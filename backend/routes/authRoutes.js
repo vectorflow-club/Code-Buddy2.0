@@ -7,7 +7,7 @@ const {
   getMe,
 } = require('../controllers/authController');
 const { adminLogin } = require('../controllers/adminController');
-const { volunteerLogin } = require('../controllers/volunteerController');
+const { volunteerLogin } = require('../controllers/volunteer');
 const { protectStudent } = require('../middleware/authMiddleware');
 const { getRateLimiters } = require('../middleware/securityMiddleware');
 

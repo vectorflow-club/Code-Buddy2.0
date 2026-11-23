@@ -419,6 +419,35 @@ const getLevelInfo = async (req, res) => {
 };
 
 /**
+ * Build the 200 response returned whenever allocation finds an existing round
+ * for the student's current level. Shared by the idempotent pre-check and all
+ * race-recovery paths; the only differences between the five original copies
+ * were the local variable names for the fresh student doc, the entry debit
+ * transaction, and the round.
+ */
+const buildExistingRoundResponse = (student, freshStudent, debitTx, round) => ({
+  success: true,
+  message: 'Existing round retrieved successfully.',
+  isExisting: true,
+  walletBalance: freshStudent ? (freshStudent.walletBalance ?? 0) : (student.walletBalance ?? 0),
+  entryFee: 0,
+  transaction: debitTx ? formatStudentTransactionResponse(debitTx) : null,
+  round: formatRoundStudentResponse(round),
+});
+
+/**
+ * Build the 400 insufficient-balance response shared by the wallet pre-check,
+ * the transaction path, and the standalone fallback path.
+ */
+const buildInsufficientBalanceResponse = (currentLevel, entryFee, currentBalance) => ({
+  success: false,
+  code: 'INSUFFICIENT_BALANCE',
+  message: `Insufficient wallet balance to enter Level ${currentLevel}. Required: ${entryFee}, available: ${currentBalance}.`,
+  walletBalance: currentBalance,
+  requiredAmount: entryFee,
+});
+
+/**
  * Controller: allocateQuestion
  * Endpoint: POST /api/rounds/allocate
  * Access: Protected (Student only)
@@ -530,15 +559,7 @@ const allocateQuestion = async (req, res) => {
         type: TRANSACTION_TYPES.STAKE_DEBIT,
       });
 
-      return res.status(200).json({
-        success: true,
-        message: 'Existing round retrieved successfully.',
-        isExisting: true,
-        walletBalance: freshStudent ? (freshStudent.walletBalance ?? 0) : (student.walletBalance ?? 0),
-        entryFee: 0,
-        transaction: existingDebitTx ? formatStudentTransactionResponse(existingDebitTx) : null,
-        round: formatRoundStudentResponse(existingRound),
-      });
+      return res.status(200).json(buildExistingRoundResponse(student, freshStudent, existingDebitTx, existingRound));
     }
 
     // 6. Check student wallet balance before allowing level entry
@@ -546,13 +567,7 @@ const allocateQuestion = async (req, res) => {
     const currentBalance = freshStudent ? (freshStudent.walletBalance ?? 0) : (student.walletBalance ?? 0);
 
     if (currentBalance < entryFee) {
-      return res.status(400).json({
-        success: false,
-        code: 'INSUFFICIENT_BALANCE',
-        message: `Insufficient wallet balance to enter Level ${currentLevel}. Required: ${entryFee}, available: ${currentBalance}.`,
-        walletBalance: currentBalance,
-        requiredAmount: entryFee,
-      });
+      return res.status(400).json(buildInsufficientBalanceResponse(currentLevel, entryFee, currentBalance));
     }
 
     // 7. Find all active matching questions for this level and difficulty
@@ -684,13 +699,7 @@ const allocateQuestion = async (req, res) => {
         txCommitted = true;
       } catch (txErr) {
         if (txErr.isInsufficientBalance) {
-          return res.status(400).json({
-            success: false,
-            code: 'INSUFFICIENT_BALANCE',
-            message: `Insufficient wallet balance to enter Level ${currentLevel}. Required: ${entryFee}, available: ${currentBalance}.`,
-            walletBalance: currentBalance,
-            requiredAmount: entryFee,
-          });
+          return res.status(400).json(buildInsufficientBalanceResponse(currentLevel, entryFee, currentBalance));
         }
         if (txErr.code === 11000 || (txErr.message && txErr.message.includes('E11000'))) {
           const raceExistingRound = await Round.findOne({
@@ -703,15 +712,7 @@ const allocateQuestion = async (req, res) => {
               roundId: raceExistingRound._id,
               type: TRANSACTION_TYPES.STAKE_DEBIT,
             });
-            return res.status(200).json({
-              success: true,
-              message: 'Existing round retrieved successfully.',
-              isExisting: true,
-              walletBalance: currentStudent ? (currentStudent.walletBalance ?? 0) : (student.walletBalance ?? 0),
-              entryFee: 0,
-              transaction: existingTx ? formatStudentTransactionResponse(existingTx) : null,
-              round: formatRoundStudentResponse(raceExistingRound),
-            });
+            return res.status(200).json(buildExistingRoundResponse(student, currentStudent, existingTx, raceExistingRound));
           }
         }
         const isTxUnsupported =
@@ -728,15 +729,7 @@ const allocateQuestion = async (req, res) => {
 
       if (isRaceExisting && savedRound) {
         const currentStudent = await Student.findById(student._id);
-        return res.status(200).json({
-          success: true,
-          message: 'Existing round retrieved successfully.',
-          isExisting: true,
-          walletBalance: currentStudent ? (currentStudent.walletBalance ?? 0) : (student.walletBalance ?? 0),
-          entryFee: 0,
-          transaction: raceExistingDebitTx ? formatStudentTransactionResponse(raceExistingDebitTx) : null,
-          round: formatRoundStudentResponse(savedRound),
-        });
+        return res.status(200).json(buildExistingRoundResponse(student, currentStudent, raceExistingDebitTx, savedRound));
       }
     }
 
@@ -753,15 +746,7 @@ const allocateQuestion = async (req, res) => {
           roundId: raceExisting._id,
           type: TRANSACTION_TYPES.STAKE_DEBIT,
         });
-        return res.status(200).json({
-          success: true,
-          message: 'Existing round retrieved successfully.',
-          isExisting: true,
-          walletBalance: currentStudent ? (currentStudent.walletBalance ?? 0) : (student.walletBalance ?? 0),
-          entryFee: 0,
-          transaction: existingTx ? formatStudentTransactionResponse(existingTx) : null,
-          round: formatRoundStudentResponse(raceExisting),
-        });
+        return res.status(200).json(buildExistingRoundResponse(student, currentStudent, existingTx, raceExisting));
       }
 
       let updatedStudent = freshStudent;
@@ -786,13 +771,7 @@ const allocateQuestion = async (req, res) => {
         );
 
         if (!updatedStudent) {
-          return res.status(400).json({
-            success: false,
-            code: 'INSUFFICIENT_BALANCE',
-            message: `Insufficient wallet balance to enter Level ${currentLevel}. Required: ${entryFee}, available: ${currentBalance}.`,
-            walletBalance: currentBalance,
-            requiredAmount: entryFee,
-          });
+          return res.status(400).json(buildInsufficientBalanceResponse(currentLevel, entryFee, currentBalance));
         }
         didDeduct = true;
       }
@@ -828,15 +807,7 @@ const allocateQuestion = async (req, res) => {
               roundId: raceExistingRound._id,
               type: TRANSACTION_TYPES.STAKE_DEBIT,
             });
-            return res.status(200).json({
-              success: true,
-              message: 'Existing round retrieved successfully.',
-              isExisting: true,
-              walletBalance: currentStudent ? (currentStudent.walletBalance ?? 0) : (student.walletBalance ?? 0),
-              entryFee: 0,
-              transaction: existingTx ? formatStudentTransactionResponse(existingTx) : null,
-              round: formatRoundStudentResponse(raceExistingRound),
-            });
+            return res.status(200).json(buildExistingRoundResponse(student, currentStudent, existingTx, raceExistingRound));
           }
         }
         throw saveError;

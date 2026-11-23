@@ -10,7 +10,7 @@ const {
   evaluateStudentRoundByUsn,
   settleStudentRoundByUsn,
   progressStudentRoundByUsn,
-} = require('../controllers/volunteerController');
+} = require('../controllers/volunteer');
 
 const {
   protectVolunteer,
