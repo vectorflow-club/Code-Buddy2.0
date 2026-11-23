@@ -1,6 +1,5 @@
 const { Level, Round, Evaluation, Transaction, Student } = require('../models');
-const { formatLevelResponse } = require('./roundController');
-const { runReadQuery } = require('./adminMonitoringController');
+const { formatLevelResponse, runReadQuery } = require('../utils');
 const { TOTAL_LEVELS, LEVEL_NUMBERS } = require('../constants');
 
 const OPEN_ROUND_STATUSES = ['ready', 'inProgress', 'timeExpired', 'submitted'];

@@ -5,11 +5,7 @@
  * without leaking stack traces, secrets, credentials, or internal DB details.
  */
 
-const buildErrorResponse = (code, message) => ({
-  success: false,
-  code,
-  message,
-});
+const { buildErrorResponse } = require('../utils');
 
 /**
  * Catch-all 404 middleware for unmatched API and non-API routes.

@@ -1,6 +1,6 @@
-const mongoose = require('mongoose');
 const { Question, Round } = require('../models');
 const { TOTAL_LEVELS } = require('../constants');
+const { isValidObjectId } = require('../utils');
 
 /**
  * Helper to validate level number strictly between 1 and 6
@@ -250,7 +250,7 @@ const getQuestionById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!isValidObjectId(id)) {
       return res.status(400).json({
         success: false,
         code: 'INVALID_ID',
@@ -299,7 +299,7 @@ const updateQuestion = async (req, res) => {
   try {
     const { id } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!isValidObjectId(id)) {
       return res.status(400).json({
         success: false,
         code: 'INVALID_ID',
@@ -482,7 +482,7 @@ const deactivateQuestion = async (req, res) => {
   try {
     const { id } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!isValidObjectId(id)) {
       return res.status(400).json({
         success: false,
         code: 'INVALID_ID',
@@ -526,7 +526,7 @@ const reactivateQuestion = async (req, res) => {
   try {
     const { id } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!isValidObjectId(id)) {
       return res.status(400).json({
         success: false,
         code: 'INVALID_ID',

@@ -1,16 +1,10 @@
 const mongoose = require('mongoose');
 const { Round, Evaluation, Transaction, Student } = require('../models');
 const { formatAdminRoundResponse } = require('./adminMonitoringController');
+const { createHttpError, isStrictObjectId } = require('../utils');
 
-const OBJECT_ID_HEX_REGEX = /^[0-9a-fA-F]{24}$/;
-
-const createRecoveryError = (status, code, message) => {
-  const err = new Error(message);
-  err.isRecoveryError = true;
-  err.status = status;
-  err.code = code;
-  return err;
-};
+const createRecoveryError = (status, code, message) =>
+  createHttpError(status, code, message, 'isRecoveryError');
 
 /**
  * Guarded In-Place Recovery of an Abandoned Round
@@ -36,7 +30,7 @@ const recoverAbandonedRound = async (req, res) => {
 
   const rawRoundId = req.params?.roundId;
   const trimmedRoundId = typeof rawRoundId === 'string' ? rawRoundId.trim() : '';
-  if (!OBJECT_ID_HEX_REGEX.test(trimmedRoundId) || !mongoose.Types.ObjectId.isValid(trimmedRoundId)) {
+  if (!isStrictObjectId(trimmedRoundId)) {
     return res.status(400).json({
       success: false,
       code: 'INVALID_ROUND_ID',

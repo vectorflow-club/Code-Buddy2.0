@@ -1,12 +1,15 @@
 const mongoose = require('mongoose');
 const { Volunteer, Student, Round, Level, Evaluation, Transaction } = require('../models');
 const { signVolunteerToken } = require('../middleware/authMiddleware');
-const { formatVolunteerResponse } = require('./adminController');
 const {
+  formatVolunteerResponse,
   formatRoundStudentResponse,
+  computeTimerFields,
+  createHttpError,
+} = require('../utils');
+const {
   syncRoundDeadlineState,
   deriveStudentRoundAvailability,
-  computeTimerFields,
 } = require('./roundController');
 const { TOTAL_LEVELS, USN_REGEX, TRANSACTION_TYPES } = require('../constants');
 
@@ -946,13 +949,8 @@ const evaluateStudentRoundByUsn = async (req, res) => {
 /**
  * Helper to create a structured HTTP error that cleanly aborts MongoDB transactions.
  */
-const createSettlementHttpError = (status, code, message) => {
-  const err = new Error(message);
-  err.isSettlementHttpError = true;
-  err.status = status;
-  err.code = code;
-  return err;
-};
+const createSettlementHttpError = (status, code, message) =>
+  createHttpError(status, code, message, 'isSettlementHttpError');
 
 /**
  * Derive authoritative immutable Transaction type from evaluation status,

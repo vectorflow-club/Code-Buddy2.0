@@ -1,12 +1,12 @@
-const mongoose = require('mongoose');
 const { Staff, Admin, Volunteer } = require('../models');
 const { signAdminToken } = require('../middleware/authMiddleware');
-const { parsePaginationQuery, buildPaginationMeta } = require('./studentController');
-
-/**
- * Escape regex metacharacters to safely match search terms without ReDoS risk.
- */
-const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const {
+  parsePaginationQuery,
+  buildPaginationMeta,
+  escapeRegex,
+  formatVolunteerResponse,
+  isValidObjectId,
+} = require('../utils');
 
 /**
  * Format Admin document for API responses, ensuring passwordHash is excluded.
@@ -19,20 +19,6 @@ const formatAdminResponse = (admin) => ({
   isActive: admin.isActive,
   createdAt: admin.createdAt,
   updatedAt: admin.updatedAt,
-});
-
-/**
- * Format Volunteer document for API responses, ensuring passwordHash is excluded.
- */
-const formatVolunteerResponse = (volunteer) => ({
-  id: volunteer._id.toString(),
-  name: volunteer.name,
-  username: volunteer.username,
-  role: 'VOLUNTEER',
-  isActive: volunteer.isActive,
-  assignedLab: volunteer.assignedLab || '',
-  createdAt: volunteer.createdAt,
-  updatedAt: volunteer.updatedAt,
 });
 
 /**
@@ -351,7 +337,7 @@ const getVolunteerById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!isValidObjectId(id)) {
       return res.status(400).json({
         success: false,
         code: 'INVALID_ID',
@@ -392,7 +378,7 @@ const deactivateVolunteer = async (req, res) => {
   try {
     const { id } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!isValidObjectId(id)) {
       return res.status(400).json({
         success: false,
         code: 'INVALID_ID',
@@ -437,7 +423,7 @@ const reactivateVolunteer = async (req, res) => {
   try {
     const { id } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!isValidObjectId(id)) {
       return res.status(400).json({
         success: false,
         code: 'INVALID_ID',
@@ -480,7 +466,7 @@ const reactivateVolunteer = async (req, res) => {
 const resolveVolunteerMutationTarget = async (req, allowedFields) => {
   const { id } = req.params;
 
-  if (!mongoose.Types.ObjectId.isValid(id)) {
+  if (!isValidObjectId(id)) {
     return {
       error: {
         status: 400,
@@ -668,6 +654,4 @@ module.exports = {
   deactivateVolunteer,
   reactivateVolunteer,
   formatAdminResponse,
-  formatVolunteerResponse,
-  escapeRegex,
 };

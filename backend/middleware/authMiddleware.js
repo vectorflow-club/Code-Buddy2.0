@@ -1,13 +1,6 @@
 const jwt = require('jsonwebtoken');
-const mongoose = require('mongoose');
 const { Student, Admin, Volunteer } = require('../models');
-
-const OBJECT_ID_HEX_REGEX = /^[a-fA-F0-9]{24}$/;
-
-const isValidObjectIdSubject = (value) =>
-  typeof value === 'string' &&
-  OBJECT_ID_HEX_REGEX.test(value) &&
-  mongoose.Types.ObjectId.isValid(value);
+const { isStrictObjectId } = require('../utils');
 
 /**
  * Retrieve the JWT secret key from environment variables.
@@ -22,13 +15,13 @@ const getJwtSecret = () => {
 };
 
 /**
- * Helper to generate a signed student session JWT using HS256.
+ * Sign a session JWT for any role using HS256.
  */
-const signStudentToken = (studentId, expiresIn = process.env.JWT_EXPIRES_IN || '7d') => {
+const signToken = (subjectId, role, expiresIn = process.env.JWT_EXPIRES_IN || '7d') => {
   return jwt.sign(
     {
-      sub: String(studentId),
-      role: 'STUDENT',
+      sub: String(subjectId),
+      role,
     },
     getJwtSecret(),
     {
@@ -37,40 +30,21 @@ const signStudentToken = (studentId, expiresIn = process.env.JWT_EXPIRES_IN || '
     }
   );
 };
+
+/**
+ * Helper to generate a signed student session JWT using HS256.
+ */
+const signStudentToken = (studentId, expiresIn) => signToken(studentId, 'STUDENT', expiresIn);
 
 /**
  * Helper to generate a signed admin session JWT using HS256.
  */
-const signAdminToken = (adminId, expiresIn = process.env.JWT_EXPIRES_IN || '7d') => {
-  return jwt.sign(
-    {
-      sub: String(adminId),
-      role: 'ADMIN',
-    },
-    getJwtSecret(),
-    {
-      algorithm: 'HS256',
-      expiresIn,
-    }
-  );
-};
+const signAdminToken = (adminId, expiresIn) => signToken(adminId, 'ADMIN', expiresIn);
 
 /**
  * Helper to generate a signed volunteer session JWT using HS256.
  */
-const signVolunteerToken = (volunteerId, expiresIn = process.env.JWT_EXPIRES_IN || '7d') => {
-  return jwt.sign(
-    {
-      sub: String(volunteerId),
-      role: 'VOLUNTEER',
-    },
-    getJwtSecret(),
-    {
-      algorithm: 'HS256',
-      expiresIn,
-    }
-  );
-};
+const signVolunteerToken = (volunteerId, expiresIn) => signToken(volunteerId, 'VOLUNTEER', expiresIn);
 
 /**
  * Internal helper to extract and cryptographically verify Bearer JWT from headers.
@@ -105,7 +79,7 @@ const extractAndVerifyToken = (req) => {
       throw error;
     }
 
-    if (!isValidObjectIdSubject(decoded.sub.trim())) {
+    if (!isStrictObjectId(decoded.sub.trim())) {
       const error = new Error('Authentication token contains an invalid user identifier.');
       error.code = 'INVALID_TOKEN';
       error.statusCode = 401;
@@ -137,250 +111,42 @@ const extractAndVerifyToken = (req) => {
 };
 
 /**
- * Student Authentication Middleware (protectStudent)
- *
- * Enforces:
- * 1. Valid HS256 JWT with role === 'STUDENT'.
- * 2. Live Student record existence in MongoDB with role === 'STUDENT'.
- * 3. Injects req.student and req.user for downstream handlers.
+ * Per-role account configuration for the shared auth core. The differences
+ * between roles are data, not code: students have no active-status check and
+ * their stored role is compared exactly, while staff roles normalize case
+ * and must be active.
  */
-const protectStudent = async (req, res, next) => {
-  try {
-    let decoded;
-    try {
-      decoded = extractAndVerifyToken(req);
-    } catch (tokenErr) {
-      return res.status(tokenErr.statusCode || 401).json({
-        success: false,
-        code: tokenErr.code || 'AUTH_FAILED',
-        message: tokenErr.message,
-      });
-    }
-
-    // Role check on JWT payload
-    if (decoded.role !== 'STUDENT') {
-      return res.status(403).json({
-        success: false,
-        code: 'FORBIDDEN_ROLE',
-        message: 'Access denied. Student authorization required.',
-      });
-    }
-
-    // Live MongoDB verification
-    const student = await Student.findById(decoded.sub.trim());
-    if (!student) {
-      return res.status(401).json({
-        success: false,
-        code: 'USER_NOT_FOUND',
-        message: 'Student account belonging to this token no longer exists.',
-      });
-    }
-
-    if (student.role !== 'STUDENT') {
-      return res.status(403).json({
-        success: false,
-        code: 'FORBIDDEN_ROLE',
-        message: 'Access denied. Account is not a registered student.',
-      });
-    }
-
-    req.student = student;
-    req.user = {
-      id: student._id.toString(),
-      role: 'STUDENT',
-    };
-
-    next();
-  } catch (error) {
-    console.error('Student auth middleware error:', error.message);
-    return res.status(500).json({
-      success: false,
-      code: 'INTERNAL_AUTH_ERROR',
-      message: 'Internal authentication error.',
-    });
-  }
-};
-
-/**
- * Admin Authentication Middleware (protectAdmin)
- *
- * Enforces:
- * 1. Valid HS256 JWT with role === 'ADMIN'.
- * 2. Live Staff record existence in MongoDB with role === 'ADMIN'.
- * 3. Verified active status (isActive === true).
- * 4. Injects req.admin and req.user for downstream handlers.
- */
-const protectAdmin = async (req, res, next) => {
-  try {
-    let decoded;
-    try {
-      decoded = extractAndVerifyToken(req);
-    } catch (tokenErr) {
-      return res.status(tokenErr.statusCode || 401).json({
-        success: false,
-        code: tokenErr.code || 'AUTH_FAILED',
-        message: tokenErr.message,
-      });
-    }
-
-    // Role check on JWT payload
-    if (decoded.role !== 'ADMIN') {
-      return res.status(403).json({
-        success: false,
-        code: 'FORBIDDEN_ROLE',
-        message: 'Access denied. Admin authorization required.',
-      });
-    }
-
-    // Live MongoDB verification
-    const admin = await Admin.findById(decoded.sub.trim());
-    if (!admin) {
-      return res.status(401).json({
-        success: false,
-        code: 'USER_NOT_FOUND',
-        message: 'Admin account belonging to this token no longer exists.',
-      });
-    }
-
-    const normalizedRole = admin.role?.toUpperCase();
-    if (normalizedRole !== 'ADMIN') {
-      return res.status(403).json({
-        success: false,
-        code: 'FORBIDDEN_ROLE',
-        message: 'Access denied. Account does not have administrator privileges.',
-      });
-    }
-
-    if (!admin.isActive) {
-      return res.status(403).json({
-        success: false,
-        code: 'ACCOUNT_DEACTIVATED',
-        message: 'Admin account has been deactivated.',
-      });
-    }
-
-    req.admin = admin;
-    req.user = {
-      id: admin._id.toString(),
-      role: 'ADMIN',
-    };
-
-    next();
-  } catch (error) {
-    console.error('Admin auth middleware error:', error.message);
-    return res.status(500).json({
-      success: false,
-      code: 'INTERNAL_AUTH_ERROR',
-      message: 'Internal authentication error.',
-    });
-  }
-};
-
-/**
- * Admin Authorization Middleware (authorizeAdmin)
- *
- * Verifies that the authenticated user on req.user has role === 'ADMIN'.
- */
-const authorizeAdmin = (req, res, next) => {
-  if (!req.user || req.user.role !== 'ADMIN') {
-    return res.status(403).json({
-      success: false,
-      code: 'FORBIDDEN_ROLE',
-      message: 'Access denied. Admin authorization required.',
-    });
-  }
-  next();
-};
-
-/**
- * Volunteer Authentication Middleware (protectVolunteer)
- *
- * Enforces:
- * 1. Valid HS256 JWT with role === 'VOLUNTEER'.
- * 2. Live Staff record existence in MongoDB with role === 'VOLUNTEER'.
- * 3. Verified active status (isActive === true). Deactivated volunteers are blocked.
- * 4. Injects req.volunteer and req.user for downstream handlers.
- */
-const protectVolunteer = async (req, res, next) => {
-  try {
-    let decoded;
-    try {
-      decoded = extractAndVerifyToken(req);
-    } catch (tokenErr) {
-      return res.status(tokenErr.statusCode || 401).json({
-        success: false,
-        code: tokenErr.code || 'AUTH_FAILED',
-        message: tokenErr.message,
-      });
-    }
-
-    // Role check on JWT payload
-    if (decoded.role !== 'VOLUNTEER') {
-      return res.status(403).json({
-        success: false,
-        code: 'FORBIDDEN_ROLE',
-        message: 'Access denied. Volunteer authorization required.',
-      });
-    }
-
-    // Live MongoDB verification
-    const volunteer = await Volunteer.findById(decoded.sub.trim());
-    if (!volunteer) {
-      return res.status(401).json({
-        success: false,
-        code: 'USER_NOT_FOUND',
-        message: 'Volunteer account belonging to this token no longer exists.',
-      });
-    }
-
-    const normalizedRole = volunteer.role?.toUpperCase();
-    if (normalizedRole !== 'VOLUNTEER') {
-      return res.status(403).json({
-        success: false,
-        code: 'FORBIDDEN_ROLE',
-        message: 'Access denied. Account does not have volunteer privileges.',
-      });
-    }
-
-    if (!volunteer.isActive) {
-      return res.status(403).json({
-        success: false,
-        code: 'ACCOUNT_DEACTIVATED',
-        message: 'Volunteer account has been deactivated. Please contact an administrator.',
-      });
-    }
-
-    req.volunteer = volunteer;
-    req.user = {
-      id: volunteer._id.toString(),
-      role: 'VOLUNTEER',
-    };
-
-    next();
-  } catch (error) {
-    console.error('Volunteer auth middleware error:', error.message);
-    return res.status(500).json({
-      success: false,
-      code: 'INTERNAL_AUTH_ERROR',
-      message: 'Internal authentication error.',
-    });
-  }
-};
-
-/**
- * Volunteer Authorization Middleware (authorizeVolunteer)
- *
- * Verifies that the authenticated user on req.user has role === 'VOLUNTEER'.
- */
-const authorizeVolunteer = (req, res, next) => {
-  if (!req.user || req.user.role !== 'VOLUNTEER') {
-    return res.status(403).json({
-      success: false,
-      code: 'FORBIDDEN_ROLE',
-      message: 'Access denied. Volunteer authorization required.',
-    });
-  }
-  next();
+const ROLE_CONFIG = {
+  STUDENT: {
+    model: Student,
+    reqKey: 'student',
+    label: 'Student',
+    notFoundMessage: 'Student account belonging to this token no longer exists.',
+    roleMismatchMessage: 'Access denied. Account is not a registered student.',
+    normalizeRole: false,
+    checkActive: false,
+    deactivatedMessage: null,
+  },
+  ADMIN: {
+    model: Admin,
+    reqKey: 'admin',
+    label: 'Admin',
+    notFoundMessage: 'Admin account belonging to this token no longer exists.',
+    roleMismatchMessage: 'Access denied. Account does not have administrator privileges.',
+    normalizeRole: true,
+    checkActive: true,
+    deactivatedMessage: 'Admin account has been deactivated.',
+  },
+  VOLUNTEER: {
+    model: Volunteer,
+    reqKey: 'volunteer',
+    label: 'Volunteer',
+    notFoundMessage: 'Volunteer account belonging to this token no longer exists.',
+    roleMismatchMessage: 'Access denied. Account does not have volunteer privileges.',
+    normalizeRole: true,
+    checkActive: true,
+    deactivatedMessage: 'Volunteer account has been deactivated. Please contact an administrator.',
+  },
 };
 
 /**
@@ -388,116 +154,157 @@ const authorizeVolunteer = (req, res, next) => {
  * Enforces account existence, role match, and active status for staff accounts.
  */
 const resolveAuthenticatedAccount = async (req, role, subjectId) => {
-  if (role === 'STUDENT') {
-    const student = await Student.findById(subjectId);
-    if (!student) {
-      return {
-        error: {
-          status: 401,
-          code: 'USER_NOT_FOUND',
-          message: 'Student account belonging to this token no longer exists.',
-        },
-      };
-    }
-    if (student.role !== 'STUDENT') {
-      return {
-        error: {
-          status: 403,
-          code: 'FORBIDDEN_ROLE',
-          message: 'Access denied. Account is not a registered student.',
-        },
-      };
-    }
-    req.student = student;
-    req.user = {
-      id: student._id.toString(),
-      role: 'STUDENT',
+  const config = ROLE_CONFIG[role];
+  if (!config) {
+    return {
+      error: {
+        status: 403,
+        code: 'FORBIDDEN_ROLE',
+        message: 'Access denied. Insufficient role authorization.',
+      },
     };
-    return { account: student };
   }
 
-  if (role === 'ADMIN') {
-    const admin = await Admin.findById(subjectId);
-    if (!admin) {
-      return {
-        error: {
-          status: 401,
-          code: 'USER_NOT_FOUND',
-          message: 'Admin account belonging to this token no longer exists.',
-        },
-      };
-    }
-    if (admin.role?.toUpperCase() !== 'ADMIN') {
-      return {
-        error: {
-          status: 403,
-          code: 'FORBIDDEN_ROLE',
-          message: 'Access denied. Account does not have administrator privileges.',
-        },
-      };
-    }
-    if (!admin.isActive) {
-      return {
-        error: {
-          status: 403,
-          code: 'ACCOUNT_DEACTIVATED',
-          message: 'Admin account has been deactivated.',
-        },
-      };
-    }
-    req.admin = admin;
-    req.user = {
-      id: admin._id.toString(),
-      role: 'ADMIN',
+  const account = await config.model.findById(subjectId);
+  if (!account) {
+    return {
+      error: {
+        status: 401,
+        code: 'USER_NOT_FOUND',
+        message: config.notFoundMessage,
+      },
     };
-    return { account: admin };
   }
 
-  if (role === 'VOLUNTEER') {
-    const volunteer = await Volunteer.findById(subjectId);
-    if (!volunteer) {
-      return {
-        error: {
-          status: 401,
-          code: 'USER_NOT_FOUND',
-          message: 'Volunteer account belonging to this token no longer exists.',
-        },
-      };
-    }
-    if (volunteer.role?.toUpperCase() !== 'VOLUNTEER') {
-      return {
-        error: {
-          status: 403,
-          code: 'FORBIDDEN_ROLE',
-          message: 'Access denied. Account does not have volunteer privileges.',
-        },
-      };
-    }
-    if (!volunteer.isActive) {
-      return {
-        error: {
-          status: 403,
-          code: 'ACCOUNT_DEACTIVATED',
-          message: 'Volunteer account has been deactivated. Please contact an administrator.',
-        },
-      };
-    }
-    req.volunteer = volunteer;
-    req.user = {
-      id: volunteer._id.toString(),
-      role: 'VOLUNTEER',
+  const storedRole = config.normalizeRole ? account.role?.toUpperCase() : account.role;
+  if (storedRole !== role) {
+    return {
+      error: {
+        status: 403,
+        code: 'FORBIDDEN_ROLE',
+        message: config.roleMismatchMessage,
+      },
     };
-    return { account: volunteer };
   }
 
-  return {
-    error: {
-      status: 403,
-      code: 'FORBIDDEN_ROLE',
-      message: 'Access denied. Insufficient role authorization.',
-    },
+  if (config.checkActive && !account.isActive) {
+    return {
+      error: {
+        status: 403,
+        code: 'ACCOUNT_DEACTIVATED',
+        message: config.deactivatedMessage,
+      },
+    };
+  }
+
+  req[config.reqKey] = account;
+  req.user = {
+    id: account._id.toString(),
+    role,
+  };
+  return { account };
+};
+
+/**
+ * Single-role authentication middleware factory.
+ *
+ * Enforces:
+ * 1. Valid HS256 JWT with role matching the guarded role.
+ * 2. Live account existence in MongoDB with matching role.
+ * 3. Verified active status for staff roles (isActive === true).
+ * 4. Injects req.<role key> and req.user for downstream handlers.
+ */
+const createRoleGuard = (role) => {
+  const config = ROLE_CONFIG[role];
+
+  return async (req, res, next) => {
+    try {
+      let decoded;
+      try {
+        decoded = extractAndVerifyToken(req);
+      } catch (tokenErr) {
+        return res.status(tokenErr.statusCode || 401).json({
+          success: false,
+          code: tokenErr.code || 'AUTH_FAILED',
+          message: tokenErr.message,
+        });
+      }
+
+      // Role check on JWT payload
+      if (decoded.role !== role) {
+        return res.status(403).json({
+          success: false,
+          code: 'FORBIDDEN_ROLE',
+          message: `Access denied. ${config.label} authorization required.`,
+        });
+      }
+
+      // Live MongoDB verification
+      const resolved = await resolveAuthenticatedAccount(req, role, decoded.sub.trim());
+      if (resolved.error) {
+        return res.status(resolved.error.status).json({
+          success: false,
+          code: resolved.error.code,
+          message: resolved.error.message,
+        });
+      }
+
+      next();
+    } catch (error) {
+      console.error(`${config.label} auth middleware error:`, error.message);
+      return res.status(500).json({
+        success: false,
+        code: 'INTERNAL_AUTH_ERROR',
+        message: 'Internal authentication error.',
+      });
+    }
   };
 };
+
+/**
+ * Student Authentication Middleware (protectStudent)
+ */
+const protectStudent = createRoleGuard('STUDENT');
+
+/**
+ * Admin Authentication Middleware (protectAdmin)
+ */
+const protectAdmin = createRoleGuard('ADMIN');
+
+/**
+ * Volunteer Authentication Middleware (protectVolunteer)
+ */
+const protectVolunteer = createRoleGuard('VOLUNTEER');
+
+/**
+ * Role authorization middleware factory.
+ *
+ * Verifies that the authenticated user on req.user has the required role.
+ */
+const createRoleAuthorizer = (role) => {
+  const config = ROLE_CONFIG[role];
+
+  return (req, res, next) => {
+    if (!req.user || req.user.role !== role) {
+      return res.status(403).json({
+        success: false,
+        code: 'FORBIDDEN_ROLE',
+        message: `Access denied. ${config.label} authorization required.`,
+      });
+    }
+    next();
+  };
+};
+
+/**
+ * Admin Authorization Middleware (authorizeAdmin)
+ */
+const authorizeAdmin = createRoleAuthorizer('ADMIN');
+
+/**
+ * Volunteer Authorization Middleware (authorizeVolunteer)
+ */
+const authorizeVolunteer = createRoleAuthorizer('VOLUNTEER');
 
 /**
  * Shared Multi-Role Authentication Middleware Factory (protectRoles)

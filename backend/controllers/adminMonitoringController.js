@@ -1,12 +1,15 @@
-const mongoose = require('mongoose');
 const { Student, Round, Evaluation, Transaction, Question, Volunteer } = require('../models');
-const { parsePaginationQuery, buildPaginationMeta } = require('./studentController');
-const { computeTimerFields } = require('./roundController');
-const { escapeRegex } = require('./adminController');
+const {
+  parsePaginationQuery,
+  buildPaginationMeta,
+  computeTimerFields,
+  escapeRegex,
+  runReadQuery,
+  isStrictObjectId,
+} = require('../utils');
 const { TOTAL_LEVELS, ACADEMIC_YEARS, USN_REGEX, TRANSACTION_TYPES } = require('../constants');
 
 const MAX_SEARCH_LENGTH = 100;
-const OBJECT_ID_HEX_REGEX = /^[0-9a-fA-F]{24}$/;
 
 const VALID_YEARS = new Set(ACADEMIC_YEARS);
 const VALID_COMPETITION_STATUSES = new Set([
@@ -37,37 +40,6 @@ const SAFE_EVALUATION_SELECT =
   '_id roundId studentId questionId levelNumber status evaluatedAt programmingLanguage isSettled settledAt isProgressed progressedAt createdAt updatedAt';
 const SAFE_TRANSACTION_SELECT =
   '_id studentId type amount balanceAfter levelNumber roundId description timestamp';
-
-/**
- * Execute a Mongoose query safely while tolerating lightweight unit-test query mocks.
- */
-const runReadQuery = async (
-  query,
-  { select = null, sort = null, skip = null, limit = null, lean = true } = {}
-) => {
-  if (!query) {
-    return query;
-  }
-
-  let current = query;
-  if (select && typeof current.select === 'function') {
-    current = current.select(select);
-  }
-  if (sort && typeof current.sort === 'function') {
-    current = current.sort(sort);
-  }
-  if (skip !== null && skip !== undefined && typeof current.skip === 'function') {
-    current = current.skip(skip);
-  }
-  if (limit !== null && limit !== undefined && typeof current.limit === 'function') {
-    current = current.limit(limit);
-  }
-  if (lean && typeof current.lean === 'function') {
-    current = current.lean();
-  }
-
-  return await current;
-};
 
 const sendValidationError = (res, error) =>
   res.status(error.status).json({
@@ -275,7 +247,7 @@ const resolveParticipantByIdentifier = async (rawIdentifier) => {
   }
 
   let query;
-  if (OBJECT_ID_HEX_REGEX.test(trimmed) && mongoose.Types.ObjectId.isValid(trimmed)) {
+  if (isStrictObjectId(trimmed)) {
     query = { _id: trimmed };
   } else {
     const normalizedUsn = trimmed.toUpperCase();
@@ -1440,5 +1412,4 @@ module.exports = {
   formatAdminEvaluationSummary,
   formatAdminRoundResponse,
   formatAdminTransactionResponse,
-  runReadQuery,
 };

@@ -1,5 +1,5 @@
 const { Student, Evaluation, Transaction } = require('../models');
-const { parsePaginationQuery, buildPaginationMeta } = require('./studentController');
+const { parsePaginationQuery, buildPaginationMeta } = require('../utils');
 const { ACADEMIC_YEARS, TRANSACTION_TYPES } = require('../constants');
 
 const ALLOWED_COMPETITION_STATUSES = ['registered', 'inProgress', 'cleared', 'eliminated', 'completed'];
