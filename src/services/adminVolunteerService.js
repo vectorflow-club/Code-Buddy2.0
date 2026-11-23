@@ -1,12 +1,4 @@
-import { backendConfig } from "./backendConfig";
-import { getAdminSession } from "./adminAuthService";
-
-function getApiUrl(path) {
-  if (!backendConfig.apiBaseUrl) {
-    throw new Error("API is not configured. Set VITE_API_BASE_URL and restart the frontend.");
-  }
-  return `${backendConfig.apiBaseUrl}${path}`;
-}
+import { createAdminRequest } from "./adminRequest";
 
 export class AdminVolunteerApiError extends Error {
   constructor(message, { status = null, code = null, kind = "api" } = {}) {
@@ -18,51 +10,15 @@ export class AdminVolunteerApiError extends Error {
   }
 }
 
-async function adminRequest(path, options = {}) {
-  const session = getAdminSession();
-  if (!session?.token) {
-    throw new AdminVolunteerApiError("Your admin session is missing. Please sign in again.", {
-      kind: "session",
-    });
-  }
-
-  let response;
-  try {
-    response = await fetch(getApiUrl(path), {
-      ...options,
-      headers: {
-        Authorization: `Bearer ${session.token}`,
-        ...(options.body ? { "Content-Type": "application/json" } : {}),
-        ...options.headers,
-      },
-    });
-  } catch {
-    throw new AdminVolunteerApiError("Could not reach the server. Check your connection and try again.", {
-      kind: "network",
-    });
-  }
-
-  let payload = null;
-  try {
-    payload = await response.json();
-  } catch {
-    // Non-JSON error responses are handled using their HTTP status below.
-  }
-
-  if (response.status === 401 || response.status === 403) {
-    throw new AdminVolunteerApiError(
-      payload?.message || "Your admin session is no longer authorized. Please sign in again.",
-      { status: response.status, code: payload?.code || null, kind: "authorization" },
-    );
-  }
-  if (!response.ok || payload?.success !== true) {
-    throw new AdminVolunteerApiError(
-      payload?.message || `The volunteer request failed (HTTP ${response.status}). Please try again.`,
-      { status: response.status, code: payload?.code || null },
-    );
-  }
-  return payload;
-}
+const adminRequest = createAdminRequest({
+  makeError: (message, meta) => new AdminVolunteerApiError(message, meta),
+  sessionMessage: "Your admin session is missing. Please sign in again.",
+  configMessage:
+    "API is not configured. Set VITE_API_BASE_URL and restart the frontend.",
+  networkMessage: "Could not reach the server. Check your connection and try again.",
+  unauthorizedMessage: "Your admin session is no longer authorized. Please sign in again.",
+  failureMessage: (status) => `The volunteer request failed (HTTP ${status}). Please try again.`,
+});
 
 function validateVolunteer(payload, context = "volunteer response") {
   if (!payload?.volunteer || typeof payload.volunteer !== "object" || Array.isArray(payload.volunteer)) {
@@ -86,7 +42,7 @@ export async function getAdminVolunteers() {
 export async function createAdminVolunteer({ name, username, password, assignedLab }) {
   const payload = await adminRequest("/api/admin/volunteers", {
     method: "POST",
-    body: JSON.stringify({ name, username, password, ...(assignedLab ? { assignedLab } : {}) }),
+    body: { name, username, password, ...(assignedLab ? { assignedLab } : {}) },
   });
   return validateVolunteer(payload, "create response");
 }
@@ -102,7 +58,7 @@ export async function updateAdminVolunteer(id, fields) {
   if (fields.assignedLab !== undefined) body.assignedLab = fields.assignedLab;
   const payload = await adminRequest(`/api/admin/volunteers/${encodeURIComponent(id)}`, {
     method: "PUT",
-    body: JSON.stringify(body),
+    body,
   });
   return validateVolunteer(payload, "update response");
 }
@@ -110,7 +66,7 @@ export async function updateAdminVolunteer(id, fields) {
 export async function resetAdminVolunteerPassword(id, password) {
   const payload = await adminRequest(
     `/api/admin/volunteers/${encodeURIComponent(id)}/reset-password`,
-    { method: "PATCH", body: JSON.stringify({ newPassword: password }) },
+    { method: "PATCH", body: { newPassword: password } },
   );
   return validateVolunteer(payload, "password reset response");
 }

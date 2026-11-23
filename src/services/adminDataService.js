@@ -1,12 +1,4 @@
-import { backendConfig } from "./backendConfig";
-import { getAdminSession } from "./adminAuthService";
-
-function apiUrl(path) {
-  if (!backendConfig.apiBaseUrl) {
-    throw new Error("Admin API is not configured. Set VITE_API_BASE_URL and restart the frontend.");
-  }
-  return `${backendConfig.apiBaseUrl}${path}`;
-}
+import { createAdminRequest } from "./adminRequest";
 
 export class AdminDataApiError extends Error {
   constructor(message, { status = null, code = null, kind = "api" } = {}) {
@@ -18,47 +10,15 @@ export class AdminDataApiError extends Error {
   }
 }
 
-async function adminRequest(path, options = {}) {
-  const session = getAdminSession();
-  if (!session?.token) {
-    throw new AdminDataApiError("Your admin session is missing. Please sign in again.", { kind: "session" });
-  }
-
-  let response;
-  try {
-    response = await fetch(apiUrl(path), {
-      ...options,
-      headers: {
-        ...options.headers,
-        Authorization: `Bearer ${session.token}`,
-      },
-    });
-  } catch {
-    throw new AdminDataApiError("Could not reach the server. Check that it is running and try again.", {
-      kind: "network",
-    });
-  }
-
-  let payload = null;
-  try {
-    payload = await response.json();
-  } catch {
-    // Keep the HTTP status as the useful error when a response is not JSON.
-  }
-  if (response.status === 401 || response.status === 403) {
-    throw new AdminDataApiError(
-      payload?.message || "Your admin session is no longer authorized. Please sign in again.",
-      { status: response.status, code: payload?.code || null, kind: "authorization" },
-    );
-  }
-  if (!response.ok || payload?.success !== true) {
-    throw new AdminDataApiError(
-      payload?.message || `The admin request failed (HTTP ${response.status}).`,
-      { status: response.status, code: payload?.code || null },
-    );
-  }
-  return payload;
-}
+const adminRequest = createAdminRequest({
+  makeError: (message, meta) => new AdminDataApiError(message, meta),
+  sessionMessage: "Your admin session is missing. Please sign in again.",
+  configMessage:
+    "Admin API is not configured. Set VITE_API_BASE_URL and restart the frontend.",
+  networkMessage: "Could not reach the server. Check that it is running and try again.",
+  unauthorizedMessage: "Your admin session is no longer authorized. Please sign in again.",
+  failureMessage: (status) => `The admin request failed (HTTP ${status}).`,
+});
 
 export async function getAdminDashboardStats() {
   const payload = await adminRequest("/api/admin/dashboard");
