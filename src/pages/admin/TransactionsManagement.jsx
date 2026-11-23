@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from "react";
 import { Search } from "lucide-react";
+import { Pagination } from "../../components/ui";
+import { useAdminList } from "../../hooks/useAdminList";
+import { formatDate } from "../../utils/formatters";
 import { getAdminTransactions } from "../../services/adminDataService";
 import "./participants.css";
 
@@ -14,12 +16,6 @@ const transactionTypes = [
 ];
 const emptyFilters = { type: "", levelNumber: "", usn: "", search: "" };
 
-function formatDate(value) {
-  if (!value) return "—";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString();
-}
-
 function displayAmount(value) {
   return value === null || value === undefined || !Number.isFinite(Number(value))
     ? "—"
@@ -27,83 +23,20 @@ function displayAmount(value) {
 }
 
 export default function TransactionsManagement() {
-  const [draftFilters, setDraftFilters] = useState(emptyFilters);
-  const [filters, setFilters] = useState({ ...emptyFilters, page: 1, limit: PAGE_LIMIT });
-  const [retryCount, setRetryCount] = useState(0);
-  const [transactions, setTransactions] = useState([]);
-  const [pagination, setPagination] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const requestSequence = useRef(0);
-  const activeRequests = useRef(new Map());
-
-  useEffect(() => {
-    const requestKey = JSON.stringify(filters);
-    const requestId = ++requestSequence.current;
-    let request = activeRequests.current.get(requestKey);
-    if (!request) {
-      request = getAdminTransactions(filters);
-      activeRequests.current.set(requestKey, request);
-      request.then(
-        () => { if (activeRequests.current.get(requestKey) === request) activeRequests.current.delete(requestKey); },
-        () => { if (activeRequests.current.get(requestKey) === request) activeRequests.current.delete(requestKey); },
-      );
-    }
-
-    setLoading(true);
-    setError(null);
-    setTransactions([]);
-    setPagination(null);
-    request.then((result) => {
-      if (requestSequence.current !== requestId) return;
-      setTransactions(result.transactions);
-      setPagination(result.pagination);
-    }).catch((requestError) => {
-      if (requestSequence.current === requestId) setError(requestError);
-    }).finally(() => {
-      if (requestSequence.current === requestId) setLoading(false);
-    });
-
-    return () => {
-      if (requestSequence.current === requestId) requestSequence.current += 1;
-    };
-  }, [filters, retryCount]);
-
-  const handleFilterChange = (event) => {
-    const { name, value } = event.target;
-    setDraftFilters((current) => ({ ...current, [name]: value }));
-  };
-
-  const applyFilters = (event) => {
-    event.preventDefault();
-    setFilters({
-      ...draftFilters,
-      levelNumber: draftFilters.levelNumber ? Number(draftFilters.levelNumber) : "",
-      usn: draftFilters.usn.trim(),
-      search: draftFilters.search.trim(),
-      page: 1,
-      limit: filters.limit,
-    });
-  };
-
-  const clearFilters = () => {
-    setDraftFilters({ ...emptyFilters });
-    setFilters({ ...emptyFilters, page: 1, limit: filters.limit });
-  };
-
-  const changePage = (nextPage) => {
-    if (loading || !pagination || nextPage < 1) return;
-    setFilters((current) => ({ ...current, page: nextPage }));
-  };
-
-  const changeLimit = (event) => {
-    const limit = Number(event.target.value);
-    setFilters((current) => ({ ...current, limit, page: 1 }));
-  };
-
-  const retry = () => {
-    if (!loading) setRetryCount((count) => count + 1);
-  };
+  const {
+    items: transactions,
+    pagination,
+    loading,
+    error,
+    draftFilters,
+    filters,
+    handleFilterChange,
+    applyFilters,
+    clearFilters,
+    changePage,
+    changeLimit,
+    retry,
+  } = useAdminList({ fetcher: getAdminTransactions, emptyFilters, resultKey: "transactions", pageLimit: PAGE_LIMIT });
 
   return (
     <div className="participant-management">
@@ -189,14 +122,7 @@ export default function TransactionsManagement() {
             </tbody>
           </table>
         </div>
-        <div className="participant-toolbar">
-          <span>{pagination ? `Page ${pagination.page} of ${pagination.totalPages}` : ""}</span>
-          <select aria-label="Transactions per page" value={filters.limit} onChange={changeLimit} disabled={loading}>
-            {[10, 20, 50, 100].map((limit) => <option key={limit} value={limit}>{limit} per page</option>)}
-          </select>
-          <button className="participant-view-btn" type="button" onClick={() => changePage((pagination?.page || 1) - 1)} disabled={loading || !pagination?.hasPrevPage}>Previous</button>
-          <button className="participant-view-btn" type="button" onClick={() => changePage((pagination?.page || 1) + 1)} disabled={loading || !pagination?.hasNextPage}>Next</button>
-        </div>
+        <Pagination pagination={pagination} limit={filters.limit} loading={loading} onPageChange={changePage} onLimitChange={changeLimit} perPageLabel="Transactions per page" />
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { Users, UserX, Trophy, Wallet, Activity } from "lucide-react";
 import { SectionHeading, MetricCard } from "../../components/ui";
+import { useFetchState } from "../../hooks/useFetchState";
 import { getAdminDashboardStats } from "../../services/adminDataService";
 
 const emptyStats = [
@@ -11,25 +12,11 @@ const emptyStats = [
 ];
 
 export default function AdminDashboard() {
-  const [dashboard, setDashboard] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const loadDashboard = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      setDashboard(await getAdminDashboardStats());
-    } catch (loadError) {
-      setError(loadError.message || "Could not load competition statistics.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadDashboard();
-  }, [loadDashboard]);
+  const fetchDashboard = useCallback(() => getAdminDashboardStats(), []);
+  const { data: dashboard, loading, error, reload: loadDashboard } = useFetchState(fetchDashboard, {
+    initialData: null,
+    errorMessage: "Could not load competition statistics.",
+  });
 
   const participants = dashboard?.participants;
   const stats = dashboard

@@ -1,5 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Search } from "lucide-react";
+import { Pagination } from "../../components/ui";
+import { useAdminList } from "../../hooks/useAdminList";
+import { formatDate } from "../../utils/formatters";
 import { getAdminRounds, recoverAdminRound } from "../../services/adminDataService";
 import "./participants.css";
 
@@ -14,12 +17,6 @@ const emptyFilters = {
   search: "",
 };
 
-function formatDate(value) {
-  if (!value) return "—";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString();
-}
-
 function formatSeconds(value) {
   if (!Number.isFinite(value) || value < 0) return "—";
   const seconds = Math.floor(value);
@@ -33,88 +30,26 @@ function displayState(value) {
 }
 
 export default function RoundsManagement() {
-  const [draftFilters, setDraftFilters] = useState(emptyFilters);
-  const [filters, setFilters] = useState({ ...emptyFilters, page: 1, limit: PAGE_LIMIT });
-  const [retryCount, setRetryCount] = useState(0);
-  const [refreshCount, setRefreshCount] = useState(0);
-  const [rounds, setRounds] = useState([]);
-  const [pagination, setPagination] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const {
+    items: rounds,
+    setItems: setRounds,
+    pagination,
+    loading,
+    error,
+    draftFilters,
+    filters,
+    handleFilterChange,
+    applyFilters,
+    clearFilters,
+    changePage,
+    changeLimit,
+    retry,
+    refresh,
+  } = useAdminList({ fetcher: getAdminRounds, emptyFilters, resultKey: "rounds", pageLimit: PAGE_LIMIT });
   const [recoveringRoundId, setRecoveringRoundId] = useState(null);
   const [recoverySuccess, setRecoverySuccess] = useState("");
   const [recoveryError, setRecoveryError] = useState(null);
-  const requestSequence = useRef(0);
-  const activeRequests = useRef(new Map());
   const recoveryInFlight = useRef(false);
-
-  useEffect(() => {
-    const requestKey = JSON.stringify(filters);
-    const requestId = ++requestSequence.current;
-    let request = activeRequests.current.get(requestKey);
-    if (!request) {
-      request = getAdminRounds(filters);
-      activeRequests.current.set(requestKey, request);
-      request.then(
-        () => { if (activeRequests.current.get(requestKey) === request) activeRequests.current.delete(requestKey); },
-        () => { if (activeRequests.current.get(requestKey) === request) activeRequests.current.delete(requestKey); },
-      );
-    }
-
-    setLoading(true);
-    setError(null);
-    setRounds([]);
-    setPagination(null);
-    request.then((result) => {
-      if (requestSequence.current !== requestId) return;
-      setRounds(result.rounds);
-      setPagination(result.pagination);
-    }).catch((requestError) => {
-      if (requestSequence.current === requestId) setError(requestError);
-    }).finally(() => {
-      if (requestSequence.current === requestId) setLoading(false);
-    });
-
-    return () => {
-      if (requestSequence.current === requestId) requestSequence.current += 1;
-    };
-  }, [filters, retryCount, refreshCount]);
-
-  const handleFilterChange = (event) => {
-    const { name, value } = event.target;
-    setDraftFilters((current) => ({ ...current, [name]: value }));
-  };
-
-  const applyFilters = (event) => {
-    event.preventDefault();
-    setFilters({
-      ...draftFilters,
-      levelNumber: draftFilters.levelNumber ? Number(draftFilters.levelNumber) : "",
-      usn: draftFilters.usn.trim(),
-      search: draftFilters.search.trim(),
-      page: 1,
-      limit: filters.limit,
-    });
-  };
-
-  const clearFilters = () => {
-    setDraftFilters({ ...emptyFilters });
-    setFilters({ ...emptyFilters, page: 1, limit: filters.limit });
-  };
-
-  const changePage = (nextPage) => {
-    if (loading || !pagination || nextPage < 1) return;
-    setFilters((current) => ({ ...current, page: nextPage }));
-  };
-
-  const changeLimit = (event) => {
-    const limit = Number(event.target.value);
-    setFilters((current) => ({ ...current, limit, page: 1 }));
-  };
-
-  const retry = () => {
-    if (!loading) setRetryCount((count) => count + 1);
-  };
 
   const recoverRound = async (round) => {
     if (recoveryInFlight.current || round?.status !== "abandoned" || !round.id) return;
@@ -129,11 +64,11 @@ export default function RoundsManagement() {
       const result = await recoverAdminRound(round.id);
       setRounds((current) => current.map((item) => item.id === result.round.id ? result.round : item));
       setRecoverySuccess(result.message || `Round ${result.round.id} was recovered and is ready.`);
-      setRefreshCount((count) => count + 1);
+      refresh();
     } catch (requestError) {
       setRecoveryError(requestError);
       if (requestError.status === 409 || requestError.status === 404) {
-        setRefreshCount((count) => count + 1);
+        refresh();
       }
     } finally {
       recoveryInFlight.current = false;
@@ -197,7 +132,7 @@ export default function RoundsManagement() {
             type="button"
             onClick={() => {
               setRecoveryError(null);
-              setRefreshCount((count) => count + 1);
+              refresh();
             }}
             disabled={loading}
           >
@@ -266,14 +201,7 @@ export default function RoundsManagement() {
             </tbody>
           </table>
         </div>
-        <div className="participant-toolbar">
-          <span>{pagination ? `Page ${pagination.page} of ${pagination.totalPages}` : ""}</span>
-          <select aria-label="Rounds per page" value={filters.limit} onChange={changeLimit} disabled={loading}>
-            {[10, 20, 50, 100].map((limit) => <option key={limit} value={limit}>{limit} per page</option>)}
-          </select>
-          <button className="participant-view-btn" type="button" onClick={() => changePage((pagination?.page || 1) - 1)} disabled={loading || !pagination?.hasPrevPage}>Previous</button>
-          <button className="participant-view-btn" type="button" onClick={() => changePage((pagination?.page || 1) + 1)} disabled={loading || !pagination?.hasNextPage}>Next</button>
-        </div>
+        <Pagination pagination={pagination} limit={filters.limit} loading={loading} onPageChange={changePage} onLimitChange={changeLimit} perPageLabel="Rounds per page" />
       </div>
     </div>
   );

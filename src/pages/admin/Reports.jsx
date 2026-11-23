@@ -8,12 +8,8 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { getAdminDashboardStats, getAdminParticipants } from "../../services/adminDataService";
+import { displayStatus, formatCurrency } from "../../utils/formatters";
 import "./reports.css";
-
-const displayStatus = (status) => {
-  if (["registered", "inProgress", "cleared"].includes(status)) return "ACTIVE";
-  return String(status || "UNKNOWN").toUpperCase();
-};
 
 const roundStatuses = ["ready", "inProgress", "timeExpired", "submitted", "evaluated", "abandoned"];
 const transactionTypes = [
@@ -184,7 +180,7 @@ export default function Reports() {
             <p className="reports-muted" role="alert">Prize distribution is unavailable because dashboard data could not be loaded.</p>
           ) : (
             <>
-              <div className="prize-total">{totalBalance === null ? "Unavailable" : `₹${Number(totalBalance).toLocaleString("en-IN")}`}</div>
+              <div className="prize-total">{totalBalance === null ? "Unavailable" : formatCurrency(Number(totalBalance))}</div>
               <span className="reports-muted">Combined participant wallet balances</span>
               {participantsError ? (
                 <p className="reports-muted" role="alert">Wallet breakdown by participant status is unavailable: {participantsError}</p>
@@ -196,7 +192,7 @@ export default function Reports() {
                     return (
                       <div key={status}>
                         <span>{status.charAt(0) + status.slice(1).toLowerCase()} participants</span>
-                        <strong>{`₹${amount.toLocaleString("en-IN")}`}</strong>
+                        <strong>{formatCurrency(amount)}</strong>
                       </div>
                     );
                   })}
@@ -232,9 +228,9 @@ export default function Reports() {
                 <tbody>
                   {transactionTypes.map((type) => {
                     const totals = dashboard.transactions?.byType?.[type];
-                    return <tr key={type}><td>{type}</td><td>{totals?.count ?? "—"}</td><td>{totals?.totalAmount === undefined ? "—" : `₹${Number(totals.totalAmount).toLocaleString("en-IN")}`}</td></tr>;
+                    return <tr key={type}><td>{type}</td><td>{totals?.count ?? "—"}</td><td>{totals?.totalAmount === undefined ? "—" : formatCurrency(Number(totals.totalAmount))}</td></tr>;
                   })}
-                  <tr><td><strong>Total</strong></td><td><strong>{dashboard.transactions?.total ?? "—"}</strong></td><td><strong>{dashboard.transactions?.totalAmount === undefined ? "—" : `₹${Number(dashboard.transactions.totalAmount).toLocaleString("en-IN")}`}</strong></td></tr>
+                  <tr><td><strong>Total</strong></td><td><strong>{dashboard.transactions?.total ?? "—"}</strong></td><td><strong>{dashboard.transactions?.totalAmount === undefined ? "—" : formatCurrency(Number(dashboard.transactions.totalAmount))}</strong></td></tr>
                 </tbody>
               </table>
             </div>
@@ -268,7 +264,7 @@ export default function Reports() {
                   <td>{participant.name}</td>
                   <td>{participant.usn}</td>
                   <td>Level {participant.level}</td>
-                  <td>₹{Number(participant.prize || 0).toLocaleString("en-IN")}</td>
+                  <td>{formatCurrency(Number(participant.prize || 0))}</td>
                   <td><span className={`report-status ${participant.status.toLowerCase()}`}>{participant.status}</span></td>
                 </tr>
               ))}

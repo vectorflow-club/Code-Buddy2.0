@@ -18,6 +18,9 @@ export function EmptyState({ title, detail, action }) { return <div className="e
 export function ErrorState({ message = 'Something went wrong. Please try again.' }) { return <div role="alert" className="error-state"><CircleHelp size={17} />{message}</div> }
 export function InlineTag({ children, tone = 'default' }) { return <span className={`tag tag-${tone}`}>{children}</span> }
 export function MetricCard({ label, value, caption, accent = false }) { return <article className={`metric-card${accent ? ' metric-accent' : ''}`}><p>{label}</p><strong>{value}</strong>{caption && <span>{caption}</span>}</article> }
+export function Pagination({ pagination, limit, loading, onPageChange, onLimitChange, perPageLabel }) {
+  return <div className="participant-toolbar"><span>{pagination ? `Page ${pagination.page} of ${pagination.totalPages}` : ''}</span><select aria-label={perPageLabel} value={limit} onChange={onLimitChange} disabled={loading}>{[10, 20, 50, 100].map(value => <option key={value} value={value}>{value} per page</option>)}</select><button className="participant-view-btn" type="button" onClick={() => onPageChange((pagination?.page || 1) - 1)} disabled={loading || !pagination?.hasPrevPage}>Previous</button><button className="participant-view-btn" type="button" onClick={() => onPageChange((pagination?.page || 1) + 1)} disabled={loading || !pagination?.hasNextPage}>Next</button></div>
+}
 export function CountdownDisplay({ seconds, status, running = false }) {
   const [displaySeconds, setDisplaySeconds] = useState(seconds)
   useEffect(() => {

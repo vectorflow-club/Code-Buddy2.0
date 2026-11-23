@@ -1,5 +1,3 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   UserRound,
   LockKeyhole,
@@ -7,37 +5,23 @@ import {
   EyeOff,
 } from "lucide-react";
 import { Brand } from "../../components/ui";
+import { useStaffLogin } from "../../hooks/useStaffLogin";
 import { loginVolunteer } from "../../services/volunteerAuthService";
 import "./volunteer-login.css";
 
 export default function VolunteerLogin() {
-  const navigate = useNavigate();
-
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-
-    if (!username.trim() || !password) {
-      setError("Please enter your username and password.");
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-    try {
-      await loginVolunteer(username.trim(), password);
-      navigate("/volunteer/dashboard", { replace: true });
-    } catch (loginError) {
-      setError(loginError.message || "Unable to sign in. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    username,
+    setUsername,
+    password,
+    setPassword,
+    showPassword,
+    setShowPassword,
+    error,
+    setError,
+    loading,
+    handleSubmit,
+  } = useStaffLogin({ login: loginVolunteer, target: "/volunteer/dashboard" });
 
   return (
     <div className="vol-login-page">
@@ -59,7 +43,7 @@ export default function VolunteerLogin() {
           your assigned participants and evaluations.
         </p>
 
-        <form onSubmit={handleLogin}>
+        <form onSubmit={handleSubmit}>
           <div className="vol-login-field">
             <label htmlFor="vol-username">Username</label>
 

@@ -1,38 +1,22 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, LockKeyhole, UserRound } from "lucide-react";
 import { Brand } from "../../components/ui";
+import { useStaffLogin } from "../../hooks/useStaffLogin";
 import { loginAdmin } from "../../services/adminAuthService";
 import "./admin-login.css";
 
 export default function AdminLogin() {
-  const navigate = useNavigate();
-
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!username.trim() || !password) {
-      setError("Please enter your username and password.");
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-    try {
-      await loginAdmin(username.trim(), password);
-      navigate("/admin/dashboard", { replace: true });
-    } catch (loginError) {
-      setError(loginError.message || "Unable to sign in. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    username,
+    setUsername,
+    password,
+    setPassword,
+    showPassword,
+    setShowPassword,
+    error,
+    setError,
+    loading,
+    handleSubmit,
+  } = useStaffLogin({ login: loginAdmin, target: "/admin/dashboard" });
 
   return (
     <div className="admin-login-page">

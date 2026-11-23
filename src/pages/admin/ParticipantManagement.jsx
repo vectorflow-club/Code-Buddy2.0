@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   Search,
   Users,
@@ -8,19 +8,15 @@ import {
   X,
 } from "lucide-react";
 import "./participants.css";
+import { useFetchState } from "../../hooks/useFetchState";
+import { usePagedHistory } from "../../hooks/usePagedHistory";
+import { displayStatus, formatCurrency, formatDate } from "../../utils/formatters";
 import {
   getAdminParticipantDetails,
   getAdminParticipantRounds,
   getAdminParticipantTransactions,
   getAdminParticipants,
 } from "../../services/adminDataService";
-
-const HISTORY_PAGE_LIMIT = 5;
-
-const displayStatus = (status) => {
-  if (["registered", "inProgress", "cleared"].includes(status)) return "ACTIVE";
-  return String(status || "UNKNOWN").toUpperCase();
-};
 
 function formatCounts(counts) {
   if (!counts || typeof counts !== "object" || Array.isArray(counts)) return "Not available";
@@ -44,53 +40,41 @@ function formatTransactionTotals(totals) {
     .join(" · ");
 }
 
-function formatDate(value) {
-  if (!value) return "—";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString();
-}
-
 export default function ParticipantManagement() {
-  const [participants, setParticipants] = useState([]);
+  const fetchParticipants = useCallback(async () => {
+    const data = await getAdminParticipants();
+    return data.map((participant) => ({
+      ...participant,
+      level: participant.currentLevel,
+      prize: participant.totalEarned,
+      status: displayStatus(participant.competitionStatus),
+    }));
+  }, []);
+  const { data: participants, loading, error, setError, reload: loadParticipants } = useFetchState(fetchParticipants, {
+    initialData: [],
+    errorMessage: "Could not load participants.",
+  });
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [selectedParticipant, setSelectedParticipant] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState("");
-  const [error, setError] = useState("");
   const [retryDetailsParticipant, setRetryDetailsParticipant] = useState(null);
-  const [roundHistory, setRoundHistory] = useState(null);
-  const [roundHistoryLoading, setRoundHistoryLoading] = useState(false);
-  const [roundHistoryError, setRoundHistoryError] = useState("");
-  const [roundPage, setRoundPage] = useState(1);
-  const [transactionHistory, setTransactionHistory] = useState(null);
-  const [transactionHistoryLoading, setTransactionHistoryLoading] = useState(false);
-  const [transactionHistoryError, setTransactionHistoryError] = useState("");
-  const [transactionPage, setTransactionPage] = useState(1);
+  const {
+    data: roundHistory,
+    loading: roundHistoryLoading,
+    error: roundHistoryError,
+    page: roundPage,
+    load: loadRoundHistory,
+  } = usePagedHistory(getAdminParticipantRounds, "Could not load round history.");
+  const {
+    data: transactionHistory,
+    loading: transactionHistoryLoading,
+    error: transactionHistoryError,
+    page: transactionPage,
+    load: loadTransactionHistory,
+  } = usePagedHistory(getAdminParticipantTransactions, "Could not load transaction history.");
   const [activeHistory, setActiveHistory] = useState("");
-
-  const loadParticipants = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const data = await getAdminParticipants();
-      setParticipants(data.map((participant) => ({
-        ...participant,
-        level: participant.currentLevel,
-        prize: participant.totalEarned,
-        status: displayStatus(participant.competitionStatus),
-      })));
-    } catch (loadError) {
-      setError(loadError.message || "Could not load participants.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadParticipants();
-  }, [loadParticipants]);
 
   const filteredParticipants = participants.filter((participant) => {
     const matchesSearch =
@@ -113,44 +97,6 @@ export default function ParticipantManagement() {
   const completedCount = participants.filter(
     (p) => p.status === "COMPLETED"
   ).length;
-
-  const loadRoundHistory = async (identifier, page = 1) => {
-    setRoundPage(page);
-    setRoundHistory(null);
-    setRoundHistoryLoading(true);
-    setRoundHistoryError("");
-    try {
-      const result = await getAdminParticipantRounds(identifier, {
-        page,
-        limit: HISTORY_PAGE_LIMIT,
-      });
-      setRoundHistory(result);
-    } catch (historyError) {
-      setRoundHistoryError(historyError.message || "Could not load round history.");
-    } finally {
-      setRoundHistoryLoading(false);
-    }
-  };
-
-  const loadTransactionHistory = async (identifier, page = 1) => {
-    setTransactionPage(page);
-    setTransactionHistory(null);
-    setTransactionHistoryLoading(true);
-    setTransactionHistoryError("");
-    try {
-      const result = await getAdminParticipantTransactions(identifier, {
-        page,
-        limit: HISTORY_PAGE_LIMIT,
-      });
-      setTransactionHistory(result);
-    } catch (historyError) {
-      setTransactionHistoryError(
-        historyError.message || "Could not load transaction history.",
-      );
-    } finally {
-      setTransactionHistoryLoading(false);
-    }
-  };
 
   const openParticipant = async (participant) => {
     const identifier = participant.usn || participant.id;
@@ -178,12 +124,6 @@ export default function ParticipantManagement() {
       })
       .finally(() => setDetailsLoading(false));
 
-    setRoundHistoryError("");
-    setTransactionHistoryError("");
-    setRoundHistory(null);
-    setTransactionHistory(null);
-    setRoundPage(1);
-    setTransactionPage(1);
     await Promise.all([
       detailsRequest,
       loadRoundHistory(identifier, 1),
@@ -286,7 +226,7 @@ export default function ParticipantManagement() {
 
                   <td>{participant.usn || "—"}</td>
                   <td>Level {participant.level}</td>
-                  <td>₹{participant.prize}</td>
+                  <td>{formatCurrency(participant.prize)}</td>
 
                   <td>
                     <span
@@ -358,7 +298,7 @@ export default function ParticipantManagement() {
 
               <div>
                 <span>Prize Secured</span>
-                <strong>₹{selectedParticipant.prize}</strong>
+                <strong>{formatCurrency(selectedParticipant.prize)}</strong>
               </div>
 
               <div>
@@ -367,7 +307,7 @@ export default function ParticipantManagement() {
               </div>
                 <div>
                   <span>Current Wallet Balance</span>
-                  <strong>{selectedParticipant.walletBalance === undefined ? "—" : `₹${selectedParticipant.walletBalance}`}</strong>
+                  <strong>{selectedParticipant.walletBalance === undefined ? "—" : formatCurrency(selectedParticipant.walletBalance)}</strong>
                 </div>
               <div>
                 <span>Total Rounds / Completed</span>
@@ -545,8 +485,8 @@ export default function ParticipantManagement() {
                             <tr key={transaction.id}>
                               <td>{formatDate(transaction.timestamp)}</td>
                               <td>{transaction.type}</td>
-                              <td>₹{transaction.amount}</td>
-                              <td>₹{transaction.balanceAfter}</td>
+                              <td>{formatCurrency(transaction.amount)}</td>
+                              <td>{formatCurrency(transaction.balanceAfter)}</td>
                               <td>{transaction.levelNumber ?? "—"}</td>
                               <td>{transaction.description}</td>
                             </tr>

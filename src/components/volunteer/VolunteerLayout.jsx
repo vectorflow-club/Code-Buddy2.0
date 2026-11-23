@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet } from "react-router-dom";
 import {
   LayoutDashboard,
   ClipboardList,
   LogOut,
 } from "lucide-react";
 import { Brand } from "../ui";
+import { useStaffSession } from "../../hooks/useStaffSession";
 import {
   clearVolunteerSession,
   getVolunteerSession,
@@ -14,46 +14,20 @@ import {
 } from "../../services/volunteerAuthService";
 import "./volunteer-layout.css";
 
+// Module-level so the session hook's validate callback stays stable.
+const VOLUNTEER_EXPIRED_CODES = ["SESSION_EXPIRED"];
+
 export default function VolunteerLayout() {
-  const navigate = useNavigate();
-  const [session, setSession] = useState(null);
-  const [checking, setChecking] = useState(true);
-  const [validationError, setValidationError] = useState("");
-
-  const validateSession = useCallback(async () => {
-    const storedSession = getVolunteerSession();
-    if (!storedSession) {
-      navigate("/volunteer/login", { replace: true });
-      return;
-    }
-
-    setChecking(true);
-    setValidationError("");
-    try {
-      const volunteer = await validateVolunteerSession(storedSession.token);
-      const refreshedSession = { ...storedSession, volunteer };
-      storeVolunteerSession(refreshedSession);
-      setSession(refreshedSession);
-    } catch (error) {
-      if (error.code === "SESSION_EXPIRED") {
-        clearVolunteerSession();
-        navigate("/volunteer/login", { replace: true });
-      } else {
-        setValidationError(error.message || "Could not validate the volunteer session.");
-      }
-    } finally {
-      setChecking(false);
-    }
-  }, [navigate]);
-
-  useEffect(() => {
-    validateSession();
-  }, [validateSession]);
-
-  const handleLogout = () => {
-    clearVolunteerSession();
-    navigate("/volunteer/login", { replace: true });
-  };
+  const { session, checking, validationError, validateSession, handleLogout } = useStaffSession({
+    getSession: getVolunteerSession,
+    storeSession: storeVolunteerSession,
+    clearSession: clearVolunteerSession,
+    validateToken: validateVolunteerSession,
+    loginPath: "/volunteer/login",
+    profileKey: "volunteer",
+    expiredCodes: VOLUNTEER_EXPIRED_CODES,
+    validateErrorMessage: "Could not validate the volunteer session.",
+  });
 
   if (checking) return <div role="status" style={{ padding: 24 }}>Checking volunteer session…</div>;
   if (!session && validationError) {

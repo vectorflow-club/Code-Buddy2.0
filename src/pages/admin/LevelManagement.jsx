@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   Settings2,
   Users,
@@ -13,55 +13,45 @@ import {
   Layers3,
 } from "lucide-react";
 import "./levels.css";
+import { useFetchState } from "../../hooks/useFetchState";
+import { formatCurrency } from "../../utils/formatters";
 import { getAdminDashboardStats } from "../../services/adminDataService";
 import { getAdminQuestionList } from "../../services/adminQuestionService";
 import { getAdminLevels, setAdminLevelActive, updateAdminLevel } from "../../services/adminLevelService";
 
 export default function LevelManagement() {
-  const [levels, setLevels] = useState([]);
+  const fetchLevels = useCallback(async () => {
+    const [configuredLevels, dashboard, questions] = await Promise.all([
+      getAdminLevels(),
+      getAdminDashboardStats(),
+      getAdminQuestionList(),
+    ]);
+    return configuredLevels.map((level) => {
+      const progress = dashboard.levels?.[`L${level.number}`] || {};
+      const levelQuestions = questions.filter((question) => question.levelNumber === level.number && question.isActive);
+      return {
+        id: level.number,
+        name: level.name,
+        entryFee: level.entryRiskAmount ?? "",
+        passReward: level.winningPayout,
+        duration: (level.durationSeconds || 0) / 60,
+        easy: levelQuestions.filter((question) => question.difficulty === "EASY").length,
+        hard: levelQuestions.filter((question) => question.difficulty === "HARD").length,
+        reached: progress.reachedCount ?? 0,
+        cleared: progress.clearedCount ?? 0,
+        status: level.isActive ? "ACTIVE" : "INACTIVE",
+        isUsedInCompetition: level.isUsedInCompetition === true,
+        hasOpenRounds: level.hasOpenRounds === true,
+      };
+    });
+  }, []);
+  const { data: levels, loading, error, setError, reload: loadLevels } = useFetchState(fetchLevels, {
+    initialData: [],
+    errorMessage: "Could not load level configuration.",
+  });
   const [editingLevel, setEditingLevel] = useState(null);
   const [savedMessage, setSavedMessage] = useState("");
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-
-  const loadLevels = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const [configuredLevels, dashboard, questions] = await Promise.all([
-        getAdminLevels(),
-        getAdminDashboardStats(),
-        getAdminQuestionList(),
-      ]);
-      setLevels(configuredLevels.map((level) => {
-        const progress = dashboard.levels?.[`L${level.number}`] || {};
-        const levelQuestions = questions.filter((question) => question.levelNumber === level.number && question.isActive);
-        return {
-          id: level.number,
-          name: level.name,
-          entryFee: level.entryRiskAmount ?? "",
-          passReward: level.winningPayout,
-          duration: (level.durationSeconds || 0) / 60,
-          easy: levelQuestions.filter((question) => question.difficulty === "EASY").length,
-          hard: levelQuestions.filter((question) => question.difficulty === "HARD").length,
-          reached: progress.reachedCount ?? 0,
-          cleared: progress.clearedCount ?? 0,
-          status: level.isActive ? "ACTIVE" : "INACTIVE",
-          isUsedInCompetition: level.isUsedInCompetition === true,
-          hasOpenRounds: level.hasOpenRounds === true,
-        };
-      }));
-    } catch (loadError) {
-      setError(loadError.message || "Could not load level configuration.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadLevels();
-  }, [loadLevels]);
 
   const totalReached = levels.find((level) => level.id === 1)?.reached ?? 0;
   const totalCleared = levels.find((level) => level.id === 6)?.cleared ?? 0;
@@ -190,14 +180,14 @@ export default function LevelManagement() {
                   <div>
                     <span><WalletIcon /> Entry fee</span>
                     <strong>
-                      {level.entryFee === "" ? "Not configured" : `₹${level.entryFee}`}
+                      {level.entryFee === "" ? "Not configured" : formatCurrency(level.entryFee)}
                     </strong>
                   </div>
 
                   <div>
                     <span><Trophy size={14} /> Pass reward</span>
                     <strong>
-                      {level.passReward === "" ? "Not configured" : `₹${level.passReward}`}
+                      {level.passReward === "" ? "Not configured" : formatCurrency(level.passReward)}
                     </strong>
                   </div>
 

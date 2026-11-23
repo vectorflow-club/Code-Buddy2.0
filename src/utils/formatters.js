@@ -13,3 +13,14 @@ export function formatDuration(seconds = 0) {
 export function formatClock(seconds = 0) {
   return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
 }
+
+export function formatDate(value, fallback = '—') {
+  if (!value) return fallback
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? fallback : date.toLocaleString()
+}
+
+export function displayStatus(status) {
+  if (['registered', 'inProgress', 'cleared'].includes(status)) return 'ACTIVE'
+  return String(status || 'UNKNOWN').toUpperCase()
+}

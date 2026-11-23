@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   Plus,
   Search,
@@ -8,6 +8,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import "./questions.css";
+import { useFetchState } from "../../hooks/useFetchState";
 import {
   createAdminQuestion,
   getAdminQuestions,
@@ -26,46 +27,34 @@ const emptyForm = {
 };
 
 export default function QuestionManagement() {
-  const [questions, setQuestions] = useState([]);
+  const fetchQuestions = useCallback(async () => {
+    const data = await getAdminQuestions();
+    return data.map((question) => ({
+      id: question.id,
+      number: question.id,
+      title: question.title,
+      level: question.levelNumber,
+      difficulty: question.difficulty,
+      statement: question.statement,
+      constraints: Array.isArray(question.constraints) ? question.constraints.join("\n") : "",
+      sampleInput: question.examples?.[0]?.input || "",
+      sampleOutput: question.examples?.[0]?.output || "",
+      examples: Array.isArray(question.examples) ? question.examples : [],
+      assigned: question.isAssigned === true,
+      isActive: question.isActive === true,
+    }));
+  }, []);
+  const { data: questions, loading, error, setError, reload: loadQuestions } = useFetchState(fetchQuestions, {
+    initialData: [],
+    errorMessage: "Could not load questions.",
+  });
   const [search, setSearch] = useState("");
   const [difficulty, setDifficulty] = useState("ALL");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
-  const [error, setError] = useState("");
-
-  const loadQuestions = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const data = await getAdminQuestions();
-      setQuestions(data.map((question) => ({
-        id: question.id,
-        number: question.id,
-        title: question.title,
-        level: question.levelNumber,
-        difficulty: question.difficulty,
-        statement: question.statement,
-        constraints: Array.isArray(question.constraints) ? question.constraints.join("\n") : "",
-        sampleInput: question.examples?.[0]?.input || "",
-        sampleOutput: question.examples?.[0]?.output || "",
-        examples: Array.isArray(question.examples) ? question.examples : [],
-        assigned: question.isAssigned === true,
-        isActive: question.isActive === true,
-      })));
-    } catch (loadError) {
-      setError(loadError.message || "Could not load questions.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadQuestions();
-  }, [loadQuestions]);
 
   const filteredQuestions = questions.filter((question) => {
     const matchesSearch =

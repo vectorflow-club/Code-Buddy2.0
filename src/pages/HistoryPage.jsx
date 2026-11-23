@@ -3,6 +3,7 @@ import { Clock3, Flag } from 'lucide-react'
 import { EmptyState, LoadingState, SectionHeading } from '../components/ui'
 import { useStudent } from '../context/StudentContext'
 import { backendCompetitionService } from '../services/backendCompetitionService'
+import { formatDate } from '../utils/formatters'
 
 const statusLabel = (round) => {
   const evaluation = round.evaluation?.status
@@ -11,12 +12,6 @@ const statusLabel = (round) => {
   if (round.status === 'inProgress') return 'In progress'
   if (round.status === 'evaluated') return 'Evaluated'
   return round.status || 'Unavailable'
-}
-
-function formatDate(value) {
-  if (!value) return 'Date unavailable'
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? 'Date unavailable' : date.toLocaleString()
 }
 
 export default function HistoryPage() {
@@ -48,7 +43,7 @@ export default function HistoryPage() {
           return <article className="history-item" key={round.id}>
             <div className="history-item-top"><span className="history-level">L{round.levelNumber}</span><span className={`history-status history-status-${status.toLowerCase().replaceAll(' ', '-')}`}>{status}</span></div>
             <h2>{question.title || `Question ${question.id || round.questionId}`}</h2>
-            <p className="history-question-meta">{question.id || round.questionId} · {question.difficulty || 'Difficulty unavailable'} · {formatDate(round.createdAt)}</p>
+            <p className="history-question-meta">{question.id || round.questionId} · {question.difficulty || 'Difficulty unavailable'} · {formatDate(round.createdAt, 'Date unavailable')}</p>
             {round.evaluation?.remarks && <p className="history-remarks"><strong>Volunteer note</strong>{round.evaluation.remarks}</p>}
             <div className="history-item-footer"><span><Clock3 size={14}/>{round.durationSeconds ? `${Math.floor(round.durationSeconds / 60)} minute round` : 'Duration unavailable'}</span><span><Flag size={14}/>{round.evaluation?.isProgressed ? 'Progression recorded' : round.evaluation?.isSettled ? 'Settlement recorded' : 'Backend status only'}</span></div>
           </article>

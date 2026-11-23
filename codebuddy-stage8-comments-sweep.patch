@@ -1,0 +1,3076 @@
+diff --git a/backend/constants/index.js b/backend/constants/index.js
+index a9f3f33..164c3e5 100644
+--- a/backend/constants/index.js
++++ b/backend/constants/index.js
+@@ -8,7 +8,6 @@
+  * round/timer flow reads a timer value from here.
+  */
+ 
+-// Number of competition levels (L1..L6).
+ const TOTAL_LEVELS = 6;
+ 
+ // Level numbers 1..TOTAL_LEVELS, for queries that must cover every level.
+@@ -37,10 +36,8 @@ const TRANSACTION_TYPES = Object.freeze({
+   ROUND_SETTLEMENT: 'ROUND_SETTLEMENT',
+ });
+ 
+-// Default round length in seconds for Levels 1-3 (3 minutes).
+ const DEFAULT_LEVEL_DURATION_SECONDS = 180;
+ 
+-// Extended round length in seconds for Levels 4-6 (5 minutes).
+ const EXTENDED_LEVEL_DURATION_SECONDS = 300;
+ 
+ module.exports = {
+diff --git a/backend/controllers/adminController.js b/backend/controllers/adminController.js
+index 73d0c34..1b07800 100644
+--- a/backend/controllers/adminController.js
++++ b/backend/controllers/adminController.js
+@@ -30,7 +30,6 @@ const adminLogin = async (req, res) => {
+   try {
+     const { username, password } = req.body || {};
+ 
+-    // 1. Missing credentials validation
+     if (!username || typeof username !== 'string' || username.trim() === '' ||
+       !password || typeof password !== 'string' || password === '') {
+       return res.status(400).json({
+@@ -42,7 +41,6 @@ const adminLogin = async (req, res) => {
+ 
+     const normalizedUsername = username.trim().toLowerCase();
+ 
+-    // 2. Query admin user in database using Admin discriminator model
+     const admin = await Admin.findOne({
+       username: normalizedUsername,
+     });
+@@ -56,7 +54,6 @@ const adminLogin = async (req, res) => {
+       });
+     }
+ 
+-    // 4. Check active account status
+     if (!admin.isActive) {
+       return res.status(403).json({
+         success: false,
+@@ -65,7 +62,6 @@ const adminLogin = async (req, res) => {
+       });
+     }
+ 
+-    // 5. Verify password hash using bcrypt
+     const isMatch = await admin.comparePassword(password);
+     if (!isMatch) {
+       return res.status(401).json({
+@@ -75,7 +71,6 @@ const adminLogin = async (req, res) => {
+       });
+     }
+ 
+-    // 6. Generate signed HS256 JWT
+     const token = signAdminToken(admin._id);
+ 
+     return res.status(200).json({
+@@ -124,7 +119,6 @@ const createVolunteer = async (req, res) => {
+   try {
+     const body = req.body || {};
+ 
+-    // 1. Strict payload validation: reject unsupported fields (e.g. client supplying role)
+     const allowedFields = ['name', 'username', 'password', 'assignedLab'];
+     const extraFields = Object.keys(body).filter((key) => !allowedFields.includes(key));
+     if (extraFields.length > 0) {
+@@ -137,7 +131,6 @@ const createVolunteer = async (req, res) => {
+ 
+     const { name, username, password, assignedLab } = body;
+ 
+-    // 2. Validate required fields
+     if (!name || typeof name !== 'string' || name.trim().length < 2) {
+       return res.status(400).json({
+         success: false,
+@@ -172,7 +165,6 @@ const createVolunteer = async (req, res) => {
+       });
+     }
+ 
+-    // 3. Check for duplicate username across all Staff
+     const existingStaff = await Staff.findOne({ username: normalizedUsername });
+     if (existingStaff) {
+       return res.status(409).json({
+@@ -182,10 +174,8 @@ const createVolunteer = async (req, res) => {
+       });
+     }
+ 
+-    // 4. Securely hash password
+     const passwordHash = await Staff.hashPassword(password);
+ 
+-    // 5. Create new Volunteer document
+     const volunteer = new Volunteer({
+       name: name.trim(),
+       username: normalizedUsername,
+diff --git a/backend/controllers/adminLevelController.js b/backend/controllers/adminLevelController.js
+index 1dd64bb..b3297f2 100644
+--- a/backend/controllers/adminLevelController.js
++++ b/backend/controllers/adminLevelController.js
+@@ -331,7 +331,6 @@ const updateLevel = async (req, res) => {
+       );
+     }
+ 
+-    // Validate safeZoneAmount <= winningPayout using effective resulting values
+     const effectiveSafeZoneAmount = Object.prototype.hasOwnProperty.call(updates, 'safeZoneAmount')
+       ? updates.safeZoneAmount
+       : level.safeZoneAmount ?? 0;
+diff --git a/backend/controllers/authController.js b/backend/controllers/authController.js
+index b049d38..26875fb 100644
+--- a/backend/controllers/authController.js
++++ b/backend/controllers/authController.js
+@@ -66,7 +66,6 @@ const verifyGoogleAuth = async (req, res) => {
+       });
+     }
+ 
+-    // 2. Validate server-side Google Client ID configuration
+     let client;
+     try {
+       client = getGoogleClient();
+@@ -79,7 +78,6 @@ const verifyGoogleAuth = async (req, res) => {
+       });
+     }
+ 
+-    // 3. Cryptographically verify the Google ID token
+     let ticket;
+     try {
+       ticket = await client.verifyIdToken({
+@@ -115,7 +113,6 @@ const verifyGoogleAuth = async (req, res) => {
+       iss,
+     } = payload;
+ 
+-    // 4. Verify token issuer
+     const validIssuers = ['accounts.google.com', 'https://accounts.google.com'];
+     if (!iss || !validIssuers.includes(iss)) {
+       return res.status(401).json({
+@@ -125,7 +122,6 @@ const verifyGoogleAuth = async (req, res) => {
+       });
+     }
+ 
+-    // 5. Verify email_verified status
+     if (emailVerified !== true) {
+       return res.status(403).json({
+         success: false,
+@@ -134,7 +130,6 @@ const verifyGoogleAuth = async (req, res) => {
+       });
+     }
+ 
+-    // 6. Strictly enforce @vvce.ac.in domain
+     const vvceDomainRegex = /^[^\s@]+@vvce\.ac\.in$/i;
+     if (!email || typeof email !== 'string' || !vvceDomainRegex.test(email)) {
+       return res.status(403).json({
+@@ -144,7 +139,6 @@ const verifyGoogleAuth = async (req, res) => {
+       });
+     }
+ 
+-    // 7. Verify required profile information
+     if (!googleSubjectId || !name || typeof name !== 'string' || name.trim() === '') {
+       return res.status(400).json({
+         success: false,
+@@ -155,21 +149,17 @@ const verifyGoogleAuth = async (req, res) => {
+ 
+     const normalizedEmail = email.toLowerCase().trim();
+ 
+-    // 8. Find existing student or check conflict or create a new student record
+     let student;
+     try {
+-      // Step A: Search exclusively by Google subject ID
+       student = await Student.findOne({ googleSubjectId });
+ 
+       if (student) {
+-        // Existing verified Google student: refresh verification flag and name if necessary
+         student.emailVerified = true;
+         if (!student.name && name) {
+           student.name = name.trim();
+         }
+         await student.save();
+       } else {
+-        // Step B: No matching Google subject exists; check whether the normalized email already belongs to another student
+         const emailConflict = await Student.findOne({ email: normalizedEmail });
+         if (emailConflict) {
+           return res.status(409).json({
+@@ -179,7 +169,6 @@ const verifyGoogleAuth = async (req, res) => {
+           });
+         }
+ 
+-        // Step C: Neither exists, provision new Student record
+         student = new Student({
+           googleSubjectId,
+           name: name.trim(),
+@@ -209,7 +198,6 @@ const verifyGoogleAuth = async (req, res) => {
+       });
+     }
+ 
+-    // 9. Generate secure HS256 JWT session token
+     let token;
+     try {
+       token = signStudentToken(student._id);
+@@ -222,7 +210,6 @@ const verifyGoogleAuth = async (req, res) => {
+       });
+     }
+ 
+-    // 10. Resolve read-only live competition state and return structured response
+     const liveState = await resolveStudentLiveState(student);
+     return res.status(200).json({
+       success: true,
+@@ -265,7 +252,6 @@ const completeRegistration = async (req, res) => {
+     const studentId = req.student._id;
+     const body = req.body || {};
+ 
+-    // 1. Reject any unsupported fields in request body
+     const allowedFields = ['usn', 'year'];
+     const extraFields = Object.keys(body).filter((key) => !allowedFields.includes(key));
+     if (extraFields.length > 0) {
+@@ -278,7 +264,6 @@ const completeRegistration = async (req, res) => {
+ 
+     const { usn, year } = body;
+ 
+-    // 2. Validate presence and types
+     if (!usn || typeof usn !== 'string' || usn.trim() === '') {
+       return res.status(400).json({
+         success: false,
+@@ -295,11 +280,9 @@ const completeRegistration = async (req, res) => {
+       });
+     }
+ 
+-    // 3. Normalize USN (trim and uppercase)
+     const normalizedUsn = usn.trim().toUpperCase();
+     const normalizedYear = year.trim();
+ 
+-    // 4. Validate USN format (/^[A-Z0-9]{8,15}$/i)
+     if (!USN_REGEX.test(normalizedUsn)) {
+       return res.status(400).json({
+         success: false,
+@@ -308,7 +291,6 @@ const completeRegistration = async (req, res) => {
+       });
+     }
+ 
+-    // 5. Validate academic year against the four schema enum values
+     if (!ACADEMIC_YEARS.includes(normalizedYear)) {
+       return res.status(400).json({
+         success: false,
+@@ -317,7 +299,6 @@ const completeRegistration = async (req, res) => {
+       });
+     }
+ 
+-    // 6. Pre-check for duplicate USN across other accounts
+     const existingWithUsn = await Student.findOne({
+       usn: normalizedUsn,
+       _id: { $ne: studentId },
+@@ -331,7 +312,6 @@ const completeRegistration = async (req, res) => {
+       });
+     }
+ 
+-    // 7. Atomic conditional update: only succeeds if registrationComplete is still false
+     let updatedStudent;
+     try {
+       updatedStudent = await Student.findOneAndUpdate(
+@@ -367,7 +347,6 @@ const completeRegistration = async (req, res) => {
+       });
+     }
+ 
+-    // 8. If conditional update did not match, check latest record for idempotency or immutability violation
+     if (!updatedStudent) {
+       const latestStudent = await Student.findById(studentId);
+       if (!latestStudent) {
+@@ -378,7 +357,6 @@ const completeRegistration = async (req, res) => {
+         });
+       }
+ 
+-      // Idempotency: same USN and academic year resubmitted
+       if (
+         latestStudent.registrationComplete &&
+         latestStudent.usn === normalizedUsn &&
+@@ -392,7 +370,6 @@ const completeRegistration = async (req, res) => {
+         });
+       }
+ 
+-      // Immutability: reject any attempt to modify USN or academic year
+       return res.status(400).json({
+         success: false,
+         code: 'REGISTRATION_ALREADY_COMPLETED',
+@@ -400,7 +377,6 @@ const completeRegistration = async (req, res) => {
+       });
+     }
+ 
+-    // 9. Return structured success response
+     const liveState = await resolveStudentLiveState(updatedStudent);
+     return res.status(200).json({
+       success: true,
+diff --git a/backend/controllers/questionController.js b/backend/controllers/questionController.js
+index 892784c..ff09315 100644
+--- a/backend/controllers/questionController.js
++++ b/backend/controllers/questionController.js
+@@ -51,7 +51,6 @@ const createQuestion = async (req, res) => {
+       hiddenTestCases = [],
+     } = req.body || {};
+ 
+-    // 1. Validate required text fields
+     if (!title || typeof title !== 'string' || title.trim().length < 3) {
+       return res.status(400).json({
+         success: false,
+@@ -68,7 +67,6 @@ const createQuestion = async (req, res) => {
+       });
+     }
+ 
+-    // 2. Validate levelNumber (1 to 6)
+     const parsedLevel = Number(levelNumber);
+     if (!isValidLevelNumber(parsedLevel)) {
+       return res.status(400).json({
+@@ -78,7 +76,6 @@ const createQuestion = async (req, res) => {
+       });
+     }
+ 
+-    // 3. Validate difficulty (EASY or HARD)
+     if (!isValidDifficulty(difficulty)) {
+       return res.status(400).json({
+         success: false,
+@@ -87,7 +84,6 @@ const createQuestion = async (req, res) => {
+       });
+     }
+ 
+-    // 4. Validate constraints array
+     if (!Array.isArray(constraints) || constraints.some((c) => typeof c !== 'string')) {
+       return res.status(400).json({
+         success: false,
+@@ -96,7 +92,6 @@ const createQuestion = async (req, res) => {
+       });
+     }
+ 
+-    // 5. Validate examples array
+     if (!Array.isArray(examples)) {
+       return res.status(400).json({
+         success: false,
+@@ -115,7 +110,6 @@ const createQuestion = async (req, res) => {
+       }
+     }
+ 
+-    // 6. Validate hiddenTestCases array
+     if (!Array.isArray(hiddenTestCases)) {
+       return res.status(400).json({
+         success: false,
+@@ -134,7 +128,6 @@ const createQuestion = async (req, res) => {
+       }
+     }
+ 
+-    // 7. Create Question document
+     const question = new Question({
+       title: title.trim(),
+       statement: statement.trim(),
+@@ -182,7 +175,6 @@ const listQuestions = async (req, res) => {
+   try {
+     const filter = {};
+ 
+-    // Optional level filter
+     if (req.query.levelNumber !== undefined) {
+       const level = Number(req.query.levelNumber);
+       if (!isValidLevelNumber(level)) {
+@@ -195,7 +187,6 @@ const listQuestions = async (req, res) => {
+       filter.levelNumber = level;
+     }
+ 
+-    // Optional difficulty filter
+     if (req.query.difficulty !== undefined) {
+       if (!isValidDifficulty(req.query.difficulty)) {
+         return res.status(400).json({
+@@ -207,7 +198,6 @@ const listQuestions = async (req, res) => {
+       filter.difficulty = req.query.difficulty.trim().toUpperCase();
+     }
+ 
+-    // Optional active status filter (strictly 'true' or 'false')
+     if (req.query.isActive !== undefined) {
+       const activeStr = String(req.query.isActive).trim().toLowerCase();
+       if (activeStr !== 'true' && activeStr !== 'false') {
+@@ -267,7 +257,6 @@ const getQuestionById = async (req, res) => {
+       });
+     }
+ 
+-    // Check if question has been assigned in any competition rounds
+     const isAssigned = await Round.exists({ questionId: id });
+ 
+     return res.status(200).json({
+@@ -318,10 +307,8 @@ const updateQuestion = async (req, res) => {
+ 
+     const body = req.body || {};
+ 
+-    // Check if this question is referenced in historical/active rounds
+     const isAssigned = await Round.exists({ questionId: id });
+ 
+-    // Validate levelNumber change
+     if (body.levelNumber !== undefined) {
+       const newLevel = Number(body.levelNumber);
+       if (!isValidLevelNumber(newLevel)) {
+@@ -341,7 +328,6 @@ const updateQuestion = async (req, res) => {
+       question.levelNumber = newLevel;
+     }
+ 
+-    // Validate difficulty change
+     if (body.difficulty !== undefined) {
+       if (!isValidDifficulty(body.difficulty)) {
+         return res.status(400).json({
+@@ -361,7 +347,6 @@ const updateQuestion = async (req, res) => {
+       question.difficulty = newDiff;
+     }
+ 
+-    // Validate title update
+     if (body.title !== undefined) {
+       if (typeof body.title !== 'string' || body.title.trim().length < 3) {
+         return res.status(400).json({
+@@ -373,7 +358,6 @@ const updateQuestion = async (req, res) => {
+       question.title = body.title.trim();
+     }
+ 
+-    // Validate statement update
+     if (body.statement !== undefined) {
+       if (typeof body.statement !== 'string' || body.statement.trim().length < 10) {
+         return res.status(400).json({
+@@ -385,7 +369,6 @@ const updateQuestion = async (req, res) => {
+       question.statement = body.statement.trim();
+     }
+ 
+-    // Validate constraints update
+     if (body.constraints !== undefined) {
+       if (!Array.isArray(body.constraints) || body.constraints.some((c) => typeof c !== 'string')) {
+         return res.status(400).json({
+@@ -397,7 +380,6 @@ const updateQuestion = async (req, res) => {
+       question.constraints = body.constraints.map((c) => c.trim());
+     }
+ 
+-    // Validate examples update
+     if (body.examples !== undefined) {
+       if (!Array.isArray(body.examples)) {
+         return res.status(400).json({
+@@ -425,7 +407,6 @@ const updateQuestion = async (req, res) => {
+       }));
+     }
+ 
+-    // Validate hiddenTestCases update
+     if (body.hiddenTestCases !== undefined) {
+       if (!Array.isArray(body.hiddenTestCases)) {
+         return res.status(400).json({
+@@ -450,7 +431,6 @@ const updateQuestion = async (req, res) => {
+       }));
+     }
+ 
+-    // Update active status if explicitly supplied
+     if (body.isActive !== undefined && typeof body.isActive === 'boolean') {
+       question.isActive = body.isActive;
+     }
+diff --git a/backend/controllers/roundController.js b/backend/controllers/roundController.js
+index 5457b0f..d5772e5 100644
+--- a/backend/controllers/roundController.js
++++ b/backend/controllers/roundController.js
+@@ -74,7 +74,6 @@ const syncRoundDeadlineState = async (round, now = new Date()) => {
+       };
+     }
+ 
+-    // Deadline reached (diffMs === 0) or passed (diffMs < 0): atomically transition inProgress -> timeExpired
+     const expiredRound = await Round.findOneAndUpdate(
+       {
+         _id: round._id,
+@@ -466,7 +465,6 @@ const buildInsufficientBalanceResponse = (currentLevel, entryFee, currentBalance
+  */
+ const allocateQuestion = async (req, res) => {
+   try {
+-    // 0. Reject any client-supplied question, difficulty, level, or student overrides
+     const bodyKeys = Object.keys(req.body || {});
+     if (bodyKeys.length > 0) {
+       return res.status(400).json({
+@@ -478,7 +476,6 @@ const allocateQuestion = async (req, res) => {
+ 
+     const student = req.student;
+ 
+-    // 1. Verify registration is complete
+     if (!student.registrationComplete) {
+       return res.status(403).json({
+         success: false,
+@@ -487,7 +484,6 @@ const allocateQuestion = async (req, res) => {
+       });
+     }
+ 
+-    // 1b. Block eliminated or completed participants from allocating new rounds or retrying
+     if (student.competitionStatus === 'eliminated') {
+       return res.status(409).json({
+         success: false,
+@@ -504,7 +500,6 @@ const allocateQuestion = async (req, res) => {
+       });
+     }
+ 
+-    // 2. Validate current level
+     const currentLevel = student.currentLevel;
+     if (!currentLevel || currentLevel < 1 || currentLevel > TOTAL_LEVELS) {
+       return res.status(400).json({
+@@ -514,7 +509,6 @@ const allocateQuestion = async (req, res) => {
+       });
+     }
+ 
+-    // 3. Determine question difficulty from academic year
+     const year = student.year;
+     let difficulty;
+     if (year === FIRST_YEAR) {
+@@ -529,7 +523,6 @@ const allocateQuestion = async (req, res) => {
+       });
+     }
+ 
+-    // 4. Verify that corresponding Level is active and fetch entry fee
+     const levelConfig = await Level.findOne({ number: currentLevel, isActive: true });
+     if (!levelConfig) {
+       return res.status(404).json({
+@@ -546,7 +539,6 @@ const allocateQuestion = async (req, res) => {
+         ? levelConfig.entryRiskAmount
+         : 0;
+ 
+-    // 5. Check whether a Round already exists for this student and current level (Idempotent)
+     const existingRound = await Round.findOne({
+       studentId: student._id,
+       levelNumber: currentLevel,
+@@ -562,7 +554,6 @@ const allocateQuestion = async (req, res) => {
+       return res.status(200).json(buildExistingRoundResponse(student, freshStudent, existingDebitTx, existingRound));
+     }
+ 
+-    // 6. Check student wallet balance before allowing level entry
+     const freshStudent = await Student.findById(student._id);
+     const currentBalance = freshStudent ? (freshStudent.walletBalance ?? 0) : (student.walletBalance ?? 0);
+ 
+@@ -570,7 +561,6 @@ const allocateQuestion = async (req, res) => {
+       return res.status(400).json(buildInsufficientBalanceResponse(currentLevel, entryFee, currentBalance));
+     }
+ 
+-    // 7. Find all active matching questions for this level and difficulty
+     const eligibleQuestions = await Question.find({
+       levelNumber: currentLevel,
+       difficulty,
+@@ -585,7 +575,6 @@ const allocateQuestion = async (req, res) => {
+       });
+     }
+ 
+-    // 8. Avoid re-allocating questions previously assigned to this student in other rounds if possible
+     const pastRounds = await Round.find({ studentId: student._id }).select('questionId');
+     const pastQuestionIds = new Set(pastRounds.map((r) => r.questionId.toString()));
+ 
+@@ -608,7 +597,6 @@ const allocateQuestion = async (req, res) => {
+       levelNumber: selectedQuestion.levelNumber,
+     };
+ 
+-    // 10. Atomic Execution: Round allocation + conditional wallet deduction + STAKE_DEBIT Transaction
+     let savedRound = null;
+     let savedDebitTx = null;
+     let finalStudent = freshStudent;
+@@ -787,7 +775,6 @@ const allocateQuestion = async (req, res) => {
+         });
+         savedRound = await round.save();
+       } catch (saveError) {
+-        // Compensating refund on round creation failure
+         if (didDeduct) {
+           await Student.findByIdAndUpdate(student._id, {
+             $inc: {
+@@ -829,7 +816,6 @@ const allocateQuestion = async (req, res) => {
+           });
+           savedDebitTx = await debitTx.save();
+         } catch (txSaveErr) {
+-          // Compensating rollback if transaction save fails
+           await Round.findByIdAndDelete(savedRound._id);
+           await Student.findByIdAndUpdate(student._id, {
+             $inc: {
+@@ -896,7 +882,6 @@ const getActiveRoundStatus = async (req, res) => {
+   try {
+     const student = req.student;
+ 
+-    // 1. Verify registration is complete
+     if (!student.registrationComplete) {
+       return res.status(403).json({
+         success: false,
+@@ -905,7 +890,6 @@ const getActiveRoundStatus = async (req, res) => {
+       });
+     }
+ 
+-    // 2. Validate current level from authoritative Student DB document
+     const currentLevel = student.currentLevel;
+     if (!currentLevel || currentLevel < 1 || currentLevel > TOTAL_LEVELS) {
+       return res.status(400).json({
+@@ -915,7 +899,6 @@ const getActiveRoundStatus = async (req, res) => {
+       });
+     }
+ 
+-    // 3. Locate current-level round exclusively for the authenticated student
+     const round = await Round.findOne({
+       studentId: student._id,
+       levelNumber: currentLevel,
+@@ -932,7 +915,6 @@ const getActiveRoundStatus = async (req, res) => {
+       });
+     }
+ 
+-    // 4. Synchronize timer and expiration state atomically
+     const timerSync = await syncRoundDeadlineState(round);
+     if (timerSync.error) {
+       return res.status(timerSync.error.status).json({
+@@ -944,7 +926,6 @@ const getActiveRoundStatus = async (req, res) => {
+ 
+     const syncedRound = timerSync.round;
+ 
+-    // 5. Return student-safe active round details and synchronized availability
+     return res.status(200).json({
+       success: true,
+       message: getActiveRoundStatusMessage(syncedRound.status, timerSync.isExpired),
+diff --git a/backend/controllers/volunteer/auth.js b/backend/controllers/volunteer/auth.js
+index 1d54c4c..e576060 100644
+--- a/backend/controllers/volunteer/auth.js
++++ b/backend/controllers/volunteer/auth.js
+@@ -11,7 +11,6 @@ const volunteerLogin = async (req, res) => {
+   try {
+     const { username, password } = req.body || {};
+ 
+-    // 1. Missing credentials validation
+     if (!username || typeof username !== 'string' || username.trim() === '' ||
+       !password || typeof password !== 'string' || password === '') {
+       return res.status(400).json({
+@@ -23,7 +22,6 @@ const volunteerLogin = async (req, res) => {
+ 
+     const normalizedUsername = username.trim().toLowerCase();
+ 
+-    // 2. Query volunteer user in database using Volunteer discriminator model
+     const volunteer = await Volunteer.findOne({
+       username: normalizedUsername,
+     });
+@@ -37,7 +35,6 @@ const volunteerLogin = async (req, res) => {
+       });
+     }
+ 
+-    // 4. Check active account status: deactivated volunteers cannot log in
+     if (!volunteer.isActive) {
+       return res.status(403).json({
+         success: false,
+@@ -46,7 +43,6 @@ const volunteerLogin = async (req, res) => {
+       });
+     }
+ 
+-    // 5. Verify password hash using bcrypt
+     const isMatch = await volunteer.comparePassword(password);
+     if (!isMatch) {
+       return res.status(401).json({
+@@ -56,7 +52,6 @@ const volunteerLogin = async (req, res) => {
+       });
+     }
+ 
+-    // 6. Generate signed HS256 JWT
+     const token = signVolunteerToken(volunteer._id);
+ 
+     return res.status(200).json({
+diff --git a/backend/controllers/volunteer/lifecycle.js b/backend/controllers/volunteer/lifecycle.js
+index 82a50fc..a17670e 100644
+--- a/backend/controllers/volunteer/lifecycle.js
++++ b/backend/controllers/volunteer/lifecycle.js
+@@ -22,7 +22,6 @@ const buildRoundStartConflict = (status, currentLevel) => ({
+  */
+ const startStudentRoundByUsn = async (req, res) => {
+   try {
+-    // 1. Validate USN, find student, verify registrationComplete and currentLevel
+     const resolved = await resolveRegisteredStudent(req.params.usn);
+     if (resolved.error) {
+       return res.status(resolved.error.status).json({
+@@ -35,7 +34,6 @@ const startStudentRoundByUsn = async (req, res) => {
+     const { student, normalizedUsn } = resolved;
+     const currentLevel = student.currentLevel;
+ 
+-    // 2. Locate student's round for their current level
+     const existingRound = await Round.findOne({
+       studentId: student._id,
+       levelNumber: currentLevel,
+@@ -49,7 +47,6 @@ const startStudentRoundByUsn = async (req, res) => {
+       });
+     }
+ 
+-    // 3. Enforce strict state pre-check: only 'ready' rounds may be started
+     if (existingRound.status !== 'ready') {
+       return res.status(409).json(buildRoundStartConflict(existingRound.status, currentLevel));
+     }
+@@ -76,7 +73,6 @@ const startStudentRoundByUsn = async (req, res) => {
+       });
+     }
+ 
+-    // 5. Compute authoritative timestamps and perform atomic conditional transition ready -> inProgress
+     const startedAt = new Date();
+     const deadline = new Date(startedAt.getTime() + durationSeconds * 1000);
+ 
+@@ -100,7 +96,6 @@ const startStudentRoundByUsn = async (req, res) => {
+       }
+     );
+ 
+-    // 6. Handle concurrent race condition where another volunteer started/modified the round first
+     if (!startedRound) {
+       const latestRound = await Round.findById(existingRound._id);
+       if (!latestRound) {
+@@ -113,7 +108,6 @@ const startStudentRoundByUsn = async (req, res) => {
+       return res.status(409).json(buildRoundStartConflict(latestRound.status, currentLevel));
+     }
+ 
+-    // 7. Return sanitized response (no hiddenTestCases, no passwordHash, no googleSubjectId)
+     return res.status(200).json({
+       success: true,
+       message: 'Round started successfully.',
+@@ -215,7 +209,6 @@ const buildExtensionIneligibleResponse = (status, currentLevel) => {
+  */
+ const extendStudentRoundByUsn = async (req, res) => {
+   try {
+-    // 1. Validate request payload
+     const parsedPayload = parseExtensionPayload(req.body);
+     if (parsedPayload.error) {
+       return res.status(parsedPayload.error.status).json({
+@@ -227,7 +220,6 @@ const extendStudentRoundByUsn = async (req, res) => {
+ 
+     const { extensionSeconds: parsedExtensionSeconds, reason: normalizedReason } = parsedPayload;
+ 
+-    // 2. Validate USN, locate registered student, verify registrationComplete and currentLevel
+     const resolved = await resolveRegisteredStudent(req.params.usn);
+     if (resolved.error) {
+       return res.status(resolved.error.status).json({
+@@ -240,7 +232,6 @@ const extendStudentRoundByUsn = async (req, res) => {
+     const { student, normalizedUsn } = resolved;
+     const currentLevel = student.currentLevel;
+ 
+-    // 3. Locate student's round for their current level
+     const initialRound = await Round.findOne({
+       studentId: student._id,
+       levelNumber: currentLevel,
+@@ -515,7 +506,6 @@ const formatEvaluationResponse = (evaluation) => ({
+  */
+ const evaluateStudentRoundByUsn = async (req, res) => {
+   try {
+-    // 1. Validate request payload
+     const parsedPayload = parseEvaluationPayload(req.body);
+     if (parsedPayload.error) {
+       return res.status(parsedPayload.error.status).json({
+@@ -527,7 +517,6 @@ const evaluateStudentRoundByUsn = async (req, res) => {
+ 
+     const { result: normalizedResult, remarks: normalizedRemarks, programmingLanguage: normalizedLanguage } = parsedPayload;
+ 
+-    // 2. Validate USN, locate registered student, verify registrationComplete and currentLevel
+     const resolved = await resolveRegisteredStudent(req.params.usn);
+     if (resolved.error) {
+       return res.status(resolved.error.status).json({
+@@ -540,7 +529,6 @@ const evaluateStudentRoundByUsn = async (req, res) => {
+     const { student, normalizedUsn } = resolved;
+     const currentLevel = student.currentLevel;
+ 
+-    // 3. Locate student's round for their current level
+     const existingRound = await Round.findOne({
+       studentId: student._id,
+       levelNumber: currentLevel,
+@@ -576,7 +564,6 @@ const evaluateStudentRoundByUsn = async (req, res) => {
+       targetRound = timerSync.round;
+     }
+ 
+-    // 5. Enforce eligibility: only 'inProgress' or 'timeExpired' rounds may be evaluated
+     if (!['inProgress', 'timeExpired'].includes(targetRound.status)) {
+       return res.status(409).json({
+         success: false,
+@@ -588,7 +575,6 @@ const evaluateStudentRoundByUsn = async (req, res) => {
+       });
+     }
+ 
+-    // 6. Guard against existing Evaluation document for this round
+     const existingEvaluation = await Evaluation.findOne({ roundId: targetRound._id });
+     if (existingEvaluation) {
+       return res.status(409).json({
+@@ -598,7 +584,6 @@ const evaluateStudentRoundByUsn = async (req, res) => {
+       });
+     }
+ 
+-    // 7. Atomically transition Round status from inProgress/timeExpired -> evaluated
+     const evaluatedAt = new Date();
+     const preEvaluationStatus = targetRound.status;
+ 
+@@ -657,7 +642,6 @@ const evaluateStudentRoundByUsn = async (req, res) => {
+         });
+       }
+ 
+-      // Compensating rollback if Evaluation persistence fails for a non-duplicate database error
+       await Round.findOneAndUpdate(
+         { _id: evaluatedRound._id, status: 'evaluated' },
+         { $set: { status: preEvaluationStatus, completedAt: null } }
+@@ -665,7 +649,6 @@ const evaluateStudentRoundByUsn = async (req, res) => {
+       throw saveError;
+     }
+ 
+-    // 9. Return sanitized evaluation summary (no hiddenTestCases, passwordHash, or googleSubjectId)
+     return res.status(200).json({
+       success: true,
+       message: `Round evaluated as ${normalizedResult}.`,
+diff --git a/backend/controllers/volunteer/lookup.js b/backend/controllers/volunteer/lookup.js
+index 53ecd63..644f04a 100644
+--- a/backend/controllers/volunteer/lookup.js
++++ b/backend/controllers/volunteer/lookup.js
+@@ -104,7 +104,6 @@ const getStudentActiveRoundByUsn = async (req, res) => {
+     const { student, normalizedUsn } = resolved;
+     const currentLevel = student.currentLevel;
+ 
+-    // Retrieve student's allocated active round for their current level (excluding abandoned rounds)
+     const round = await Round.findOne({
+       studentId: student._id,
+       levelNumber: currentLevel,
+@@ -119,7 +118,6 @@ const getStudentActiveRoundByUsn = async (req, res) => {
+       });
+     }
+ 
+-    // Synchronize deadline status (computes remainingSeconds and atomically expires timed-out rounds)
+     const timerSync = await syncRoundDeadlineState(round);
+     if (timerSync.error) {
+       return res.status(timerSync.error.status).json({
+@@ -131,7 +129,6 @@ const getStudentActiveRoundByUsn = async (req, res) => {
+ 
+     const syncedRound = timerSync.round;
+ 
+-    // Return student identity/registration summary, timer state, and public question snapshot (no hiddenTestCases)
+     return res.status(200).json({
+       success: true,
+       message: timerSync.isExpired
+diff --git a/backend/controllers/volunteer/settlement.js b/backend/controllers/volunteer/settlement.js
+index ddcc248..c19cd51 100644
+--- a/backend/controllers/volunteer/settlement.js
++++ b/backend/controllers/volunteer/settlement.js
+@@ -427,7 +427,6 @@ const handleTxErrorResponse = (res, error, {
+  * fields (currentLevel, levelsCleared, competitionStatus, safeZoneAmount, totals) unchanged.
+  */
+ const settleStudentRoundByUsn = async (req, res) => {
+-  // 1. Reject any client-supplied wallet amounts, evaluation results, or level overrides
+   const bodyKeys = Object.keys(req.body || {});
+   if (bodyKeys.length > 0) {
+     return res.status(400).json({
+@@ -437,7 +436,6 @@ const settleStudentRoundByUsn = async (req, res) => {
+     });
+   }
+ 
+-  // 2. Validate USN, locate registered student, verify registrationComplete and currentLevel
+   const resolved = await resolveRegisteredStudent(req.params.usn);
+   if (resolved.error) {
+     return res.status(resolved.error.status).json({
+@@ -450,7 +448,6 @@ const settleStudentRoundByUsn = async (req, res) => {
+   const { student, normalizedUsn } = resolved;
+   const currentLevel = student.currentLevel;
+ 
+-  // 3. Locate student's round for their current level
+   const existingRound = await Round.findOne({
+     studentId: student._id,
+     levelNumber: currentLevel,
+@@ -472,7 +469,6 @@ const settleStudentRoundByUsn = async (req, res) => {
+     });
+   }
+ 
+-  // 4. Execute atomic MongoDB transaction covering Evaluation claim, Student wallet update, and Transaction insert
+   const session = await mongoose.startSession();
+   let settlementOutput = null;
+ 
+@@ -594,7 +590,6 @@ const settleStudentRoundByUsn = async (req, res) => {
+  * Access: Protected (Volunteer only)
+  */
+ const progressStudentRoundByUsn = async (req, res) => {
+-  // 1. Reject any client-supplied progression, balance, level, or verdict parameters
+   const bodyKeys = Object.keys(req.body || {});
+   if (bodyKeys.length > 0) {
+     return res.status(400).json({
+@@ -604,7 +599,6 @@ const progressStudentRoundByUsn = async (req, res) => {
+     });
+   }
+ 
+-  // 2. Validate USN, locate registered student, verify registrationComplete and currentLevel
+   const resolved = await resolveRegisteredStudent(req.params.usn);
+   if (resolved.error) {
+     return res.status(resolved.error.status).json({
+@@ -620,7 +614,6 @@ const progressStudentRoundByUsn = async (req, res) => {
+ 
+   try {
+     await session.withTransaction(async () => {
+-      // 3. Load Student, current-level Round (detecting already-progressed prior level), and active Level inside tx
+       const { sessionStudent, sessionCurrentLevel, sessionRound, levelConfig } =
+         await loadTxStudentRoundAndLevel({
+           session,
+@@ -685,7 +678,6 @@ const progressStudentRoundByUsn = async (req, res) => {
+         );
+       }
+ 
+-      // 5. Ensure settlement exists once: reuse if already settled, else settle atomically in same tx
+       let didSettleNow = false;
+       let previousWalletBalance;
+       let targetBalance;
+@@ -754,7 +746,6 @@ const progressStudentRoundByUsn = async (req, res) => {
+         settlementTransaction = settlementResult.savedTransaction;
+       }
+ 
+-      // 6. Compute progression, safe-zone protection (strictly L1 & L4 on PASS), and cumulative statistics
+       const isPass = finalizedEvaluation.status === 'PASS';
+       const isFinalLevel = Boolean(levelConfig.isFinal) || sessionCurrentLevel === TOTAL_LEVELS;
+       const isSafeZoneCheckpoint =
+diff --git a/backend/middleware/authMiddleware.js b/backend/middleware/authMiddleware.js
+index 3684131..0419dd1 100644
+--- a/backend/middleware/authMiddleware.js
++++ b/backend/middleware/authMiddleware.js
+@@ -230,7 +230,6 @@ const createRoleGuard = (role) => {
+         });
+       }
+ 
+-      // Role check on JWT payload
+       if (decoded.role !== role) {
+         return res.status(403).json({
+           success: false,
+@@ -239,7 +238,6 @@ const createRoleGuard = (role) => {
+         });
+       }
+ 
+-      // Live MongoDB verification
+       const resolved = await resolveAuthenticatedAccount(req, role, decoded.sub.trim());
+       if (resolved.error) {
+         return res.status(resolved.error.status).json({
+diff --git a/backend/middleware/errorMiddleware.js b/backend/middleware/errorMiddleware.js
+index 8ba009f..dde22f9 100644
+--- a/backend/middleware/errorMiddleware.js
++++ b/backend/middleware/errorMiddleware.js
+@@ -33,21 +33,18 @@ const errorHandler = (err, req, res, next) => {
+     );
+   }
+ 
+-  // 1. Disallowed CORS browser origin
+   if (err.code === 'CORS_ORIGIN_NOT_ALLOWED' || err.isCorsError) {
+     return res.status(403).json(
+       buildErrorResponse('CORS_ORIGIN_NOT_ALLOWED', 'Origin is not allowed by CORS policy.')
+     );
+   }
+ 
+-  // 2. Request body exceeds configured size limit (Express/raw-body PayloadTooLargeError)
+   if (err.type === 'entity.too.large' || err.status === 413 || err.statusCode === 413) {
+     return res.status(413).json(
+       buildErrorResponse('PAYLOAD_TOO_LARGE', 'Request payload exceeds the maximum allowed size limit.')
+     );
+   }
+ 
+-  // 3. Malformed JSON request body (Express body-parser SyntaxError)
+   if (
+     err.type === 'entity.parse.failed' ||
+     (err instanceof SyntaxError && (err.status === 400 || err.statusCode === 400) && 'body' in err)
+@@ -57,7 +54,6 @@ const errorHandler = (err, req, res, next) => {
+     );
+   }
+ 
+-  // 4. Explicit operational 4xx errors forwarded via next(err)
+   const explicitStatus = Number.isInteger(err.statusCode) ? err.statusCode : err.status;
+   if (Number.isInteger(explicitStatus) && explicitStatus >= 400 && explicitStatus < 500) {
+     const code =
+@@ -71,7 +67,6 @@ const errorHandler = (err, req, res, next) => {
+     return res.status(explicitStatus).json(buildErrorResponse(code, message));
+   }
+ 
+-  // 5. Mongoose schema ValidationError -> 400 VALIDATION_ERROR
+   if (err.name === 'ValidationError' && err.errors && typeof err.errors === 'object') {
+     const fieldMessages = Object.values(err.errors)
+       .map((item) => (item && typeof item.message === 'string' ? item.message : null))
+@@ -83,7 +78,6 @@ const errorHandler = (err, req, res, next) => {
+     return res.status(400).json(buildErrorResponse('VALIDATION_ERROR', summary));
+   }
+ 
+-  // 6. Context-aware Mongoose CastError handling
+   if (err.name === 'CastError') {
+     if (explicitStatus >= 500 || err.isInternalError) {
+       console.error(`[ErrorHandler] ${req.method} ${req.originalUrl} -> Internal CastError (${err.path || 'unknown'})`);
+@@ -103,7 +97,6 @@ const errorHandler = (err, req, res, next) => {
+     );
+   }
+ 
+-  // 7. MongoDB duplicate key error (E11000) -> 409 Conflict
+   if (err.code === 11000 || (typeof err.message === 'string' && err.message.includes('E11000'))) {
+     return res.status(409).json(
+       buildErrorResponse('DUPLICATE_RESOURCE', 'A record with the provided unique value already exists.')
+diff --git a/backend/models/Evaluation.js b/backend/models/Evaluation.js
+index da42955..74e453c 100644
+--- a/backend/models/Evaluation.js
++++ b/backend/models/Evaluation.js
+@@ -3,7 +3,6 @@ const { TOTAL_LEVELS } = require('../constants');
+ 
+ const evaluationSchema = new mongoose.Schema(
+   {
+-    // Reference to the round being evaluated (one evaluation per round)
+     roundId: {
+       type: mongoose.Schema.Types.ObjectId,
+       ref: 'Round',
+@@ -11,20 +10,17 @@ const evaluationSchema = new mongoose.Schema(
+       unique: true,
+       index: true,
+     },
+-    // Reference to the evaluated student
+     studentId: {
+       type: mongoose.Schema.Types.ObjectId,
+       ref: 'Student',
+       required: [true, 'Student ID is required'],
+       index: true,
+     },
+-    // Reference to the question evaluated
+     questionId: {
+       type: mongoose.Schema.Types.ObjectId,
+       ref: 'Question',
+       required: [true, 'Question ID is required'],
+     },
+-    // Competition level number
+     levelNumber: {
+       type: Number,
+       required: [true, 'Level number is required'],
+@@ -32,7 +28,6 @@ const evaluationSchema = new mongoose.Schema(
+       max: [TOTAL_LEVELS, `Level number cannot exceed ${TOTAL_LEVELS}`],
+       index: true,
+     },
+-    // Official grading status
+     status: {
+       type: String,
+       enum: {
+@@ -42,63 +37,52 @@ const evaluationSchema = new mongoose.Schema(
+       default: 'PENDING',
+       index: true,
+     },
+-    // Volunteer staff member who conducted the walkthrough evaluation
+     evaluatedBy: {
+       type: mongoose.Schema.Types.ObjectId,
+       ref: 'Staff',
+       default: null,
+     },
+-    // Timestamp when grading decision was recorded
+     evaluatedAt: {
+       type: Date,
+       default: null,
+     },
+-    // Programming language demonstrated by the student (e.g. C, C++, Java, Python)
+     programmingLanguage: {
+       type: String,
+       trim: true,
+       default: '',
+     },
+-    // Qualitative evaluation notes or remarks
+     volunteerNotes: {
+       type: String,
+       trim: true,
+       default: '',
+     },
+-    // Tracks whether financial wallet settlement has been applied for this evaluation
+     isSettled: {
+       type: Boolean,
+       default: false,
+       index: true,
+     },
+-    // Timestamp when wallet settlement was completed
+     settledAt: {
+       type: Date,
+       default: null,
+     },
+-    // Volunteer staff member who performed wallet settlement
+     settledBy: {
+       type: mongoose.Schema.Types.ObjectId,
+       ref: 'Staff',
+       default: null,
+     },
+-    // Reference to the immutable settlement Transaction record
+     settlementTransactionId: {
+       type: mongoose.Schema.Types.ObjectId,
+       ref: 'Transaction',
+       default: null,
+     },
+-    // Tracks whether student progression and statistics have been applied for this evaluation
+     isProgressed: {
+       type: Boolean,
+       default: false,
+     },
+-    // Timestamp when student progression was finalized
+     progressedAt: {
+       type: Date,
+       default: null,
+     },
+-    // Volunteer staff member who finalized progression
+     progressedBy: {
+       type: mongoose.Schema.Types.ObjectId,
+       ref: 'Staff',
+@@ -110,7 +94,6 @@ const evaluationSchema = new mongoose.Schema(
+   }
+ );
+ 
+-// Compile and export Evaluation model
+ const Evaluation = mongoose.model('Evaluation', evaluationSchema);
+ 
+ module.exports = Evaluation;
+diff --git a/backend/models/Level.js b/backend/models/Level.js
+index 989c65d..294d2f4 100644
+--- a/backend/models/Level.js
++++ b/backend/models/Level.js
+@@ -3,7 +3,6 @@ const { TOTAL_LEVELS } = require('../constants');
+ 
+ const levelSchema = new mongoose.Schema(
+   {
+-    // Level tier number: 1 to 6
+     number: {
+       type: Number,
+       required: [true, 'Level number is required'],
+@@ -12,54 +11,45 @@ const levelSchema = new mongoose.Schema(
+       max: [TOTAL_LEVELS, `Level number cannot exceed ${TOTAL_LEVELS}`],
+       index: true,
+     },
+-    // Display name (e.g., 'Level 1', 'Final level')
+     name: {
+       type: String,
+       required: [true, 'Level name is required'],
+       trim: true,
+     },
+-    // Entry risk/stake amount. Kept optional (default null) for L5 until finalized
+     entryRiskAmount: {
+       type: Number,
+       min: [0, 'Entry risk amount cannot be negative'],
+       default: null,
+     },
+-    // Total secured payout upon winning/passing this level
+     winningPayout: {
+       type: Number,
+       required: [true, 'Winning payout is required'],
+       min: [0, 'Winning payout cannot be negative'],
+     },
+-    // Payout upon losing or timer expiry at this level
+     losingPayout: {
+       type: Number,
+       min: [0, 'Losing payout cannot be negative'],
+       default: 0,
+     },
+-    // Guaranteed safe-zone earnings locked upon clearing this level
+     safeZoneAmount: {
+       type: Number,
+       min: [0, 'Safe-zone amount cannot be negative'],
+       default: 0,
+     },
+-    // Flags whether this level is a designated safe zone checkpoint (L1, L4)
+     isSafeZone: {
+       type: Boolean,
+       default: false,
+       index: true,
+     },
+-    // Flags whether this is the final competition level (L6)
+     isFinal: {
+       type: Boolean,
+       default: false,
+     },
+-    // Shared round countdown duration in seconds (default: 180s = 3 minutes)
+     durationSeconds: {
+       type: Number,
+       default: 180,
+       min: [10, 'Timer duration must be at least 10 seconds'],
+     },
+-    // Active configuration status
+     isActive: {
+       type: Boolean,
+       default: true,
+@@ -70,7 +60,6 @@ const levelSchema = new mongoose.Schema(
+   }
+ );
+ 
+-// Compile and export Level model
+ const Level = mongoose.model('Level', levelSchema);
+ 
+ module.exports = Level;
+diff --git a/backend/models/Question.js b/backend/models/Question.js
+index 29362ad..060e583 100644
+--- a/backend/models/Question.js
++++ b/backend/models/Question.js
+@@ -1,7 +1,6 @@
+ const mongoose = require('mongoose');
+ const { TOTAL_LEVELS } = require('../constants');
+ 
+-// Subdocument schema for question examples/samples
+ const exampleSchema = new mongoose.Schema(
+   {
+     id: {
+@@ -31,7 +30,6 @@ const exampleSchema = new mongoose.Schema(
+   { _id: false }
+ );
+ 
+-// Subdocument schema for hidden volunteer test cases
+ const hiddenTestCaseSchema = new mongoose.Schema(
+   {
+     input: {
+@@ -48,24 +46,20 @@ const hiddenTestCaseSchema = new mongoose.Schema(
+ 
+ const questionSchema = new mongoose.Schema(
+   {
+-    // Question title
+     title: {
+       type: String,
+       required: [true, 'Question title is required'],
+       trim: true,
+     },
+-    // Detailed problem statement
+     statement: {
+       type: String,
+       required: [true, 'Problem statement is required'],
+       trim: true,
+     },
+-    // Problem constraints (e.g. 1 <= N <= 10^5)
+     constraints: {
+       type: [String],
+       default: [],
+     },
+-    // Sample inputs and outputs shown to the student
+     examples: {
+       type: [exampleSchema],
+       default: [],
+@@ -80,7 +74,6 @@ const questionSchema = new mongoose.Schema(
+       required: [true, 'Difficulty is required'],
+       index: true,
+     },
+-    // Target competition level (1 to 6)
+     levelNumber: {
+       type: Number,
+       required: [true, 'Level number is required'],
+@@ -88,18 +81,15 @@ const questionSchema = new mongoose.Schema(
+       max: [TOTAL_LEVELS, `Level number cannot exceed ${TOTAL_LEVELS}`],
+       index: true,
+     },
+-    // Optional hidden test cases for volunteer code verification
+     hiddenTestCases: {
+       type: [hiddenTestCaseSchema],
+       default: [],
+     },
+-    // Active status flag
+     isActive: {
+       type: Boolean,
+       default: true,
+       index: true,
+     },
+-    // Reference to Admin staff who authored/uploaded the question
+     createdBy: {
+       type: mongoose.Schema.Types.ObjectId,
+       ref: 'Staff',
+@@ -114,7 +104,6 @@ const questionSchema = new mongoose.Schema(
+ // Compound index for efficient random question selection by level and difficulty
+ questionSchema.index({ levelNumber: 1, difficulty: 1, isActive: 1 });
+ 
+-// Compile and export Question model
+ const Question = mongoose.model('Question', questionSchema);
+ 
+ module.exports = Question;
+diff --git a/backend/models/Round.js b/backend/models/Round.js
+index 39e2e67..a6e911f 100644
+--- a/backend/models/Round.js
++++ b/backend/models/Round.js
+@@ -1,7 +1,6 @@
+ const mongoose = require('mongoose');
+ const { TOTAL_LEVELS } = require('../constants');
+ 
+-// Subdocument schema for timer extension history
+ const timerExtensionSchema = new mongoose.Schema(
+   {
+     extendedBy: {
+@@ -27,7 +26,6 @@ const timerExtensionSchema = new mongoose.Schema(
+   { _id: false }
+ );
+ 
+-// Subdocument schema for frozen question snapshot
+ const questionSnapshotSchema = new mongoose.Schema(
+   {
+     questionId: {
+@@ -66,14 +64,12 @@ const questionSnapshotSchema = new mongoose.Schema(
+ 
+ const roundSchema = new mongoose.Schema(
+   {
+-    // Reference to the participating student
+     studentId: {
+       type: mongoose.Schema.Types.ObjectId,
+       ref: 'Student',
+       required: [true, 'Student ID is required'],
+       index: true,
+     },
+-    // Level number being attempted (1 to 6)
+     levelNumber: {
+       type: Number,
+       required: [true, 'Level number is required'],
+@@ -81,18 +77,15 @@ const roundSchema = new mongoose.Schema(
+       max: [TOTAL_LEVELS, `Level number cannot exceed ${TOTAL_LEVELS}`],
+       index: true,
+     },
+-    // Reference to the assigned question
+     questionId: {
+       type: mongoose.Schema.Types.ObjectId,
+       ref: 'Question',
+       required: [true, 'Assigned question ID is required'],
+     },
+-    // Immutable snapshot of the assigned question at the time of allocation
+     questionSnapshot: {
+       type: questionSnapshotSchema,
+       required: [true, 'Question snapshot is required'],
+     },
+-    // Current round status
+     status: {
+       type: String,
+       enum: {
+@@ -102,13 +95,11 @@ const roundSchema = new mongoose.Schema(
+       default: 'ready',
+       index: true,
+     },
+-    // Configured timer duration in seconds (default: 180s = 3 minutes)
+     durationSeconds: {
+       type: Number,
+       default: 180,
+       min: [10, 'Duration must be at least 10 seconds'],
+     },
+-    // Official timestamp when volunteer started the round timer
+     startedAt: {
+       type: Date,
+       default: null,
+@@ -119,18 +110,15 @@ const roundSchema = new mongoose.Schema(
+       default: null,
+       index: true,
+     },
+-    // Log of all timer extensions granted by volunteers
+     timerExtensions: {
+       type: [timerExtensionSchema],
+       default: [],
+     },
+-    // Volunteer staff member who officially started this round
+     startedBy: {
+       type: mongoose.Schema.Types.ObjectId,
+       ref: 'Staff',
+       default: null,
+     },
+-    // Timestamp when the round was concluded/evaluated
+     completedAt: {
+       type: Date,
+       default: null,
+@@ -144,7 +132,6 @@ const roundSchema = new mongoose.Schema(
+ // Compound unique index: A student can only have ONE round attempt per level
+ roundSchema.index({ studentId: 1, levelNumber: 1 }, { unique: true });
+ 
+-// Compile and export Round model
+ const Round = mongoose.model('Round', roundSchema);
+ 
+ module.exports = Round;
+diff --git a/backend/models/Staff.js b/backend/models/Staff.js
+index 267fede..39faa0a 100644
+--- a/backend/models/Staff.js
++++ b/backend/models/Staff.js
+@@ -3,13 +3,11 @@ const bcrypt = require('bcrypt');
+ 
+ const staffSchema = new mongoose.Schema(
+   {
+-    // Full name of the staff member
+     name: {
+       type: String,
+       required: [true, 'Staff name is required'],
+       trim: true,
+     },
+-    // Unique username for credential login
+     username: {
+       type: String,
+       required: [true, 'Username is required'],
+@@ -20,12 +18,10 @@ const staffSchema = new mongoose.Schema(
+       minlength: [3, 'Username must be at least 3 characters long'],
+       match: [/^[a-z0-9_.-]+$/i, 'Username can only contain alphanumeric characters, underscores, dots, and hyphens'],
+     },
+-    // Securely hashed password (never plain text)
+     passwordHash: {
+       type: String,
+       required: [true, 'Password hash is required'],
+     },
+-    // Staff role (discriminator key for ADMIN and VOLUNTEER models)
+     role: {
+       type: String,
+       enum: {
+@@ -37,13 +33,11 @@ const staffSchema = new mongoose.Schema(
+       default: 'VOLUNTEER',
+       index: true,
+     },
+-    // Account active status
+     isActive: {
+       type: Boolean,
+       default: true,
+       index: true,
+     },
+-    // Optional lab or station assigned to the volunteer
+     assignedLab: {
+       type: String,
+       trim: true,
+@@ -87,7 +81,6 @@ staffSchema.statics.hashPassword = async function (plainPassword) {
+   return bcrypt.hash(plainPassword, saltRounds);
+ };
+ 
+-// Compile and export Staff base model
+ const Staff = mongoose.models.Staff || mongoose.model('Staff', staffSchema);
+ 
+ module.exports = Staff;
+\ No newline at end of file
+diff --git a/backend/models/Student.js b/backend/models/Student.js
+index 871fea5..a93a51c 100644
+--- a/backend/models/Student.js
++++ b/backend/models/Student.js
+@@ -3,7 +3,6 @@ const { TOTAL_LEVELS, ACADEMIC_YEARS, USN_REGEX } = require('../constants');
+ 
+ const studentSchema = new mongoose.Schema(
+   {
+-    // Google authentication subject identifier
+     googleSubjectId: {
+       type: String,
+       required: [true, 'Google subject ID is required'],
+@@ -11,13 +10,11 @@ const studentSchema = new mongoose.Schema(
+       trim: true,
+       index: true,
+     },
+-    // Student full name
+     name: {
+       type: String,
+       required: [true, 'Student name is required'],
+       trim: true,
+     },
+-    // Official college email (must end in @vvce.ac.in)
+     email: {
+       type: String,
+       required: [true, 'Email is required'],
+@@ -32,12 +29,10 @@ const studentSchema = new mongoose.Schema(
+         message: (props) => `${props.value} is not a valid VVCE college email address (@vvce.ac.in)`,
+       },
+     },
+-    // Email verification status from Google Identity Services
+     emailVerified: {
+       type: Boolean,
+       default: false,
+     },
+-    // Authorization role
+     role: {
+       type: String,
+       enum: {
+@@ -47,7 +42,6 @@ const studentSchema = new mongoose.Schema(
+       default: 'STUDENT',
+       required: [true, 'Role is required'],
+     },
+-    // University Seat Number (unique per student; required when registration is complete)
+     usn: {
+       type: String,
+       unique: true,
+@@ -64,13 +58,11 @@ const studentSchema = new mongoose.Schema(
+       validate: {
+         validator: function (value) {
+           if (!value) return true; // Handled by conditional required validator above
+-          // Flexible alphanumeric validation (8-15 characters) matching current platform standard
+           return USN_REGEX.test(value);
+         },
+         message: (props) => `${props.value} is not a valid USN format (alphanumeric, 8-15 characters)`,
+       },
+     },
+-    // Academic year of study (required when registration is complete)
+     year: {
+       type: String,
+       enum: {
+@@ -86,34 +78,29 @@ const studentSchema = new mongoose.Schema(
+         'Academic year is required when registration is complete',
+       ],
+     },
+-    // Registration completion status
+     registrationComplete: {
+       type: Boolean,
+       default: false,
+       index: true,
+     },
+-    // Current level (1 to 6)
+     currentLevel: {
+       type: Number,
+       default: 1,
+       min: [1, 'Current level cannot be less than 1'],
+       max: [TOTAL_LEVELS, `Current level cannot exceed ${TOTAL_LEVELS}`],
+     },
+-    // Highest level reached during the competition
+     highestLevelReached: {
+       type: Number,
+       default: 1,
+       min: [1, 'Highest level cannot be less than 1'],
+       max: [TOTAL_LEVELS, `Highest level cannot exceed ${TOTAL_LEVELS}`],
+     },
+-    // Count of levels cleared successfully
+     levelsCleared: {
+       type: Number,
+       default: 0,
+       min: [0, 'Levels cleared cannot be negative'],
+       max: [TOTAL_LEVELS, `Levels cleared cannot exceed ${TOTAL_LEVELS}`],
+     },
+-    // Overall student competition status
+     competitionStatus: {
+       type: String,
+       enum: {
+@@ -123,7 +110,6 @@ const studentSchema = new mongoose.Schema(
+       default: 'registered',
+       index: true,
+     },
+-    // Student round availability state for the UI
+     roundAvailability: {
+       type: String,
+       enum: {
+@@ -141,25 +127,21 @@ const studentSchema = new mongoose.Schema(
+       },
+       default: 'ready',
+     },
+-    // Current wallet balance available for staking
+     walletBalance: {
+       type: Number,
+       default: 0,
+       min: [0, 'Wallet balance cannot be negative'],
+     },
+-    // Cumulative gross rewards won across all cleared levels (separate neutral aggregate)
+     totalEarned: {
+       type: Number,
+       default: 0,
+       min: [0, 'Total earned cannot be negative'],
+     },
+-    // Cumulative amount staked across all entered rounds (separate neutral aggregate)
+     totalRisked: {
+       type: Number,
+       default: 0,
+       min: [0, 'Total risked cannot be negative'],
+     },
+-    // Guaranteed earnings secured by clearing safe-zone checkpoints (separate neutral aggregate)
+     safeZoneAmount: {
+       type: Number,
+       default: 0,
+@@ -171,7 +153,6 @@ const studentSchema = new mongoose.Schema(
+   }
+ );
+ 
+-// Compile and export Student model
+ const Student = mongoose.model('Student', studentSchema);
+ 
+ module.exports = Student;
+\ No newline at end of file
+diff --git a/backend/models/Transaction.js b/backend/models/Transaction.js
+index f637dea..7b7126c 100644
+--- a/backend/models/Transaction.js
++++ b/backend/models/Transaction.js
+@@ -3,14 +3,12 @@ const { TOTAL_LEVELS, TRANSACTION_TYPES } = require('../constants');
+ 
+ const transactionSchema = new mongoose.Schema(
+   {
+-    // Reference to the student owning this transaction
+     studentId: {
+       type: mongoose.Schema.Types.ObjectId,
+       ref: 'Student',
+       required: [true, 'Student ID is required'],
+       index: true,
+     },
+-    // Transaction categorization
+     type: {
+       type: String,
+       enum: {
+@@ -20,7 +18,6 @@ const transactionSchema = new mongoose.Schema(
+       required: [true, 'Transaction type is required'],
+       index: true,
+     },
+-    // Transaction execution status
+     status: {
+       type: String,
+       enum: {
+@@ -30,26 +27,22 @@ const transactionSchema = new mongoose.Schema(
+       default: 'SUCCESS',
+       index: true,
+     },
+-    // Transaction amount (non-negative magnitude of balance change)
+     amount: {
+       type: Number,
+       required: [true, 'Transaction amount is required'],
+       min: [0, 'Transaction amount cannot be negative'],
+     },
+-    // Resulting student wallet balance after this transaction (must not be negative)
+     balanceAfter: {
+       type: Number,
+       required: [true, 'Resulting balance after transaction is required'],
+       min: [0, 'Wallet balance after transaction cannot be negative'],
+     },
+-    // Associated level (optional)
+     levelNumber: {
+       type: Number,
+       min: [1, 'Level number cannot be less than 1'],
+       max: [TOTAL_LEVELS, `Level number cannot exceed ${TOTAL_LEVELS}`],
+       default: null,
+     },
+-    // Associated round (optional)
+     roundId: {
+       type: mongoose.Schema.Types.ObjectId,
+       ref: 'Round',
+@@ -63,19 +56,16 @@ const transactionSchema = new mongoose.Schema(
+       sparse: true,
+       default: undefined,
+     },
+-    // Human-readable transaction statement description
+     description: {
+       type: String,
+       required: [true, 'Transaction description is required'],
+       trim: true,
+     },
+-    // Staff member who authorized/performed this transaction (if admin adjustment)
+     performedBy: {
+       type: mongoose.Schema.Types.ObjectId,
+       ref: 'Staff',
+       default: null,
+     },
+-    // Official transaction timestamp
+     timestamp: {
+       type: Date,
+       default: Date.now,
+@@ -104,7 +94,6 @@ transactionSchema.pre('findOneAndDelete', function () {
+   throw new Error('Transactions are immutable and cannot be deleted');
+ });
+ 
+-// Compile and export Transaction model
+ const Transaction = mongoose.model('Transaction', transactionSchema);
+ 
+ module.exports = Transaction;
+diff --git a/backend/scripts/seedAdmin.js b/backend/scripts/seedAdmin.js
+index 124cb65..2ed1002 100644
+--- a/backend/scripts/seedAdmin.js
++++ b/backend/scripts/seedAdmin.js
+@@ -3,7 +3,6 @@ const dotenv = require('dotenv');
+ const mongoose = require('mongoose');
+ const bcrypt = require('bcrypt');
+ 
+-// Load environment variables from backend/.env and current environment
+ dotenv.config({ path: path.join(__dirname, '../.env') });
+ dotenv.config();
+ 
+@@ -20,7 +19,6 @@ const seedAdmin = async () => {
+   const adminPassword = process.env.ADMIN_PASSWORD;
+   const adminName = process.env.ADMIN_NAME || 'System Administrator';
+ 
+-  // 1. Fail safely if required environment variables are missing
+   if (!mongoUri) {
+     console.error('[seedAdmin] Error: MONGO_URI environment variable is required.');
+     process.exit(1);
+@@ -39,10 +37,8 @@ const seedAdmin = async () => {
+   const normalizedUsername = adminUsername.trim().toLowerCase();
+ 
+   try {
+-    // 2. Connect to MongoDB
+     await mongoose.connect(mongoUri);
+ 
+-    // 3. Check whether an Admin account already exists (by username or role)
+     const existingAdmin = await Staff.findOne({
+       $or: [
+         { username: normalizedUsername },
+@@ -56,11 +52,9 @@ const seedAdmin = async () => {
+       process.exit(0);
+     }
+ 
+-    // 4. Securely hash password (never store plaintext)
+     const saltRounds = 10;
+     const passwordHash = await bcrypt.hash(adminPassword, saltRounds);
+ 
+-    // 5. Create new Admin document
+     const newAdmin = new Admin({
+       name: adminName.trim(),
+       username: normalizedUsername,
+@@ -83,7 +77,6 @@ const seedAdmin = async () => {
+   }
+ };
+ 
+-// Execute seed if run directly
+ if (require.main === module) {
+   seedAdmin();
+ }
+diff --git a/backend/scripts/seedLevels.js b/backend/scripts/seedLevels.js
+index 724b40e..5fdb557 100644
+--- a/backend/scripts/seedLevels.js
++++ b/backend/scripts/seedLevels.js
+@@ -2,7 +2,6 @@ const path = require('path');
+ const dotenv = require('dotenv');
+ const mongoose = require('mongoose');
+ 
+-// Load environment variables from backend/.env and current environment
+ dotenv.config({ path: path.join(__dirname, '../.env') });
+ dotenv.config();
+ 
+@@ -12,7 +11,6 @@ const {
+   EXTENDED_LEVEL_DURATION_SECONDS,
+ } = require('../constants');
+ 
+-// Canonical configuration for the six competition levels
+ const INITIAL_LEVELS = [
+   {
+     number: 1,
+@@ -138,7 +136,6 @@ const seedLevels = async () => {
+   }
+ };
+ 
+-// Execute seed if run directly
+ if (require.main === module) {
+   seedLevels();
+ }
+diff --git a/backend/scripts/updateLevels.js b/backend/scripts/updateLevels.js
+index 4854518..dd3d76f 100644
+--- a/backend/scripts/updateLevels.js
++++ b/backend/scripts/updateLevels.js
+@@ -2,7 +2,6 @@ const path = require('path');
+ const dotenv = require('dotenv');
+ const mongoose = require('mongoose');
+ 
+-// Load environment variables from backend/.env and current environment
+ dotenv.config({ path: path.join(__dirname, '../.env') });
+ dotenv.config();
+ 
+@@ -96,7 +95,6 @@ const updateLevels = async () => {
+   }
+ };
+ 
+-// Execute update if run directly
+ if (require.main === module) {
+   updateLevels();
+ }
+diff --git a/backend/server.js b/backend/server.js
+index cdf523a..cbfe2a5 100644
+--- a/backend/server.js
++++ b/backend/server.js
+@@ -3,7 +3,6 @@ const express = require('express');
+ const dotenv = require('dotenv');
+ const mongoose = require('mongoose');
+ 
+-// 1. Load environment variables before configuring middleware
+ dotenv.config({ path: path.join(__dirname, '.env') });
+ 
+ const {
+@@ -22,20 +21,16 @@ const {
+ const app = express();
+ const PORT = process.env.PORT || 5000;
+ 
+-// 2. Proxy configuration (disabled unless explicitly configured via TRUST_PROXY)
+ const trustProxyConfig = resolveTrustProxySetting(process.env.TRUST_PROXY);
+ if (!trustProxyConfig.error && trustProxyConfig.value !== undefined) {
+   app.set('trust proxy', trustProxyConfig.value);
+ }
+ 
+-// 3. Security headers (remove X-Powered-By and apply Helmet defaults compatible with frontend integrations)
+ app.disable('x-powered-by');
+ app.use(createHelmetMiddleware());
+ 
+-// 4. Environment-driven CORS allowlist
+ app.use(createCorsMiddleware());
+ 
+-// 5. Explicit bounded JSON request body parser (API is JSON-only)
+ const jsonLimitConfig = parseJsonBodyLimit(process.env.JSON_BODY_LIMIT);
+ app.use(express.json({ limit: jsonLimitConfig.value || '256kb' }));
+ 
+@@ -43,7 +38,6 @@ app.use(express.json({ limit: jsonLimitConfig.value || '256kb' }));
+ const { generalApiLimiter } = getRateLimiters();
+ app.use('/api', generalApiLimiter);
+ 
+-// Import route modules
+ const authRoutes = require('./routes/authRoutes');
+ const adminRoutes = require('./routes/adminRoutes');
+ const volunteerRoutes = require('./routes/volunteerRoutes');
+@@ -53,7 +47,6 @@ const studentRoutes = require('./routes/studentRoutes');
+ const competitionRoutes = require('./routes/competitionRoutes');
+ const leaderboardRoutes = require('./routes/leaderboardRoutes');
+ 
+-// Mount API routes
+ app.use('/api/auth', authRoutes);
+ app.use('/api/admin', adminRoutes);
+ app.use('/api/admin/questions', questionRoutes);
+@@ -63,7 +56,6 @@ app.use('/api/student', studentRoutes);
+ app.use('/api/competition', competitionRoutes);
+ app.use('/api/leaderboard', leaderboardRoutes);
+ 
+-// Helper function to map Mongoose readyState numbers to readable status strings
+ const getMongoConnectionStatus = () => {
+   const connectionStates = {
+     0: 'disconnected',
+@@ -74,7 +66,6 @@ const getMongoConnectionStatus = () => {
+   return connectionStates[mongoose.connection.readyState];
+ };
+ 
+-// Monitor MongoDB Atlas connection events
+ mongoose.connection.on('connected', () => {
+   console.log('MongoDB Atlas connection established successfully.');
+ });
+@@ -87,7 +78,6 @@ mongoose.connection.on('disconnected', () => {
+   console.warn('MongoDB Atlas disconnected.');
+ });
+ 
+-// Root route for initial verification
+ app.get('/', (req, res) => {
+   res.json({
+     message: 'Code Buddy Backend API is running.',
+@@ -95,7 +85,6 @@ app.get('/', (req, res) => {
+   });
+ });
+ 
+-// Health check endpoint reporting server and MongoDB connection status
+ app.get('/api/health', (req, res) => {
+   const readyState = mongoose.connection.readyState;
+   const isConnected = readyState === 1;
+@@ -111,13 +100,11 @@ app.get('/api/health', (req, res) => {
+   });
+ });
+ 
+-// 9. Structured 404 handler for unmatched API and non-API routes
+ app.use(notFoundHandler);
+ 
+ // 10. Centralized 4-argument Express error handler (must be registered last)
+ app.use(errorHandler);
+ 
+-// Connect to MongoDB Atlas
+ const connectDB = async () => {
+   const mongoUri = process.env.MONGO_URI;
+ 
+@@ -134,7 +121,6 @@ const connectDB = async () => {
+   }
+ };
+ 
+-// Start the server
+ const startServer = async () => {
+   const envValidation = validateStartupEnv();
+   if (!envValidation.valid) {
+diff --git a/backend/tests/integration/task6.integration.test.js b/backend/tests/integration/task6.integration.test.js
+index 3f4fe05..49adb80 100644
+--- a/backend/tests/integration/task6.integration.test.js
++++ b/backend/tests/integration/task6.integration.test.js
+@@ -55,7 +55,6 @@ async function runSuite(name, fn) {
+ }
+ 
+ async function run() {
+-  // 0. Database safety guard tests (must block Atlas, non-local, empty, and production-matching URIs)
+   await runSuite('Safety Guard: assertSafeTestMongoUri rejects unsafe targets', async () => {
+     assert.throws(
+       () => assertSafeTestMongoUri('mongodb+srv://user:pass@cluster0.abcde.mongodb.net/codebuddy'),
+@@ -82,7 +81,6 @@ async function run() {
+   let volunteerId = null;
+   let adminToken = null;
+ 
+-  // Helpers that call real Express endpoints via Supertest
+   const loginAdmin = async () => {
+     const res = await env.http().post('/api/admin/login').send({
+       username: env.seededAdminCredentials.username,
+@@ -213,13 +211,11 @@ async function run() {
+     await env.seedBaseData();
+ 
+     await runSuite('Suite A: Core Auth, Volunteer Provisioning & Student Registration + All 4 Academic Years Allocation', async () => {
+-      // Check health endpoint
+       const healthRes = await env.http().get('/api/health');
+       checkEqual(healthRes.status, 200, 'GET /api/health returns 200');
+       checkEqual(healthRes.body.status, 'ok', 'Health check status ok');
+       checkEqual(healthRes.body.server, 'healthy', 'Health check server healthy');
+ 
+-      // Admin login via both /api/admin/login and /api/auth/admin/login alias
+       adminToken = await loginAdmin();
+       const aliasAdminRes = await env.http().post('/api/auth/admin/login').send({
+         username: env.seededAdminCredentials.username,
+@@ -233,7 +229,6 @@ async function run() {
+         .set('Authorization', `Bearer ${adminToken}`);
+       checkEqual(adminMeRes.status, 200, 'GET /api/admin/me -> 200');
+ 
+-      // Admin creates primary volunteer
+       const createVolRes = await env
+         .http()
+         .post('/api/admin/volunteers')
+@@ -248,7 +243,6 @@ async function run() {
+       volunteerId = createVolRes.body.volunteer.id;
+       env.trackStaffId(volunteerId);
+ 
+-      // Volunteer login via /api/volunteer/login and alias /api/auth/volunteer/login
+       const vLoginRes = await env.http().post('/api/volunteer/login').send({
+         username: 'vol_int_1',
+         password: 'VolPassword!123',
+@@ -262,7 +256,6 @@ async function run() {
+       });
+       checkEqual(vAliasRes.status, 200, 'POST /api/auth/volunteer/login alias -> 200');
+ 
+-      // Negative Google Auth tests
+       env.registerGoogleIdentity('gmail-token', {
+         payload: {
+           sub: 'sub-gmail',
+@@ -285,7 +278,6 @@ async function run() {
+       const missingIdTokenRes = await env.http().post('/api/auth/google').send({});
+       checkEqual(missingIdTokenRes.status, 400, 'Empty Google auth payload rejected 400');
+ 
+-      // Unregistered student tries to allocate before completing registration
+       const unregistered = await provisionAndRegisterStudent({
+         tag: 'unreg',
+         name: 'Unregistered Student',
+@@ -298,7 +290,6 @@ async function run() {
+         .set('Authorization', `Bearer ${unregistered.token}`);
+       checkEqual(unregAllocRes.status, 403, 'Unregistered student cannot allocate round');
+ 
+-      // Pre-unused Level 6 deactivate + reactivate check before any student reaches Level 6
+       const deactL6Res = await env
+         .http()
+         .patch('/api/admin/levels/6/deactivate')
+@@ -313,7 +304,6 @@ async function run() {
+       checkEqual(reactL6Res.status, 200, 'Level 6 can be reactivated -> 200');
+       checkEqual(reactL6Res.body.level.isActive, true, 'Level 6 isActive true after activate');
+ 
+-      // Academic year question allocation rules: 1st Year -> EASY; 2nd/3rd/4th Year -> HARD
+       const y1 = await provisionAndRegisterStudent({
+         tag: 'yr1check',
+         name: 'Year 1 Student',
+@@ -339,7 +329,6 @@ async function run() {
+         year: '4th Year',
+       });
+ 
+-      // Duplicate USN guard
+       const dupUsnStudent = await provisionAndRegisterStudent({
+         tag: 'dupUsn',
+         name: 'Dup USN Candidate',
+@@ -354,7 +343,6 @@ async function run() {
+       checkEqual(dupRegRes.status, 409, 'Duplicate USN returns 409');
+       checkEqual(dupRegRes.body.code, 'DUPLICATE_USN', 'Duplicate USN code matches');
+ 
+-      // Allocate concurrent check on y1 (two parallel POST /api/rounds/allocate -> single DB Round!)
+       const [allocY1A, allocY1B] = await Promise.all([
+         env.http().post('/api/rounds/allocate').set('Authorization', `Bearer ${y1.token}`),
+         env.http().post('/api/rounds/allocate').set('Authorization', `Bearer ${y1.token}`),
+@@ -373,7 +361,6 @@ async function run() {
+       checkEqual(allocY1A.body.round.question.difficulty, 'EASY', 'Year 1 allocates EASY');
+       assertNoSensitiveLeak(allocY1A.body, 'allocate response');
+ 
+-      // Idempotent second sequential allocation returns 200 + isExisting: true
+       const idempRes = await env
+         .http()
+         .post('/api/rounds/allocate')
+@@ -382,7 +369,6 @@ async function run() {
+       checkEqual(idempRes.body.isExisting, true, 'Repeated allocate marks isExisting: true');
+       checkEqual(idempRes.body.round.id, allocY1A.body.round.id, 'Same round kept');
+ 
+-      // Year 2, 3, 4 -> HARD
+       const allocY2 = await env.http().post('/api/rounds/allocate').set('Authorization', `Bearer ${y2.token}`);
+       const allocY3 = await env.http().post('/api/rounds/allocate').set('Authorization', `Bearer ${y3.token}`);
+       const allocY4 = await env.http().post('/api/rounds/allocate').set('Authorization', `Bearer ${y4.token}`);
+@@ -393,7 +379,6 @@ async function run() {
+       checkEqual(allocY4.status, 201, 'Year 4 alloc -> 201');
+       checkEqual(allocY4.body.round.question.difficulty, 'HARD', 'Year 4 allocates HARD');
+ 
+-      // Student profile, level-info, and active round endpoint
+       const meRes = await env.http().get('/api/auth/me').set('Authorization', `Bearer ${y1.token}`);
+       checkEqual(meRes.status, 200, 'GET /api/auth/me -> 200');
+       checkEqual(meRes.body.student.currentLevel, 1, 'GET /api/auth/me currentLevel=1');
+@@ -408,7 +393,6 @@ async function run() {
+       checkEqual(activeRes.status, 200, 'GET /api/rounds/active -> 200');
+       checkEqual(activeRes.body.round.status, 'ready', 'Active round status ready');
+ 
+-      // Volunteer lookup + extension + timer expiration DB sync verification
+       const lookupRes = await env
+         .http()
+         .get(`/api/volunteer/students/${y2.usn}/round`)
+@@ -432,7 +416,6 @@ async function run() {
+       checkEqual(extendRes.body.extensionSeconds, 45, 'Extension seconds reported');
+       checkEqual(extendRes.body.round.timerExtensions.length, 1, 'One extension logged');
+ 
+-      // Simulate past deadline in real DB, verify real controller sync transitions to timeExpired
+       await env.models.Round.findByIdAndUpdate(startY2Res.body.round.id, {
+         $set: { deadline: new Date(Date.now() - 10000) },
+       });
+@@ -447,7 +430,6 @@ async function run() {
+     });
+ 
+     await runSuite('Suite B: Full L1-L6 PASS Journey, L1-L6 FAIL Paths, Safe Zones, Concurrency & History/Transactions', async () => {
+-      // 1. Full L1 -> L6 PASS champion (2nd year -> HARD throughout)
+       const champ = await provisionAndRegisterStudent({
+         tag: 'champion',
+         name: 'Champion Student',
+@@ -483,14 +465,12 @@ async function run() {
+         }
+       }
+ 
+-      // Guard: completed student cannot allocate further rounds
+       const postCompleteAlloc = await env
+         .http()
+         .post('/api/rounds/allocate')
+         .set('Authorization', `Bearer ${champ.token}`);
+       checkEqual(postCompleteAlloc.status, 409, 'Completed student cannot allocate more rounds -> 409');
+ 
+-      // Student history & ledger transactions for champion
+       const histRes = await env
+         .http()
+         .get('/api/student/rounds/history')
+@@ -506,7 +486,6 @@ async function run() {
+       checkEqual(txRes.body.transactions.length, 6, 'Champion has 6 immutable ledger transactions');
+       checkEqual(txRes.body.walletBalance, 500, 'Champion transactions endpoint walletBalance=500');
+ 
+-      // 2. Duplicate evaluation / settlement / progression & concurrency races on a separate student
+       const raceStudent = await provisionAndRegisterStudent({
+         tag: 'racer',
+         name: 'Race Guard Student',
+@@ -524,7 +503,6 @@ async function run() {
+         .set('Authorization', `Bearer ${volunteerToken}`);
+       checkEqual(rStart.status, 200, 'Race student L1 started');
+ 
+-      // Concurrent evaluations (only 1 succeeds with 200, 1 gets 409 ROUND_ALREADY_EVALUATED)
+       const [evA, evB] = await Promise.all([
+         env
+           .http()
+@@ -543,7 +521,6 @@ async function run() {
+       const evalDbCount = await env.models.Evaluation.countDocuments({ roundId: rAlloc.body.round.id });
+       checkEqual(evalDbCount, 1, 'Exactly 1 Evaluation document exists in DB');
+ 
+-      // Concurrent settlements (only 1 succeeds with 200, second gets 409 ROUND_ALREADY_SETTLED or SETTLEMENT_CONFLICT)
+       const [stA, stB] = await Promise.all([
+         env
+           .http()
+@@ -560,14 +537,12 @@ async function run() {
+       const txDbCount = await env.models.Transaction.countDocuments({ roundId: rAlloc.body.round.id });
+       checkEqual(txDbCount, 1, 'Exactly 1 Transaction document exists in DB');
+ 
+-      // Sequential duplicate settle check
+       const dupSettle = await env
+         .http()
+         .post(`/api/volunteer/students/${raceStudent.usn}/round/settle`)
+         .set('Authorization', `Bearer ${volunteerToken}`);
+       checkEqual(dupSettle.status, 409, 'Duplicate settle rejected 409');
+ 
+-      // Concurrent progression (only 1 succeeds with 200, second gets 409)
+       const [prA, prB] = await Promise.all([
+         env
+           .http()
+@@ -585,7 +560,6 @@ async function run() {
+       checkEqual(racerInDb.currentLevel, 2, 'Race student progressed exactly once to level 2');
+       checkEqual(racerInDb.walletBalance, 50, 'Race student wallet settled once to 50');
+ 
+-      // 3. Dedicated FAIL tests across ALL six levels (L1..L6) verifying canonical losing payouts & elimination
+       const failScenarios = [
+         { failAt: 1, expectedWallet: 0, expectedSafeZone: 0 },
+         { failAt: 2, expectedWallet: 50, expectedSafeZone: 50 },
+@@ -634,7 +608,6 @@ async function run() {
+           `L${scenario.failAt} FAIL sets competitionStatus='eliminated'`
+         );
+ 
+-        // Eliminated student cannot allocate next round
+         const blockedAlloc = await env
+           .http()
+           .post('/api/rounds/allocate')
+@@ -644,7 +617,6 @@ async function run() {
+     });
+ 
+     await runSuite('Suite C: Volunteer Management, Admin Monitoring, Dashboard, Level Config & Guarded Recovery', async () => {
+-      // 1. Volunteer lifecycle (create, deactivate -> block token, reactivate, reset password)
+       const tempVolRes = await env
+         .http()
+         .post('/api/admin/volunteers')
+@@ -703,7 +675,6 @@ async function run() {
+       });
+       checkEqual(newPwOk.status, 200, 'New password succeeds after reset -> 200');
+ 
+-      // 2. Question Bank CRUD
+       const qCreate = await env
+         .http()
+         .post('/api/admin/questions')
+@@ -733,7 +704,6 @@ async function run() {
+         .set('Authorization', `Bearer ${adminToken}`);
+       checkEqual(qReact.status, 200, 'Admin reactivate question -> 200');
+ 
+-      // 3. Guarded Abandoned Round Recovery (POST /api/admin/rounds/:roundId/recover)
+       const recStudent = await provisionAndRegisterStudent({
+         tag: 'recovery_user',
+         name: 'Recovery Target Student',
+@@ -747,7 +717,6 @@ async function run() {
+       checkEqual(recAlloc.status, 201, 'Allocated round for recovery scenario -> 201');
+       const recRoundId = recAlloc.body.round.id;
+ 
+-      // Trying to recover an active non-abandoned round -> 409 ROUND_NOT_ABANDONED
+       const nonAbandRes = await env
+         .http()
+         .post(`/api/admin/rounds/${recRoundId}/recover`)
+@@ -755,11 +724,8 @@ async function run() {
+       checkEqual(nonAbandRes.status, 409, 'Recovering non-abandoned round rejected 409');
+       checkEqual(nonAbandRes.body.code, 'ROUND_NOT_ABANDONED', 'Code ROUND_NOT_ABANDONED');
+ 
+-      // Mark round abandoned in DB (no evaluation, no transaction) and also mark student abandoned-like state?
+-      // Student stays registered/inProgress; round becomes abandoned
+       await env.models.Round.findByIdAndUpdate(recRoundId, { $set: { status: 'abandoned' } });
+ 
+-      // Invalid ObjectId -> 400; missing ObjectId -> 404
+       const badIdRec = await env
+         .http()
+         .post('/api/admin/rounds/not-an-object-id/recover')
+@@ -772,7 +738,6 @@ async function run() {
+         .set('Authorization', `Bearer ${adminToken}`);
+       checkEqual(missingIdRec.status, 404, 'Nonexistent roundId on recover -> 404');
+ 
+-      // Concurrent recovery test: two parallel POST /recover -> 1 wins (200), 1 conflicts (409)
+       const [recA, recB] = await Promise.all([
+         env
+           .http()
+@@ -795,7 +760,6 @@ async function run() {
+         'Recovered round preserved original questionId'
+       );
+ 
+-      // Verify recovered round returns as existing ready round (200) and completes & settles cleanly
+       const recPlay = await playOneLevel({
+         studentToken: recStudent.token,
+         usn: recStudent.usn,
+@@ -808,7 +772,6 @@ async function run() {
+       checkEqual(recPlay.allocRes.body.round.id, recRoundId, 'Re-allocated recovered round preserves _id');
+       checkEqual(recPlay.progRes.body.student.walletBalance, 50, 'Recovered round completes and settles cleanly');
+ 
+-      // 4. Admin Level Config + Locking after competition usage
+       const levelsRes = await env
+         .http()
+         .get('/api/admin/levels')
+@@ -839,7 +802,6 @@ async function run() {
+         .set('Authorization', `Bearer ${adminToken}`);
+       checkEqual(deactUsedL1.status, 409, 'Deactivating in-use Level 1 blocked with 409');
+ 
+-      // 5. Admin Monitoring (read-only + zero email leak) & Dashboard
+       const txBefore = await env.models.Transaction.countDocuments({});
+       const rndBefore = await env.models.Round.countDocuments({});
+ 
+@@ -863,7 +825,6 @@ async function run() {
+       assertNoSensitiveLeak(roundsMonRes.body, 'admin rounds');
+       assertNoSensitiveLeak(txMonRes.body, 'admin transactions');
+ 
+-      // Cross-check Dashboard aggregates against real DB state
+       const dbCompletedStudents = await env.models.Student.countDocuments({ competitionStatus: 'completed' });
+       const dbEliminatedStudents = await env.models.Student.countDocuments({ competitionStatus: 'eliminated' });
+       checkEqual(
+@@ -886,8 +847,6 @@ async function run() {
+     });
+ 
+     await runSuite('Suite D: Leaderboard Integration (Student, Volunteer & Admin)', async () => {
+-      // Pick champion student or create quick student token? We can mint or use an existing active student token:
+-      // Let's register one student in Suite D for calling Student leaderboard + /me cleanly
+       const lbStudent = await provisionAndRegisterStudent({
+         tag: 'lb_viewer',
+         name: 'Leaderboard Viewer',
+@@ -938,7 +897,6 @@ async function run() {
+     });
+ 
+     await runSuite('Suite E: Task 5 Security Middleware, RBAC, Validation & Real Rate-Limiting Negative Tests', async () => {
+-      // 1. Missing, malformed, expired, not-before, invalid-sub, and wrong-role JWTs
+       const noAuth = await env.http().get('/api/admin/dashboard');
+       checkEqual(noAuth.status, 401, 'Missing Authorization header -> 401');
+ 
+@@ -992,7 +950,6 @@ async function run() {
+         .set('Authorization', `Bearer ${ghostJwt}`);
+       checkEqual(ghostRes.status, 401, 'Nonexistent/deleted Student subject JWT -> 401');
+ 
+-      // Wrong role isolation
+       const volToAdmin = await env
+         .http()
+         .get('/api/admin/dashboard')
+@@ -1005,7 +962,6 @@ async function run() {
+         .set('Authorization', `Bearer ${adminToken}`);
+       checkEqual(adminToRound.status, 403, 'Admin hitting /api/rounds/allocate -> 403');
+ 
+-      // 2. CORS allowlist & Helmet security headers
+       const badOriginRes = await env
+         .http()
+         .get('/api/health')
+@@ -1027,7 +983,6 @@ async function run() {
+       checkEqual(goodOriginRes.headers['x-frame-options'], 'DENY', 'Helmet x-frame-options DENY');
+       checkEqual(goodOriginRes.headers['x-powered-by'], undefined, 'X-Powered-By stripped');
+ 
+-      // 3. Malformed JSON, Payload Too Large, and Unknown Route 404
+       const malformedRes = await env
+         .http()
+         .post('/api/admin/login')
+@@ -1049,7 +1004,6 @@ async function run() {
+       checkEqual(unknownRes.status, 404, 'Unknown API route -> 404');
+       checkEqual(unknownRes.body.code, 'ROUTE_NOT_FOUND', 'Code ROUTE_NOT_FOUND');
+ 
+-      // Ensure zero stack trace or secret exposure in error responses
+       for (const errBody of [badOriginRes.body, malformedRes.body, oversizedRes.body, unknownRes.body]) {
+         const s = JSON.stringify(errBody);
+         check(!/"stack"/i.test(s), 'Error response must not expose stack field');
+@@ -1057,7 +1011,6 @@ async function run() {
+         check(!s.includes('127.0.0.1'), 'Error response must not leak Mongo URI');
+       }
+ 
+-      // 4. Real Rate Limiter integration via Supertest (reload Express app with tight limits)
+       const { app: tightApp } = env.reloadAppWithEnv({
+         API_RATE_LIMIT_MAX: '5',
+         LOGIN_RATE_LIMIT_MAX: '2',
+@@ -1065,7 +1018,6 @@ async function run() {
+       });
+       const tightReq = request(tightApp);
+ 
+-      // Login rate limit (max 2 requests for same IP -> 3rd returns 429)
+       const rl1 = await tightReq
+         .post('/api/admin/login')
+         .set('X-Forwarded-For', '203.0.113.10')
+@@ -1083,7 +1035,6 @@ async function run() {
+       checkEqual(rl3.status, 429, 'Login attempt 3 exceeds LOGIN_RATE_LIMIT_MAX -> 429');
+       checkEqual(rl3.body.code, 'RATE_LIMIT_EXCEEDED', 'Login rate limiter returns RATE_LIMIT_EXCEEDED');
+ 
+-      // General /api limiter (distinct IP on non-exempt route; max 5 requests -> 6th returns 429)
+       for (let i = 1; i <= 5; i += 1) {
+         const r = await tightReq
+           .get('/api/admin/me')
+@@ -1098,7 +1049,6 @@ async function run() {
+       checkEqual(api6.status, 429, 'General API call 6/5 hits 429 RATE_LIMIT_EXCEEDED');
+       checkEqual(api6.body.code, 'RATE_LIMIT_EXCEEDED', 'General API rate limit code matches');
+ 
+-      // Confirm /api/health remains exempt even from the rate-limited IP
+       const healthExempt = await tightReq.get('/api/health').set('X-Forwarded-For', '203.0.113.20');
+       checkEqual(healthExempt.status, 200, 'GET /api/health remains exempt -> 200');
+     });
+diff --git a/backend/tests/integration/testHarness.js b/backend/tests/integration/testHarness.js
+index 8c8ac99..c1d9285 100644
+--- a/backend/tests/integration/testHarness.js
++++ b/backend/tests/integration/testHarness.js
+@@ -112,7 +112,6 @@ class IntegrationTestEnvironment {
+     // Capture any pre-existing MONGO_URI strictly for negative safeguard comparison; NEVER connect to it.
+     const preexistingEnvUri = process.env.MONGO_URI || null;
+ 
+-    // 1. Boot isolated single-node WiredTiger MongoDB Replica Set in memory (ACID tx capable)
+     this.replSet = await MongoMemoryReplSet.create({
+       replSet: {
+         count: 1,
+@@ -128,7 +127,6 @@ class IntegrationTestEnvironment {
+     const memUri = this.replSet.getUri();
+     assertSafeTestMongoUri(memUri, preexistingEnvUri);
+ 
+-    // 2. Prevent server.js from reading production backend/.env, then inject isolated test config
+     dotenv.config = () => ({ parsed: {} });
+     process.env.NODE_ENV = envOverrides.NODE_ENV || 'production';
+     process.env.MONGO_URI = memUri;
+@@ -148,7 +146,6 @@ class IntegrationTestEnvironment {
+     process.env.LOGIN_IP_RATE_LIMIT_MAX = envOverrides.LOGIN_IP_RATE_LIMIT_MAX || '200';
+     process.env.GOOGLE_AUTH_RATE_LIMIT_MAX = envOverrides.GOOGLE_AUTH_RATE_LIMIT_MAX || '500';
+ 
+-    // 3. Connect Mongoose strictly to the verified loopback in-memory replica set
+     await mongoose.connect(memUri);
+ 
+     const connHost = String(mongoose.connection.host || '').toLowerCase();
+@@ -160,7 +157,6 @@ class IntegrationTestEnvironment {
+       throw new Error(`SAFETY_BLOCK: Connected host "${connHost}" is not an isolated local test instance.`);
+     }
+ 
+-    // 4. Install Google OAuth ID-token cryptographic verification stub ONLY
+     const tokenMap = this.googleTokenMap;
+     OAuth2Client.prototype.verifyIdToken = async function ({ idToken }) {
+       const entry = tokenMap.get(idToken);
+@@ -175,7 +171,6 @@ class IntegrationTestEnvironment {
+       };
+     };
+ 
+-    // 5. Load real Express app and models, then synchronize real MongoDB indexes
+     this.app = require('../../server');
+     this.models = require('../../models');
+ 
+diff --git a/backend/tests/walletAllocation.test.js b/backend/tests/walletAllocation.test.js
+index c04f751..123a2cb 100644
+--- a/backend/tests/walletAllocation.test.js
++++ b/backend/tests/walletAllocation.test.js
+@@ -1,7 +1,6 @@
+ const assert = require('assert');
+ const mongoose = require('mongoose');
+ 
+-// Import controllers and models
+ const {
+   getLevelInfo,
+   allocateQuestion,
+@@ -28,7 +27,6 @@ const {
+ const { INITIAL_LEVELS } = require('../scripts/seedLevels');
+ const { TOTAL_LEVELS } = require('../constants');
+ 
+-// Test utilities
+ const mockRes = () => {
+   const res = {
+     statusCode: 200,
+@@ -68,7 +66,6 @@ async function runWalletWorkflowTests() {
+     }
+   };
+ 
+-  // In-memory data store for isolated testing
+   const store = {
+     students: new Map(),
+     rounds: new Map(),
+@@ -78,13 +75,11 @@ async function runWalletWorkflowTests() {
+     transactions: new Map(),
+   };
+ 
+-  // Populate canonical levels
+   INITIAL_LEVELS.forEach((lvl) => {
+     const doc = { ...lvl, _id: new mongoose.Types.ObjectId() };
+     store.levels.set(lvl.number, doc);
+   });
+ 
+-  // Populate sample questions for levels 1-6
+   for (let lvl = 1; lvl <= TOTAL_LEVELS; lvl++) {
+     for (const diff of ['EASY', 'HARD']) {
+       const qId = new mongoose.Types.ObjectId();
+@@ -102,7 +97,6 @@ async function runWalletWorkflowTests() {
+     }
+   }
+ 
+-  // Backup original Mongoose methods
+   const origStudentFindById = Student.findById;
+   const origStudentFindOne = Student.findOne;
+   const origStudentFindOneAndUpdate = Student.findOneAndUpdate;
+@@ -129,7 +123,6 @@ async function runWalletWorkflowTests() {
+ 
+   const origMongooseStartSession = mongoose.startSession;
+ 
+-  // Mock mongoose.startSession to support transactional testing in-memory
+   mongoose.startSession = async function () {
+     return {
+       withTransaction: async (callback) => {
+@@ -151,7 +144,6 @@ async function runWalletWorkflowTests() {
+     };
+   };
+ 
+-  // Install test mocks on Mongoose models
+   Student.findById = function (id) {
+     const doc = store.students.get(id?.toString());
+     const copy = doc ? { ...doc } : null;
+@@ -176,7 +168,6 @@ async function runWalletWorkflowTests() {
+     const student = store.students.get(filter._id?.toString());
+     if (!student) return null;
+ 
+-    // Check $gte walletBalance filter
+     if (filter.walletBalance && filter.walletBalance.$gte !== undefined) {
+       if ((student.walletBalance ?? 0) < filter.walletBalance.$gte) {
+         return null; // Conditional update fails!
+@@ -295,7 +286,6 @@ async function runWalletWorkflowTests() {
+   Round.prototype.save = async function () {
+     const r = this.toObject ? this.toObject() : { ...this._doc };
+     if (!r._id) r._id = new mongoose.Types.ObjectId();
+-    // Unique check { studentId, levelNumber }
+     for (const existing of store.rounds.values()) {
+       if (
+         existing.studentId.toString() === r.studentId.toString() &&
+@@ -411,9 +401,6 @@ async function runWalletWorkflowTests() {
+   };
+ 
+   try {
+-    // -------------------------------------------------------------
+-    // Test 1: GET /api/competition/config returns all 6 levels with correct fields
+-    // -------------------------------------------------------------
+     await test('1. GET /api/competition/config returns authoritative 6 levels with entryRiskAmount', async () => {
+       const req = {};
+       const res = mockRes();
+@@ -440,9 +427,6 @@ async function runWalletWorkflowTests() {
+       assert.strictEqual(l6.winningPayout, 500);
+     });
+ 
+-    // -------------------------------------------------------------
+-    // Test 2: GET /api/rounds/level-info returns level details and hasSufficientBalance
+-    // -------------------------------------------------------------
+     await test('2. GET /api/rounds/level-info returns wallet balance and entry fee eligibility', async () => {
+       const studentId = new mongoose.Types.ObjectId();
+       const studentDoc = {
+@@ -471,9 +455,6 @@ async function runWalletWorkflowTests() {
+       assert.strictEqual(res.body.level.winningPayout, 50);
+     });
+ 
+-    // -------------------------------------------------------------
+-    // Test 3: POST /api/rounds/allocate for Level 1 (Free entry, fee = 0)
+-    // -------------------------------------------------------------
+     let allocatedL1Round = null;
+     await test('3. POST /api/rounds/allocate for Level 1 succeeds with 0 fee (no deduction)', async () => {
+       const student = store.students.get(Array.from(store.students.keys())[0]);
+@@ -493,14 +474,10 @@ async function runWalletWorkflowTests() {
+       assert.strictEqual(res.body.round.status, 'ready');
+ 
+       allocatedL1Round = res.body.round;
+-      // Verify in-memory state
+       const dbStudent = store.students.get(student._id.toString());
+       assert.strictEqual(dbStudent.walletBalance, 0);
+     });
+ 
+-    // -------------------------------------------------------------
+-    // Test 4: Repeated allocate for Level 1 is idempotent and charges nothing
+-    // -------------------------------------------------------------
+     await test('4. Repeated POST /api/rounds/allocate is idempotent (isExisting: true, no deduction)', async () => {
+       const student = store.students.get(Array.from(store.students.keys())[0]);
+       const req = { student, body: {} };
+@@ -516,9 +493,6 @@ async function runWalletWorkflowTests() {
+       assert.strictEqual(res.body.round.id, allocatedL1Round.id);
+     });
+ 
+-    // -------------------------------------------------------------
+-    // Test 5: Insufficient balance blocks Level 2 allocation (fee = 50, balance = 0)
+-    // -------------------------------------------------------------
+     await test('5. POST /api/rounds/allocate rejects when wallet balance is insufficient (HTTP 400)', async () => {
+       const studentId = new mongoose.Types.ObjectId();
+       const brokeStudent = {
+@@ -545,7 +519,6 @@ async function runWalletWorkflowTests() {
+       assert.strictEqual(res.body.walletBalance, 0);
+       assert.strictEqual(res.body.requiredAmount, 50);
+ 
+-      // Verify no round was allocated
+       let roundFound = false;
+       for (const r of store.rounds.values()) {
+         if (r.studentId.toString() === studentId.toString() && r.levelNumber === 2) {
+@@ -554,7 +527,6 @@ async function runWalletWorkflowTests() {
+       }
+       assert.strictEqual(roundFound, false, 'No round should be created on insufficient balance');
+ 
+-      // Verify no transaction was recorded
+       let txFound = false;
+       for (const tx of store.transactions.values()) {
+         if (tx.studentId.toString() === studentId.toString()) txFound = true;
+@@ -562,9 +534,6 @@ async function runWalletWorkflowTests() {
+       assert.strictEqual(txFound, false, 'No transaction should be created on insufficient balance');
+     });
+ 
+-    // -------------------------------------------------------------
+-    // Test 6: Successful Level 2 entry deduction (fee = 50, balance = 50 -> 0)
+-    // -------------------------------------------------------------
+     let l2Round = null;
+     let l2DebitTx = null;
+     await test('6. POST /api/rounds/allocate succeeds when student has 50, deducts 50, records STAKE_DEBIT', async () => {
+@@ -605,12 +574,10 @@ async function runWalletWorkflowTests() {
+       l2Round = res.body.round;
+       l2DebitTx = res.body.transaction;
+ 
+-      // Verify student in database was updated
+       const dbStudent = store.students.get(studentId.toString());
+       assert.strictEqual(dbStudent.walletBalance, 0);
+       assert.strictEqual(dbStudent.totalRisked, 50);
+ 
+-      // Verify immutable Transaction in database
+       const dbTx = store.transactions.get(res.body.transaction.id);
+       assert.ok(dbTx);
+       assert.strictEqual(dbTx.type, 'STAKE_DEBIT');
+@@ -619,9 +586,6 @@ async function runWalletWorkflowTests() {
+       assert.strictEqual(dbTx.settlementKey, `round_entry:${l2Round.id}`);
+     });
+ 
+-    // -------------------------------------------------------------
+-    // Test 7: Repeated allocation on Level 2 does NOT deduct fee again
+-    // -------------------------------------------------------------
+     await test('7. Repeated Level 2 allocate returns existing round and previous debit transaction without double charge', async () => {
+       const student = store.students.get(l2Round.studentId);
+       const req = { student, body: {} };
+@@ -638,7 +602,6 @@ async function runWalletWorkflowTests() {
+       assert.ok(res.body.transaction);
+       assert.strictEqual(res.body.transaction.id, l2DebitTx.id);
+ 
+-      // Verify only 1 transaction exists in store for this student
+       let txCount = 0;
+       for (const tx of store.transactions.values()) {
+         if (tx.studentId.toString() === student._id.toString()) txCount++;
+@@ -646,9 +609,6 @@ async function runWalletWorkflowTests() {
+       assert.strictEqual(txCount, 1, 'Only 1 transaction should exist (no duplicate debit)');
+     });
+ 
+-    // -------------------------------------------------------------
+-    // Test 8: Failed allocation triggers compensating rollback so student is NOT charged
+-    // -------------------------------------------------------------
+     await test('8. Failed round allocation cleanly refunds student wallet and does not record charge', async () => {
+       const studentId = new mongoose.Types.ObjectId();
+       const testStudent = {
+@@ -665,7 +625,6 @@ async function runWalletWorkflowTests() {
+       };
+       store.students.set(studentId.toString(), testStudent);
+ 
+-      // Force Round.prototype.save to fail temporarily
+       const failingSave = Round.prototype.save;
+       Round.prototype.save = async function () {
+         throw new Error('Database disk write failure during round save simulation');
+@@ -682,12 +641,10 @@ async function runWalletWorkflowTests() {
+         Round.prototype.save = failingSave;
+       }
+ 
+-      // Check student in database was refunded!
+       const dbStudent = store.students.get(studentId.toString());
+       assert.strictEqual(dbStudent.walletBalance, 100, 'Student balance must be restored to 100!');
+       assert.strictEqual(dbStudent.totalRisked, 0, 'Total risked must be restored to 0!');
+ 
+-      // Check no round or transaction exists
+       let rCount = 0;
+       for (const r of store.rounds.values()) {
+         if (r.studentId.toString() === studentId.toString()) rCount++;
+@@ -695,9 +652,6 @@ async function runWalletWorkflowTests() {
+       assert.strictEqual(rCount, 0, 'No round should persist after failed allocation');
+     });
+ 
+-    // -------------------------------------------------------------
+-    // Test 9: GET /api/student/transactions returns debit transaction and balance
+-    // -------------------------------------------------------------
+     await test('9. GET /api/student/transactions returns accurate ledger with STAKE_DEBIT', async () => {
+       const student = store.students.get(l2Round.studentId);
+       const req = { student, query: {} };
+@@ -720,11 +674,7 @@ async function runWalletWorkflowTests() {
+       assert.strictEqual(tx.status, 'SUCCESS');
+     });
+ 
+-    // -------------------------------------------------------------
+-    // Test 10: Reward credit on settlement and duplicate prevention
+-    // -------------------------------------------------------------
+     await test('10. Level settlement credits winning payout (REWARD_CREDIT) and prevents duplicate credits', async () => {
+-      // Simulate volunteer evaluating Level 2 as PASS
+       const student = store.students.get(l2Round.studentId);
+       const volunteerId = new mongoose.Types.ObjectId();
+       const evalId = new mongoose.Types.ObjectId();
+@@ -790,7 +740,6 @@ async function runWalletWorkflowTests() {
+         role: 'VOLUNTEER',
+       };
+ 
+-      // Mark round evaluated
+       const roundDoc = store.rounds.get(l2Round.id);
+       roundDoc.status = 'evaluated';
+       store.rounds.set(l2Round.id, roundDoc);
+@@ -814,11 +763,9 @@ async function runWalletWorkflowTests() {
+       assert.strictEqual(settleRes.body.settlement.targetBalance, 100);
+       assert.strictEqual(settleRes.body.settlement.deltaAmount, 100);
+ 
+-      // Verify student balance in store is now 100
+       const updatedStudent = store.students.get(student._id.toString());
+       assert.strictEqual(updatedStudent.walletBalance, 100);
+ 
+-      // Verify repeated settlement is REJECTED with 409 ROUND_ALREADY_SETTLED
+       const repeatRes = mockRes();
+       await settleStudentRoundByUsn(settleReq, repeatRes);
+ 
+@@ -826,13 +773,9 @@ async function runWalletWorkflowTests() {
+       assert.strictEqual(repeatRes.body.success, false);
+       assert.strictEqual(repeatRes.body.code, 'ROUND_ALREADY_SETTLED');
+ 
+-      // Verify student balance remains 100 (not 200!)
+       assert.strictEqual(updatedStudent.walletBalance, 100);
+     });
+ 
+-    // -------------------------------------------------------------
+-    // Test 11: Free entry at Level 5 (entryRiskAmount = 0, balance unchanged)
+-    // -------------------------------------------------------------
+     await test('11. Level 5 free entry (entryRiskAmount = 0) allocates without deducting balance', async () => {
+       const studentId = new mongoose.Types.ObjectId();
+       const l5Student = {
+@@ -868,9 +811,6 @@ async function runWalletWorkflowTests() {
+       assert.strictEqual(dbStudent.totalRisked, 300); // Not changed!
+     });
+ 
+-    // -------------------------------------------------------------
+-    // Test 12: Unregistered student cannot allocate (HTTP 403)
+-    // -------------------------------------------------------------
+     await test('12. Unregistered student allocation is rejected with 403 REGISTRATION_INCOMPLETE', async () => {
+       const studentId = new mongoose.Types.ObjectId();
+       const unregStudent = {
+@@ -895,9 +835,6 @@ async function runWalletWorkflowTests() {
+       assert.strictEqual(res.body.code, 'REGISTRATION_INCOMPLETE');
+     });
+ 
+-    // -------------------------------------------------------------
+-    // Test 13: Eliminated student cannot allocate (HTTP 409)
+-    // -------------------------------------------------------------
+     await test('13. Eliminated student allocation is rejected with 409 STUDENT_ELIMINATED', async () => {
+       const studentId = new mongoose.Types.ObjectId();
+       const elimStudent = {
+@@ -922,9 +859,6 @@ async function runWalletWorkflowTests() {
+       assert.strictEqual(res.body.code, 'STUDENT_ELIMINATED');
+     });
+ 
+-    // -------------------------------------------------------------
+-    // Test 14: Completed student cannot allocate (HTTP 409)
+-    // -------------------------------------------------------------
+     await test('14. Completed competition student allocation is rejected with 409 COMPETITION_COMPLETED', async () => {
+       const studentId = new mongoose.Types.ObjectId();
+       const champStudent = {
+@@ -949,9 +883,6 @@ async function runWalletWorkflowTests() {
+       assert.strictEqual(res.body.code, 'COMPETITION_COMPLETED');
+     });
+ 
+-    // -------------------------------------------------------------
+-    // Test 15: Progression reuses settlement and advances level without double-counting totalRisked
+-    // -------------------------------------------------------------
+     await test('15. Student progression advances to Level 3 and preserves totalRisked accurately', async () => {
+       const student = store.students.get(l2Round.studentId);
+       const volunteer = {
+@@ -978,7 +909,6 @@ async function runWalletWorkflowTests() {
+       assert.strictEqual(progRes.body.student.walletBalance, 100);
+       assert.strictEqual(progRes.body.student.totalRisked, 50, 'totalRisked must remain 50 (not 100!)');
+ 
+-      // Verify repeated progression is rejected with 409 ROUND_ALREADY_PROGRESSED
+       const repeatProgRes = mockRes();
+       await progressStudentRoundByUsn(progReq, repeatProgRes);
+ 
+@@ -987,9 +917,6 @@ async function runWalletWorkflowTests() {
+       assert.strictEqual(repeatProgRes.body.code, 'ROUND_ALREADY_PROGRESSED');
+     });
+ 
+-    // -------------------------------------------------------------
+-    // Test 16: Concurrent duplicate allocation in session.withTransaction returns HTTP 200 with isExisting: true
+-    // -------------------------------------------------------------
+     await test('16. Concurrent race-allocated round in session.withTransaction returns HTTP 200 with isExisting: true and no double deduction', async () => {
+       const studentId = new mongoose.Types.ObjectId();
+       const raceStudent = {
+@@ -1006,7 +933,6 @@ async function runWalletWorkflowTests() {
+       };
+       store.students.set(studentId.toString(), raceStudent);
+ 
+-      // Create pre-existing round and debit tx simulating concurrent allocation committing right as this request enters transaction
+       const raceRoundId = new mongoose.Types.ObjectId();
+       const sampleQId = new mongoose.Types.ObjectId();
+       const existingRoundDoc = {
+@@ -1034,14 +960,12 @@ async function runWalletWorkflowTests() {
+       };
+       store.transactions.set(raceTxId.toString(), existingTxDoc);
+ 
+-      // Simulate step 5 pre-check missing the round, but session.withTransaction() detecting it
+       let step5Checked = false;
+       const baseRoundFindOne = Round.findOne;
+       Round.findOne = function (filter) {
+         if (filter.studentId && filter.studentId.toString() === studentId.toString() && filter.levelNumber === 2) {
+           const query = {
+             session(sess) {
+-              // With session: returns the existing round!
+               return {
+                 then(resolve) { resolve({ ...existingRoundDoc }); },
+                 exec: async () => ({ ...existingRoundDoc }),
+@@ -1083,7 +1007,6 @@ async function runWalletWorkflowTests() {
+         assert.strictEqual(res.body.transaction.id, raceTxId.toString());
+         assert.strictEqual(res.body.transaction.type, 'STAKE_DEBIT');
+ 
+-        // Verify balance was NOT deducted again (still 150)
+         const dbStudent = store.students.get(studentId.toString());
+         assert.strictEqual(dbStudent.walletBalance, 150, 'Wallet balance must not be deducted again');
+         assert.strictEqual(dbStudent.totalRisked, 50, 'Total risked must remain 50');
+@@ -1093,7 +1016,6 @@ async function runWalletWorkflowTests() {
+     });
+ 
+   } finally {
+-    // Restore original Mongoose methods
+     Student.findById = origStudentFindById;
+     Student.findOne = origStudentFindOne;
+     Student.findOneAndUpdate = origStudentFindOneAndUpdate;
+diff --git a/src/App.jsx b/src/App.jsx
+index a203e39..4c2b22d 100644
+--- a/src/App.jsx
++++ b/src/App.jsx
+@@ -13,7 +13,6 @@ import ProfilePage from './pages/ProfilePage';
+ import WalletPage from './pages/WalletPage';
+ import HistoryPage from './pages/HistoryPage';
+ 
+-// Admin imports
+ import AdminLayout from './components/admin/AdminLayout';
+ import AdminDashboard from './pages/admin/AdminDashboard';
+ import QuestionManagement from './pages/admin/QuestionManagement';
+@@ -25,7 +24,6 @@ import RoundsManagement from './pages/admin/RoundsManagement';
+ import TransactionsManagement from './pages/admin/TransactionsManagement';
+ import AdminLogin from './pages/admin/AdminLogin';
+ 
+-// Volunteer imports
+ import VolunteerLayout from './components/volunteer/VolunteerLayout';
+ import VolunteerDashboard from './pages/volunteer/VolunteerDashboard';
+ import VolunteerLogin from './pages/volunteer/VolunteerLogin';
+diff --git a/src/components/admin/admin.css b/src/components/admin/admin.css
+index caa3923..30b6003 100644
+--- a/src/components/admin/admin.css
++++ b/src/components/admin/admin.css
+@@ -1,5 +1,3 @@
+-/* ADMIN DASHBOARD */
+-
+ .admin-dashboard {
+   display: flex;
+   flex-direction: column;
+@@ -79,7 +77,6 @@
+     grid-template-columns: 1fr;
+   }
+ }
+-/* ADMIN LAYOUT */
+ 
+ .admin-shell {
+   min-height: 100vh;
+diff --git a/src/pages/admin/LevelManagement.jsx b/src/pages/admin/LevelManagement.jsx
+index 3b7fd24..0d93789 100644
+--- a/src/pages/admin/LevelManagement.jsx
++++ b/src/pages/admin/LevelManagement.jsx
+@@ -120,7 +120,6 @@ export default function LevelManagement() {
+       {error && <div className="levels-demo-note" role="alert"><AlertCircle size={17} />{error} <button type="button" onClick={loadLevels}>Retry</button></div>}
+       {loading && <div className="levels-demo-note" role="status">Loading level configuration…</div>}
+ 
+-      {/* Overview */}
+       <section className="levels-overview">
+         <OverviewCard
+           icon={<Layers3 />}
+@@ -144,7 +143,6 @@ export default function LevelManagement() {
+         />
+       </section>
+ 
+-      {/* Level cards */}
+       <section className="levels-section">
+         <div className="levels-section-heading">
+           <div>
+@@ -236,7 +234,6 @@ export default function LevelManagement() {
+         </div>
+       </section>
+ 
+-      {/* Question allocation */}
+       <section className="levels-section allocation-panel">
+         <div className="levels-section-heading">
+           <div>
+@@ -277,7 +274,6 @@ export default function LevelManagement() {
+         </div>
+       </section>
+ 
+-      {/* Rules */}
+       <section className="levels-section rules-panel">
+         <div className="levels-section-heading">
+           <div>
+@@ -315,7 +311,6 @@ export default function LevelManagement() {
+         </p>
+       </section>
+ 
+-      {/* Edit modal */}
+       {editingLevel && (
+         <div
+           className="level-modal-overlay"
+diff --git a/src/pages/admin/QuestionManagement.jsx b/src/pages/admin/QuestionManagement.jsx
+index c537463..6889981 100644
+--- a/src/pages/admin/QuestionManagement.jsx
++++ b/src/pages/admin/QuestionManagement.jsx
+@@ -152,7 +152,6 @@ export default function QuestionManagement() {
+   return (
+     <div className="question-management">
+ 
+-      {/* PAGE HEADER */}
+       <div className="question-page-header">
+         <div>
+           <span className="admin-eyebrow">
+@@ -173,7 +172,6 @@ export default function QuestionManagement() {
+         </button>
+       </div>
+ 
+-      {/* STATISTICS */}
+       <div className="question-summary">
+         <div className="question-summary-card">
+           <span>Total Questions</span>
+@@ -198,7 +196,6 @@ export default function QuestionManagement() {
+       {error && <p role="alert">{error} <button type="button" onClick={loadQuestions}>Retry</button></p>}
+       {loading && <p role="status">Loading questions…</p>}
+ 
+-      {/* SEARCH AND FILTER */}
+       <div className="question-toolbar">
+         <div className="question-search">
+           <Search size={18} />
+@@ -221,7 +218,6 @@ export default function QuestionManagement() {
+         </select>
+       </div>
+ 
+-      {/* QUESTION TABLE */}
+       <div className="question-table-container">
+         <div className="question-table-heading">
+           <div>
+@@ -310,7 +306,6 @@ export default function QuestionManagement() {
+         </div>
+       </div>
+ 
+-      {/* ADD / EDIT FORM */}
+       {showForm && (
+         <div className="question-modal-overlay">
+           <div className="question-modal">
+diff --git a/src/pages/admin/participants.css b/src/pages/admin/participants.css
+index 9bc42b9..8a560a0 100644
+--- a/src/pages/admin/participants.css
++++ b/src/pages/admin/participants.css
+@@ -1,5 +1,3 @@
+-/* PARTICIPANT MANAGEMENT */
+-
+ .participant-management {
+   display: flex;
+   flex-direction: column;
+@@ -7,8 +5,6 @@
+   width: 100%;
+ }
+ 
+-/* PAGE HEADER */
+-
+ .participant-page-header h1 {
+   font-size: 32px;
+   font-weight: 700;
+@@ -21,8 +17,6 @@
+   font-size: 13px;
+ }
+ 
+-/* SUMMARY CARDS */
+-
+ .participant-summary {
+   display: grid;
+   grid-template-columns: repeat(4, minmax(0, 1fr));
+@@ -52,8 +46,6 @@
+   color: var(--forest);
+ }
+ 
+-/* SEARCH AND FILTER */
+-
+ .participant-toolbar {
+   display: flex;
+   align-items: center;
+@@ -103,8 +95,6 @@
+   cursor: pointer;
+ }
+ 
+-/* TABLE */
+-
+ .participant-table-container {
+   background: var(--paper);
+   border: 1px solid var(--forest-muted);
+@@ -179,8 +169,6 @@
+   font-size: 10px;
+ }
+ 
+-/* STATUS LABELS */
+-
+ .participant-status {
+   display: inline-block;
+   padding: 6px 9px;
+@@ -204,8 +192,6 @@
+   color: #55558a;
+ }
+ 
+-/* VIEW BUTTON */
+-
+ .participant-view-btn {
+   display: flex;
+   align-items: center;
+@@ -231,8 +217,6 @@
+   white-space: normal;
+ }
+ 
+-/* DETAILS MODAL */
+-
+ .participant-modal-overlay {
+   position: fixed;
+   inset: 0;
+@@ -320,8 +304,6 @@
+   cursor: pointer;
+ }
+ 
+-/* RESPONSIVE */
+-
+ @media (max-width: 900px) {
+   .participant-summary {
+     grid-template-columns: repeat(2, minmax(0, 1fr));
+diff --git a/src/pages/admin/questions.css b/src/pages/admin/questions.css
+index 8e06610..1c9d542 100644
+--- a/src/pages/admin/questions.css
++++ b/src/pages/admin/questions.css
+@@ -1,5 +1,3 @@
+-/* QUESTION MANAGEMENT */
+-
+ .question-management {
+   display: flex;
+   flex-direction: column;
+@@ -7,8 +5,6 @@
+   width: 100%;
+ }
+ 
+-/* PAGE HEADER */
+-
+ .question-page-header {
+   display: flex;
+   justify-content: space-between;
+@@ -49,8 +45,6 @@
+   transform: translateY(-2px);
+ }
+ 
+-/* SUMMARY CARDS */
+-
+ .question-summary {
+   display: grid;
+   grid-template-columns: repeat(3, minmax(0, 1fr));
+@@ -77,8 +71,6 @@
+   color: var(--forest);
+ }
+ 
+-/* SEARCH AND FILTER */
+-
+ .question-toolbar {
+   display: flex;
+   gap: 14px;
+@@ -129,8 +121,6 @@
+   cursor: pointer;
+ }
+ 
+-/* QUESTION TABLE */
+-
+ .question-table-container {
+   background: var(--paper);
+   border: 1px solid var(--forest-muted);
+@@ -204,8 +194,6 @@
+   color: #343d38;
+ }
+ 
+-/* DIFFICULTY LABELS */
+-
+ .question-difficulty,
+ .question-status {
+   display: inline-block;
+@@ -235,8 +223,6 @@
+   color: #806527;
+ }
+ 
+-/* ACTION BUTTONS */
+-
+ .question-actions {
+   display: flex;
+   align-items: center;
+@@ -272,8 +258,6 @@
+   white-space: normal;
+ }
+ 
+-/* ADD / EDIT MODAL */
+-
+ .question-modal-overlay {
+   position: fixed;
+   inset: 0;
+@@ -397,8 +381,6 @@
+   color: var(--paper);
+ }
+ 
+-/* RESPONSIVE DESIGN */
+-
+ @media (max-width: 850px) {
+   .question-summary {
+     grid-template-columns: repeat(2, minmax(0, 1fr));
+diff --git a/src/pages/admin/volunteer.css b/src/pages/admin/volunteer.css
+index 18b84cb..abc7dbf 100644
+--- a/src/pages/admin/volunteer.css
++++ b/src/pages/admin/volunteer.css
+@@ -1,7 +1,3 @@
+-/* =====================================
+-   VOLUNTEER MANAGEMENT
+-===================================== */
+-
+ .volunteer-management {
+   display: flex;
+   flex-direction: column;
+@@ -10,8 +6,6 @@
+   color: #343d38;
+ }
+ 
+-/* HEADER */
+-
+ .volunteer-page-header {
+   display: flex;
+   justify-content: space-between;
+@@ -49,8 +43,6 @@
+   background: var(--ink);
+ }
+ 
+-/* SUMMARY CARDS */
+-
+ .volunteer-summary {
+   display: grid;
+   grid-template-columns: repeat(3, minmax(0, 1fr));
+@@ -81,8 +73,6 @@
+   color: var(--forest);
+ }
+ 
+-/* SEARCH AND FILTER */
+-
+ .volunteer-toolbar {
+   display: flex;
+   gap: 14px;
+@@ -138,8 +128,6 @@
+   line-height: 1.5;
+ }
+ 
+-/* VOLUNTEER TABLE */
+-
+ .volunteer-table-container {
+   background: var(--paper);
+   border: 1px solid var(--forest-muted);
+@@ -216,8 +204,6 @@
+   opacity: 1;
+ }
+ 
+-/* STATUS LABELS */
+-
+ .volunteer-status {
+   display: inline-block;
+   padding: 6px 9px;
+@@ -235,8 +221,6 @@
+   color: #9a482d;
+ }
+ 
+-/* ACTION ICONS */
+-
+ .volunteer-actions {
+   display: flex;
+   align-items: center;
+@@ -280,8 +264,6 @@
+   color: #59645e !important;
+ }
+ 
+-/* MODALS */
+-
+ .volunteer-modal-overlay {
+   position: fixed;
+   inset: 0;
+@@ -328,8 +310,6 @@
+   cursor: pointer;
+ }
+ 
+-/* FORM */
+-
+ .volunteer-form-field {
+   display: flex;
+   flex-direction: column;
+@@ -384,8 +364,6 @@
+   color: var(--paper);
+ }
+ 
+-/* DETAILS POPUP */
+-
+ .volunteer-detail-list {
+   display: flex;
+   flex-direction: column;
+@@ -422,8 +400,6 @@
+   cursor: pointer;
+ }
+ 
+-/* RESPONSIVE */
+-
+ @media (max-width: 850px) {
+   .volunteer-summary {
+     grid-template-columns: repeat(2, minmax(0, 1fr));
+diff --git a/src/pages/volunteer/volunteer-dashboard.css b/src/pages/volunteer/volunteer-dashboard.css
+index 8ea7c15..107e087 100644
+--- a/src/pages/volunteer/volunteer-dashboard.css
++++ b/src/pages/volunteer/volunteer-dashboard.css
+@@ -310,7 +310,6 @@
+   .vol-participants-section {
+     padding: 15px;
+   }
+-  /* Evaluation Progress */
+ 
+ .vol-progress-track {
+   width: 100%;
+diff --git a/src/styles.css b/src/styles.css
+index b5dc406..297435b 100644
+--- a/src/styles.css
++++ b/src/styles.css
+@@ -132,7 +132,6 @@ h1, h2, h3, h4, p { margin-top: 0; }
+ .dashboard-links small { color: var(--subtle); font-size: 10px; }
+ .site-footer { min-height: 58px; padding: 15px clamp(22px, 6.3vw, 104px); border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 15px; color: var(--subtle); font-size: 10px; }
+ 
+-/* Round workspace */
+ .round-page { padding-top: 0; }
+ .back-link { display: inline-flex; margin: 2px 0 27px; font-size: 11px; color: var(--subtle); transition: color .16s ease; }
+ .back-link:hover { color: var(--forest); }
+@@ -198,7 +197,6 @@ h1, h2, h3, h4, p { margin-top: 0; }
+ .round-readonly-note { font-size: 10px; line-height: 1.6; color: var(--subtle); margin: 14px 0 0; }
+ .reset-round { margin-top: 14px; border: 0; background: none; cursor: pointer; color: var(--subtle); }
+ 
+-/* Competition-wide record cards */
+ .record-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 31px; }
+ .record-card { min-height: 265px; padding: clamp(20px, 3.5vw, 31px); background: var(--forest); color: var(--white); display: flex; flex-direction: column; position: relative; overflow: hidden; }
+ .record-card::after { content: ''; position: absolute; width: 210px; height: 210px; right: -77px; top: -87px; border: 1px solid rgb(255 255 255 / 14%); transform: rotate(45deg); box-shadow: 0 0 0 22px rgb(255 255 255 / 3%), 0 0 0 44px rgb(255 255 255 / 3%); pointer-events: none; }
+@@ -216,7 +214,6 @@ h1, h2, h3, h4, p { margin-top: 0; }
+ .record-footnote svg { flex: 0 0 auto; margin-top: 1px; }
+ .record-source { margin: 12px 0 0; font: 9px var(--mono); color: #87928b; text-transform: uppercase; letter-spacing: .05em; }
+ 
+-/* Student profile */
+ .profile-sheet { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 18px 21px; padding: clamp(20px, 4vw, 34px); border: 1px solid var(--line); background: var(--white); margin-top: 29px; }
+ .profile-avatar { width: 76px; height: 76px; display: grid; place-items: center; background: var(--forest); color: var(--lime); font: 700 20px var(--mono); }
+ .profile-name { align-self: center; min-width: 0; }
+@@ -234,7 +231,6 @@ h1, h2, h3, h4, p { margin-top: 0; }
+ .profile-competition strong { font: 500 12px var(--mono); color: var(--lime); overflow-wrap: anywhere; }
+ .profile-note { max-width: 740px; margin: 14px 0 0; color: var(--subtle); font-size: 10px; line-height: 1.65; }
+ 
+-/* Outcome states */
+ .outcome-screen { width: min(100% - 48px, 1010px); margin: 0 auto; padding: 31px 0 24px; min-height: 100vh; display: flex; flex-direction: column; }
+ .outcome-topline { display: flex; justify-content: space-between; align-items: center; gap: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--line); }
+ .outcome-topline>span { font: 9px var(--mono); letter-spacing: .07em; color: var(--subtle); text-align: right; }
+@@ -265,7 +261,6 @@ h1, h2, h3, h4, p { margin-top: 0; }
+ .outcome-footer>span { display: flex; align-items: center; gap: 7px; }
+ .outcome-footer button { border: 0; background: none; font-size: 10px; text-decoration: underline; cursor: pointer; color: var(--subtle); }
+ 
+-/* Login and registration */
+ .auth-shell { min-height: 100vh; padding: 0 clamp(22px, 8vw, 128px); display: flex; flex-direction: column; background: var(--paper); }
+ .auth-header { height: 76px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+ .auth-header>span, .auth-footer { font: 9px var(--mono); letter-spacing: .08em; color: var(--subtle); }
+@@ -309,7 +304,6 @@ h1, h2, h3, h4, p { margin-top: 0; }
+ .auth-back { align-self: center; padding: 10px; color: var(--subtle); font-size: 10px; }
+ .auth-back a { display: flex; align-items: center; gap: 7px; }
+ 
+-/* Shared loading, empty and error feedback */
+ .state-message, .empty-state { display: flex; align-items: center; justify-content: center; min-height: 60vh; gap: 10px; color: var(--subtle); font-size: 12px; }
+ .empty-state { flex-direction: column; text-align: center; padding: 32px 15px; }
+ .empty-state h2 { margin: 0; color: var(--ink); font: 750 22px var(--display); }

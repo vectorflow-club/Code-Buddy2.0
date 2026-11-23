@@ -16,6 +16,7 @@
   --lime: #c9f45a;
   --muted: #dce3dc;
   --line: #cbd5cd;
+  --forest-muted: #cbd5cd;
   --subtle: #64716b;
   --mono: 'DM Mono', monospace;
   --display: 'Manrope', 'DM Sans', sans-serif;
@@ -434,7 +435,7 @@ h1, h2, h3, h4, p { margin-top: 0; }
 .wallet-ledger { margin-top: 34px; border-top: 1px solid var(--line, #d7ddd5); }
 .wallet-ledger-heading { display: flex; align-items: center; gap: 13px; padding: 22px 0; border-bottom: 1px solid var(--line, #d7ddd5); }
 .wallet-ledger-heading h2 { margin: 0; font-size: 21px; }
-.wallet-ledger-heading p { margin: 4px 0 0; color: var(--muted, #68716b); font-size: 13px; }
+.wallet-ledger-heading p { margin: 4px 0 0; color: var(--subtle); font-size: 13px; }
 .transaction-row { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 17px 0; border-bottom: 1px solid var(--line, #d7ddd5); }
 .transaction-mark { display: grid; width: 36px; height: 36px; place-items: center; background: #e9eee8; color: #173d32; }
 .transaction-description, .transaction-amount { display: grid; gap: 5px; min-width: 0; }
@@ -445,18 +446,18 @@ h1, h2, h3, h4, p { margin-top: 0; }
 .ledger-pagination button { border: 1px solid #c7cec6; background: #fff; color: #101a18; padding: 9px 13px; cursor: pointer; }
 .ledger-pagination button:disabled { cursor: not-allowed; opacity: .5; }
 .personal-rank { display: flex; align-items: baseline; gap: 14px; margin: 18px 0 28px; padding: 16px 0; border-top: 1px solid var(--line, #d7ddd5); border-bottom: 1px solid var(--line, #d7ddd5); }
-.personal-rank > span { color: var(--muted, #68716b); font-size: 11px; font-weight: 700; letter-spacing: .09em; }
-.personal-rank > strong { color: #173d32; font-family: var(--font-mono, monospace); font-size: 24px; }
-.personal-rank > small { color: var(--muted, #68716b); }
+.personal-rank > span { color: var(--subtle); font-size: 11px; font-weight: 700; letter-spacing: .09em; }
+.personal-rank > strong { color: #173d32; font-family: var(--mono); font-size: 24px; }
+.personal-rank > small { color: var(--subtle); }
 .history-list { display: grid; gap: 14px; }
 .history-item { padding: 22px 24px; border: 1px solid var(--line, #d7ddd5); background: #fff; }
 .history-item-top, .history-item-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.history-level { color: #173d32; font-family: var(--font-mono, monospace); font-size: 12px; font-weight: 700; }
-.history-status { padding: 5px 8px; background: #e9eee8; color: #45534b; font-family: var(--font-mono, monospace); font-size: 10px; text-transform: uppercase; }
+.history-level { color: #173d32; font-family: var(--mono); font-size: 12px; font-weight: 700; }
+.history-status { padding: 5px 8px; background: #e9eee8; color: #45534b; font-family: var(--mono); font-size: 10px; text-transform: uppercase; }
 .history-status-pass { background: #e9f3d3; color: #28451b; }
 .history-status-fail { background: #f8e4df; color: #7b2e22; }
 .history-item h2 { margin: 18px 0 6px; color: #101a18; font-size: 20px; }
-.history-question-meta, .history-remarks { color: var(--muted, #68716b); font-size: 13px; overflow-wrap: anywhere; }
+.history-question-meta, .history-remarks { color: var(--subtle); font-size: 13px; overflow-wrap: anywhere; }
 .history-remarks { display: grid; gap: 5px; margin: 16px 0; padding: 12px 14px; border-left: 2px solid #c9f45a; background: #f7f8f3; }
 .history-remarks strong { color: #173d32; font-size: 11px; text-transform: uppercase; }
 .history-item-footer { justify-content: flex-start; flex-wrap: wrap; margin-top: 18px; padding-top: 12px; border-top: 1px solid #e7e7e1; color: #68716b; font-size: 12px; }

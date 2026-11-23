@@ -8,23 +8,7 @@ import {
   Plus,
 } from "lucide-react";
 import "./timer.css";
-
-function formatTime(value) {
-  const totalSeconds = Math.max(0, Math.floor(value));
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-}
-
-function formatDeadline(value) {
-  if (!value) return "Unavailable";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Unavailable";
-
-  return date.toLocaleString();
-}
+import { formatClock, formatDate } from "../../utils/formatters";
 
 export default function TimerPanel({
   levelNumber,
@@ -120,7 +104,7 @@ export default function TimerPanel({
         } ${isFinished ? "timer-finished" : ""}`}
       >
         <span className="timer-time">
-          {canDisplayCountdown ? formatTime(countdownSeconds) : "--:--"}
+          {canDisplayCountdown ? formatClock(countdownSeconds) : "--:--"}
         </span>
 
         <span className="timer-status">
@@ -233,7 +217,7 @@ export default function TimerPanel({
 
       <div className="timer-duration-note">
         <span>{levelNumber ? `Level ${levelNumber}` : "Round"}</span>
-        <span>Deadline: {formatDeadline(deadline)}</span>
+        <span>Deadline: {formatDate(deadline, "Unavailable")}</span>
       </div>
     </section>
   );

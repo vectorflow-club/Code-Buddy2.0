@@ -1,6 +1,5 @@
 import "./admin.css";
-import { useCallback, useEffect, useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet } from "react-router-dom";
 import {
   LayoutDashboard,
   BookOpen,
@@ -14,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { Brand } from "../ui";
+import { useStaffSession } from "../../hooks/useStaffSession";
 import {
   clearAdminSession,
   getAdminSession,
@@ -32,46 +32,20 @@ const navItems = [
   { to: "/admin/transactions", label: "Transactions", icon: Receipt },
 ];
 
+// Module-level so the session hook's validate callback stays stable.
+const ADMIN_EXPIRED_CODES = ["SESSION_EXPIRED", "INVALID_SESSION"];
+
 export default function AdminLayout() {
-  const navigate = useNavigate();
-  const [session, setSession] = useState(null);
-  const [checking, setChecking] = useState(true);
-  const [validationError, setValidationError] = useState("");
-
-  const validateSession = useCallback(async () => {
-    const storedSession = getAdminSession();
-    if (!storedSession) {
-      navigate("/admin/login", { replace: true });
-      return;
-    }
-
-    setChecking(true);
-    setValidationError("");
-    try {
-      const admin = await validateAdminSession(storedSession.token);
-      const refreshedSession = { ...storedSession, admin };
-      storeAdminSession(refreshedSession);
-      setSession(refreshedSession);
-    } catch (error) {
-      if (error.code === "SESSION_EXPIRED" || error.code === "INVALID_SESSION") {
-        clearAdminSession();
-        navigate("/admin/login", { replace: true });
-      } else {
-        setValidationError(error.message || "Could not validate the admin session.");
-      }
-    } finally {
-      setChecking(false);
-    }
-  }, [navigate]);
-
-  useEffect(() => {
-    validateSession();
-  }, [validateSession]);
-
-  const handleLogout = () => {
-    clearAdminSession();
-    navigate("/admin/login", { replace: true });
-  };
+  const { session, checking, validationError, validateSession, handleLogout } = useStaffSession({
+    getSession: getAdminSession,
+    storeSession: storeAdminSession,
+    clearSession: clearAdminSession,
+    validateToken: validateAdminSession,
+    loginPath: "/admin/login",
+    profileKey: "admin",
+    expiredCodes: ADMIN_EXPIRED_CODES,
+    validateErrorMessage: "Could not validate the admin session.",
+  });
 
   if (checking) return <div role="status" style={{ padding: 24 }}>Checking admin session…</div>;
   if (!session && validationError) {
