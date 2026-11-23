@@ -66,6 +66,11 @@ const getMongoConnectionStatus = () => {
   return connectionStates[mongoose.connection.readyState];
 };
 
+// Cached MongoDB connect promise, shared across requests in one serverless
+// instance. Vercel reuses warm instances, so the first request connects and
+// later requests reuse the same connection instead of opening a new one.
+let dbConnectPromise = null;
+
 mongoose.connection.on('connected', () => {
   console.log('MongoDB Atlas connection established successfully.');
 });
@@ -75,6 +80,9 @@ mongoose.connection.on('error', (err) => {
 });
 
 mongoose.connection.on('disconnected', () => {
+  // Drop the cached promise so the next request reconnects instead of
+  // reusing a dead connection.
+  dbConnectPromise = null;
   console.warn('MongoDB Atlas disconnected.');
 });
 
@@ -105,20 +113,34 @@ app.use(notFoundHandler);
 // 10. Centralized 4-argument Express error handler (must be registered last)
 app.use(errorHandler);
 
+// Connect to MongoDB. Throws on failure and never exits: the local path
+// (startServer) converts the throw into process.exit, and the serverless
+// entry converts it into a 500 response.
 const connectDB = async () => {
   const mongoUri = process.env.MONGO_URI;
 
   if (!mongoUri) {
-    console.error('Database connection error: MONGO_URI is not defined in the backend environment.');
-    process.exit(1);
+    throw new Error('MONGO_URI is not defined in the backend environment.');
   }
 
-  try {
-    await mongoose.connect(mongoUri);
-  } catch (error) {
-    console.error(`Database connection error: ${error.message}`);
-    process.exit(1);
+  await mongoose.connect(mongoUri);
+};
+
+// Serverless-safe connect: returns immediately when already connected, and
+// shares one in-flight connect promise across concurrent requests so a warm
+// instance never opens a second connection. A failed connect clears the
+// cache so the next request retries instead of reusing the rejection.
+const ensureDbConnected = async () => {
+  if (mongoose.connection.readyState === 1) {
+    return;
   }
+  if (!dbConnectPromise) {
+    dbConnectPromise = connectDB().catch((error) => {
+      dbConnectPromise = null;
+      throw error;
+    });
+  }
+  await dbConnectPromise;
 };
 
 const startServer = async () => {
@@ -131,7 +153,12 @@ const startServer = async () => {
     process.exit(1);
   }
 
-  await connectDB();
+  try {
+    await connectDB();
+  } catch (error) {
+    console.error(`Database connection error: ${error.message}`);
+    process.exit(1);
+  }
 
   app.listen(PORT, () => {
     console.log(`Code Buddy server running on port ${PORT}`);
@@ -143,3 +170,4 @@ if (require.main === module) {
 }
 
 module.exports = app;
+module.exports.ensureDbConnected = ensureDbConnected;
