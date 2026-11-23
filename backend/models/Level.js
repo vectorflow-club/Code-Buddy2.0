@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { TOTAL_LEVELS } = require('../constants');
 
 const levelSchema = new mongoose.Schema(
   {
@@ -8,7 +9,7 @@ const levelSchema = new mongoose.Schema(
       required: [true, 'Level number is required'],
       unique: true,
       min: [1, 'Level number cannot be less than 1'],
-      max: [6, 'Level number cannot exceed 6'],
+      max: [TOTAL_LEVELS, `Level number cannot exceed ${TOTAL_LEVELS}`],
       index: true,
     },
     // Display name (e.g., 'Level 1', 'Final level')

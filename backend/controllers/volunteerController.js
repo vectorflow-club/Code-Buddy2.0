@@ -8,6 +8,7 @@ const {
   deriveStudentRoundAvailability,
   computeTimerFields,
 } = require('./roundController');
+const { TOTAL_LEVELS, USN_REGEX, TRANSACTION_TYPES } = require('../constants');
 
 /**
  * Format student identity, registration, and competition status for Volunteer inspection.
@@ -46,8 +47,7 @@ const resolveRegisteredStudent = async (rawUsn) => {
   }
 
   const normalizedUsn = rawUsn.trim().toUpperCase();
-  const usnRegex = /^[A-Z0-9]{8,15}$/i;
-  if (!usnRegex.test(normalizedUsn)) {
+  if (!USN_REGEX.test(normalizedUsn)) {
     return {
       error: {
         status: 400,
@@ -79,7 +79,7 @@ const resolveRegisteredStudent = async (rawUsn) => {
   }
 
   const currentLevel = student.currentLevel;
-  if (!currentLevel || currentLevel < 1 || currentLevel > 6) {
+  if (!currentLevel || currentLevel < 1 || currentLevel > TOTAL_LEVELS) {
     return {
       error: {
         status: 400,
@@ -960,15 +960,15 @@ const createSettlementHttpError = (status, code, message) => {
  */
 const resolveSettlementTransactionType = (evaluationStatus, deltaAmount, levelConfig) => {
   if (evaluationStatus === 'PASS') {
-    return 'REWARD_CREDIT';
+    return TRANSACTION_TYPES.REWARD_CREDIT;
   }
   if (deltaAmount < 0) {
-    return 'STAKE_DEBIT';
+    return TRANSACTION_TYPES.STAKE_DEBIT;
   }
   if (levelConfig.isSafeZone === true) {
-    return 'SAFE_ZONE_PAYOUT';
+    return TRANSACTION_TYPES.SAFE_ZONE_PAYOUT;
   }
-  return 'ROUND_SETTLEMENT';
+  return TRANSACTION_TYPES.ROUND_SETTLEMENT;
 };
 
 /**
@@ -1006,7 +1006,7 @@ const loadTxStudentRoundAndLevel = async ({
   }
 
   const sessionCurrentLevel = sessionStudent.currentLevel;
-  if (!sessionCurrentLevel || sessionCurrentLevel < 1 || sessionCurrentLevel > 6) {
+  if (!sessionCurrentLevel || sessionCurrentLevel < 1 || sessionCurrentLevel > TOTAL_LEVELS) {
     throw createSettlementHttpError(400, 'INVALID_STUDENT_LEVEL', 'Student current level is invalid.');
   }
 
@@ -1301,7 +1301,7 @@ const resolveExistingSettlementInTx = async ({
   }
 
   const previousWalletBalance =
-    existingTransaction.type === 'STAKE_DEBIT'
+    existingTransaction.type === TRANSACTION_TYPES.STAKE_DEBIT
       ? existingTransaction.balanceAfter + existingTransaction.amount
       : existingTransaction.balanceAfter - existingTransaction.amount;
 
@@ -1699,7 +1699,7 @@ const progressStudentRoundByUsn = async (req, res) => {
 
       // 6. Compute progression, safe-zone protection (strictly L1 & L4 on PASS), and cumulative statistics
       const isPass = finalizedEvaluation.status === 'PASS';
-      const isFinalLevel = Boolean(levelConfig.isFinal) || sessionCurrentLevel === 6;
+      const isFinalLevel = Boolean(levelConfig.isFinal) || sessionCurrentLevel === TOTAL_LEVELS;
       const isSafeZoneCheckpoint =
         isPass && Boolean(levelConfig.isSafeZone) && Number(levelConfig.safeZoneAmount) > 0;
 
@@ -1719,7 +1719,7 @@ const progressStudentRoundByUsn = async (req, res) => {
       // Positive incremental PASS reward only (L1 FAIL safe-zone payout never increments totalEarned)
       const earnedIncrement = isPass ? Math.max(0, deltaAmount) : 0;
       const hasEntryDebit = Boolean(
-        await Transaction.exists({ roundId: sessionRound._id, type: 'STAKE_DEBIT' }).session(session)
+        await Transaction.exists({ roundId: sessionRound._id, type: TRANSACTION_TYPES.STAKE_DEBIT }).session(session)
       );
       const riskedIncrement = hasEntryDebit ? 0 : entryRiskAmount;
       const nextTotalEarned = prevTotalEarned + earnedIncrement;

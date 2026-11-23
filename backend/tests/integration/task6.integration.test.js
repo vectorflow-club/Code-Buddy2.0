@@ -587,7 +587,7 @@ async function run() {
 
       // 3. Dedicated FAIL tests across ALL six levels (L1..L6) verifying canonical losing payouts & elimination
       const failScenarios = [
-        { failAt: 1, expectedWallet: 50, expectedSafeZone: 0 },
+        { failAt: 1, expectedWallet: 0, expectedSafeZone: 0 },
         { failAt: 2, expectedWallet: 50, expectedSafeZone: 50 },
         { failAt: 3, expectedWallet: 50, expectedSafeZone: 50 },
         { failAt: 4, expectedWallet: 50, expectedSafeZone: 50 },

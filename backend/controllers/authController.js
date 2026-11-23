@@ -2,6 +2,7 @@ const { OAuth2Client } = require('google-auth-library');
 const { Student } = require('../models');
 const { signStudentToken } = require('../middleware/authMiddleware');
 const { resolveStudentLiveState } = require('./roundController');
+const { USN_REGEX, ACADEMIC_YEARS } = require('../constants');
 
 // Lazily initialize OAuth2Client to ensure process.env.GOOGLE_CLIENT_ID is read at runtime
 let googleClient = null;
@@ -299,8 +300,7 @@ const completeRegistration = async (req, res) => {
     const normalizedYear = year.trim();
 
     // 4. Validate USN format (/^[A-Z0-9]{8,15}$/i)
-    const usnRegex = /^[A-Z0-9]{8,15}$/i;
-    if (!usnRegex.test(normalizedUsn)) {
+    if (!USN_REGEX.test(normalizedUsn)) {
       return res.status(400).json({
         success: false,
         code: 'INVALID_USN_FORMAT',
@@ -309,8 +309,7 @@ const completeRegistration = async (req, res) => {
     }
 
     // 5. Validate academic year against the four schema enum values
-    const allowedYears = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
-    if (!allowedYears.includes(normalizedYear)) {
+    if (!ACADEMIC_YEARS.includes(normalizedYear)) {
       return res.status(400).json({
         success: false,
         code: 'INVALID_YEAR',

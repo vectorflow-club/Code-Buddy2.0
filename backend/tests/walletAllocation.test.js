@@ -24,6 +24,10 @@ const {
   Staff,
 } = require('../models');
 
+// Single ladder: level definitions live in the seed script, not in a second fixture copy.
+const { INITIAL_LEVELS } = require('../scripts/seedLevels');
+const { TOTAL_LEVELS } = require('../constants');
+
 // Test utilities
 const mockRes = () => {
   const res = {
@@ -40,82 +44,6 @@ const mockRes = () => {
   };
   return res;
 };
-
-// Canonical 6 levels
-const CANONICAL_LEVELS = [
-  {
-    number: 1,
-    name: 'Level 1',
-    entryRiskAmount: 0,
-    winningPayout: 50,
-    losingPayout: 50,
-    safeZoneAmount: 50,
-    isSafeZone: true,
-    isFinal: false,
-    durationSeconds: 180,
-    isActive: true,
-  },
-  {
-    number: 2,
-    name: 'Level 2',
-    entryRiskAmount: 50,
-    winningPayout: 100,
-    losingPayout: 50,
-    safeZoneAmount: 0,
-    isSafeZone: false,
-    isFinal: false,
-    durationSeconds: 180,
-    isActive: true,
-  },
-  {
-    number: 3,
-    name: 'Level 3',
-    entryRiskAmount: 100,
-    winningPayout: 150,
-    losingPayout: 50,
-    safeZoneAmount: 0,
-    isSafeZone: false,
-    isFinal: false,
-    durationSeconds: 180,
-    isActive: true,
-  },
-  {
-    number: 4,
-    name: 'Level 4',
-    entryRiskAmount: 150,
-    winningPayout: 250,
-    losingPayout: 50,
-    safeZoneAmount: 250,
-    isSafeZone: true,
-    isFinal: false,
-    durationSeconds: 180,
-    isActive: true,
-  },
-  {
-    number: 5,
-    name: 'Level 5',
-    entryRiskAmount: 0,
-    winningPayout: 350,
-    losingPayout: 250,
-    safeZoneAmount: 0,
-    isSafeZone: false,
-    isFinal: false,
-    durationSeconds: 180,
-    isActive: true,
-  },
-  {
-    number: 6,
-    name: 'Level 6',
-    entryRiskAmount: 100,
-    winningPayout: 500,
-    losingPayout: 250,
-    safeZoneAmount: 0,
-    isSafeZone: false,
-    isFinal: true,
-    durationSeconds: 180,
-    isActive: true,
-  },
-];
 
 async function runWalletWorkflowTests() {
   console.log('===============================================================');
@@ -151,13 +79,13 @@ async function runWalletWorkflowTests() {
   };
 
   // Populate canonical levels
-  CANONICAL_LEVELS.forEach((lvl) => {
+  INITIAL_LEVELS.forEach((lvl) => {
     const doc = { ...lvl, _id: new mongoose.Types.ObjectId() };
     store.levels.set(lvl.number, doc);
   });
 
   // Populate sample questions for levels 1-6
-  for (let lvl = 1; lvl <= 6; lvl++) {
+  for (let lvl = 1; lvl <= TOTAL_LEVELS; lvl++) {
     for (const diff of ['EASY', 'HARD']) {
       const qId = new mongoose.Types.ObjectId();
       store.questions.set(qId.toString(), {

@@ -7,6 +7,10 @@ dotenv.config({ path: path.join(__dirname, '../.env') });
 dotenv.config();
 
 const { Level } = require('../models');
+const {
+  DEFAULT_LEVEL_DURATION_SECONDS,
+  EXTENDED_LEVEL_DURATION_SECONDS,
+} = require('../constants');
 
 // Canonical configuration for the six competition levels
 const INITIAL_LEVELS = [
@@ -15,11 +19,11 @@ const INITIAL_LEVELS = [
     name: 'Level 1',
     entryRiskAmount: 0,
     winningPayout: 50,
-    losingPayout: 50,
+    losingPayout: 0,
     safeZoneAmount: 50,
     isSafeZone: true,
     isFinal: false,
-    durationSeconds: 180,
+    durationSeconds: DEFAULT_LEVEL_DURATION_SECONDS,
     isActive: true,
   },
   {
@@ -31,7 +35,7 @@ const INITIAL_LEVELS = [
     safeZoneAmount: 0,
     isSafeZone: false,
     isFinal: false,
-    durationSeconds: 180,
+    durationSeconds: DEFAULT_LEVEL_DURATION_SECONDS,
     isActive: true,
   },
   {
@@ -43,7 +47,7 @@ const INITIAL_LEVELS = [
     safeZoneAmount: 0,
     isSafeZone: false,
     isFinal: false,
-    durationSeconds: 180,
+    durationSeconds: DEFAULT_LEVEL_DURATION_SECONDS,
     isActive: true,
   },
   {
@@ -55,7 +59,7 @@ const INITIAL_LEVELS = [
     safeZoneAmount: 250,
     isSafeZone: true,
     isFinal: false,
-    durationSeconds: 180,
+    durationSeconds: EXTENDED_LEVEL_DURATION_SECONDS,
     isActive: true,
   },
   {
@@ -67,7 +71,7 @@ const INITIAL_LEVELS = [
     safeZoneAmount: 0,
     isSafeZone: false,
     isFinal: false,
-    durationSeconds: 180,
+    durationSeconds: EXTENDED_LEVEL_DURATION_SECONDS,
     isActive: true,
   },
   {
@@ -79,7 +83,7 @@ const INITIAL_LEVELS = [
     safeZoneAmount: 0,
     isSafeZone: false,
     isFinal: true,
-    durationSeconds: 180,
+    durationSeconds: EXTENDED_LEVEL_DURATION_SECONDS,
     isActive: true,
   },
 ];
@@ -140,3 +144,4 @@ if (require.main === module) {
 }
 
 module.exports = seedLevels;
+module.exports.INITIAL_LEVELS = INITIAL_LEVELS;

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { TOTAL_LEVELS } = require('../constants');
 
 const evaluationSchema = new mongoose.Schema(
   {
@@ -28,7 +29,7 @@ const evaluationSchema = new mongoose.Schema(
       type: Number,
       required: [true, 'Level number is required'],
       min: [1, 'Level number cannot be less than 1'],
-      max: [6, 'Level number cannot exceed 6'],
+      max: [TOTAL_LEVELS, `Level number cannot exceed ${TOTAL_LEVELS}`],
       index: true,
     },
     // Official grading status

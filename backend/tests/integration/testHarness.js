@@ -6,6 +6,10 @@ const { MongoMemoryReplSet } = require('mongodb-memory-server');
 const { OAuth2Client } = require('google-auth-library');
 const request = require('supertest');
 
+// Single ladder: level definitions live in the seed script, not in a second fixture copy.
+const { INITIAL_LEVELS } = require('../../scripts/seedLevels');
+const { TOTAL_LEVELS } = require('../../constants');
+
 const ALLOWED_LOCAL_URI_REGEX = /^mongodb:\/\/(127\.0\.0\.1|localhost)(:\d+)?(\/|$|\?)/i;
 
 /**
@@ -28,83 +32,11 @@ function assertSafeTestMongoUri(uri, forbiddenProductionUri = null) {
 }
 
 /**
- * Canonical six-level seed fixtures matching backend/scripts/seedLevels.js.
+ * Canonical six-level seed fixtures, imported from backend/scripts/seedLevels.js.
+ * Returns fresh copies so callers can mutate the seeded objects freely.
  */
 function getCanonicalLevelsSeed() {
-  return [
-    {
-      number: 1,
-      name: 'Level 1',
-      entryRiskAmount: 0,
-      winningPayout: 50,
-      losingPayout: 50,
-      safeZoneAmount: 50,
-      isSafeZone: true,
-      isFinal: false,
-      durationSeconds: 180,
-      isActive: true,
-    },
-    {
-      number: 2,
-      name: 'Level 2',
-      entryRiskAmount: 50,
-      winningPayout: 100,
-      losingPayout: 50,
-      safeZoneAmount: 0,
-      isSafeZone: false,
-      isFinal: false,
-      durationSeconds: 180,
-      isActive: true,
-    },
-    {
-      number: 3,
-      name: 'Level 3',
-      entryRiskAmount: 100,
-      winningPayout: 150,
-      losingPayout: 50,
-      safeZoneAmount: 0,
-      isSafeZone: false,
-      isFinal: false,
-      durationSeconds: 180,
-      isActive: true,
-    },
-    {
-      number: 4,
-      name: 'Level 4',
-      entryRiskAmount: 150,
-      winningPayout: 250,
-      losingPayout: 50,
-      safeZoneAmount: 250,
-      isSafeZone: true,
-      isFinal: false,
-      durationSeconds: 180,
-      isActive: true,
-    },
-    {
-      number: 5,
-      name: 'Level 5',
-      entryRiskAmount: 0,
-      winningPayout: 350,
-      losingPayout: 250,
-      safeZoneAmount: 0,
-      isSafeZone: false,
-      isFinal: false,
-      durationSeconds: 180,
-      isActive: true,
-    },
-    {
-      number: 6,
-      name: 'Level 6',
-      entryRiskAmount: 100,
-      winningPayout: 500,
-      losingPayout: 250,
-      safeZoneAmount: 0,
-      isSafeZone: false,
-      isFinal: true,
-      durationSeconds: 180,
-      isActive: true,
-    },
-  ];
+  return INITIAL_LEVELS.map((level) => ({ ...level }));
 }
 
 /**
@@ -112,7 +44,7 @@ function getCanonicalLevelsSeed() {
  */
 function buildQuestionBankSeed(adminId) {
   const questions = [];
-  for (let levelNumber = 1; levelNumber <= 6; levelNumber += 1) {
+  for (let levelNumber = 1; levelNumber <= TOTAL_LEVELS; levelNumber += 1) {
     for (const difficulty of ['EASY', 'HARD']) {
       for (let variant = 1; variant <= 2; variant += 1) {
         questions.push({

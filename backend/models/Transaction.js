@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { TOTAL_LEVELS, TRANSACTION_TYPES } = require('../constants');
 
 const transactionSchema = new mongoose.Schema(
   {
@@ -13,7 +14,7 @@ const transactionSchema = new mongoose.Schema(
     type: {
       type: String,
       enum: {
-        values: ['STAKE_DEBIT', 'REWARD_CREDIT', 'REFUND', 'SAFE_ZONE_PAYOUT', 'ADMIN_ADJUSTMENT', 'ROUND_SETTLEMENT'],
+        values: Object.values(TRANSACTION_TYPES),
         message: '{VALUE} is not a valid transaction type',
       },
       required: [true, 'Transaction type is required'],
@@ -45,7 +46,7 @@ const transactionSchema = new mongoose.Schema(
     levelNumber: {
       type: Number,
       min: [1, 'Level number cannot be less than 1'],
-      max: [6, 'Level number cannot exceed 6'],
+      max: [TOTAL_LEVELS, `Level number cannot exceed ${TOTAL_LEVELS}`],
       default: null,
     },
     // Associated round (optional)

@@ -1,8 +1,8 @@
 const { Student, Evaluation, Transaction } = require('../models');
 const { parsePaginationQuery, buildPaginationMeta } = require('./studentController');
+const { ACADEMIC_YEARS, TRANSACTION_TYPES } = require('../constants');
 
 const ALLOWED_COMPETITION_STATUSES = ['registered', 'inProgress', 'cleared', 'eliminated', 'completed'];
-const ALLOWED_ACADEMIC_YEARS = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
 
 /**
  * Safely parse optional competitionStatus and year query filters.
@@ -39,17 +39,17 @@ const parseLeaderboardFilters = (query = {}) => {
         error: {
           status: 400,
           code: 'INVALID_YEAR_FILTER',
-          message: `Query parameter 'year' must be one of: ${ALLOWED_ACADEMIC_YEARS.join(', ')}.`,
+          message: `Query parameter 'year' must be one of: ${ACADEMIC_YEARS.join(', ')}.`,
         },
       };
     }
     const normalizedYear = query.year.trim();
-    if (!ALLOWED_ACADEMIC_YEARS.includes(normalizedYear)) {
+    if (!ACADEMIC_YEARS.includes(normalizedYear)) {
       return {
         error: {
           status: 400,
           code: 'INVALID_YEAR_FILTER',
-          message: `Invalid year filter '${normalizedYear}'. Allowed values: ${ALLOWED_ACADEMIC_YEARS.join(', ')}.`,
+          message: `Invalid year filter '${normalizedYear}'. Allowed values: ${ACADEMIC_YEARS.join(', ')}.`,
         },
       };
     }
@@ -89,7 +89,7 @@ const fetchLeaderboardDataset = async () => {
       'studentId levelNumber status isProgressed progressedAt evaluatedAt createdAt'
     ),
     runReadQuery(
-      Transaction.find({ type: 'REWARD_CREDIT' }),
+      Transaction.find({ type: TRANSACTION_TYPES.REWARD_CREDIT }),
       'studentId type amount timestamp'
     ),
   ]);
@@ -186,7 +186,7 @@ const buildRewardTxTimestampMap = (rewardTransactions = []) => {
   const map = new Map();
 
   for (const tx of rewardTransactions) {
-    if (!tx || tx.type !== 'REWARD_CREDIT' || !tx.studentId) {
+    if (!tx || tx.type !== TRANSACTION_TYPES.REWARD_CREDIT || !tx.studentId) {
       continue;
     }
     if (typeof tx.amount !== 'number' || !Number.isFinite(tx.amount) || tx.amount <= 0) {

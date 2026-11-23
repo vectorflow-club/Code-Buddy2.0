@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const { Round, Question, Level, Evaluation, Student, Transaction } = require('../models');
+const { TOTAL_LEVELS, FIRST_YEAR, ACADEMIC_YEARS, TRANSACTION_TYPES } = require('../constants');
 
 /**
  * Format an immutable Transaction ledger record for student consumption.
@@ -251,7 +252,7 @@ const deriveStudentRoundAvailability = (student, round = null, evaluation = null
         }
         if (evaluation.status === 'PASS') {
           if (evaluation.isProgressed) {
-            return round.levelNumber >= 6 ? 'completed' : 'ready';
+            return round.levelNumber >= TOTAL_LEVELS ? 'completed' : 'ready';
           }
           return 'cleared';
         }
@@ -292,7 +293,7 @@ const resolveStudentLiveState = async (student) => {
   }
 
   let liveCurrentLevel =
-    Number.isInteger(student.currentLevel) && student.currentLevel >= 1 && student.currentLevel <= 6
+    Number.isInteger(student.currentLevel) && student.currentLevel >= 1 && student.currentLevel <= TOTAL_LEVELS
       ? student.currentLevel
       : 1;
   let liveHighestLevelReached = Math.max(student.highestLevelReached ?? 1, liveCurrentLevel);
@@ -317,7 +318,7 @@ const resolveStudentLiveState = async (student) => {
   let inspectedEvaluation = null;
 
   if (student.registrationComplete && canQueryModel(Round, 'findOne')) {
-    for (let step = 0; step < 6; step += 1) {
+    for (let step = 0; step < TOTAL_LEVELS; step += 1) {
       const round = await Round.findOne({
         studentId: student._id,
         levelNumber: liveCurrentLevel,
@@ -338,7 +339,7 @@ const resolveStudentLiveState = async (student) => {
 
         if (evaluation && evaluation.status === 'PASS' && evaluation.isProgressed) {
           liveLevelsCleared = Math.max(liveLevelsCleared, liveCurrentLevel);
-          if (liveCurrentLevel < 6) {
+          if (liveCurrentLevel < TOTAL_LEVELS) {
             liveCurrentLevel += 1;
             liveHighestLevelReached = Math.max(liveHighestLevelReached, liveCurrentLevel);
             if (liveCompetitionStatus === 'registered' || liveCompetitionStatus === 'cleared') {
@@ -498,7 +499,7 @@ const getLevelInfo = async (req, res) => {
     }
 
     const currentLevel = student.currentLevel;
-    if (!currentLevel || currentLevel < 1 || currentLevel > 6) {
+    if (!currentLevel || currentLevel < 1 || currentLevel > TOTAL_LEVELS) {
       return res.status(400).json({
         success: false,
         code: 'INVALID_STUDENT_LEVEL',
@@ -597,7 +598,7 @@ const allocateQuestion = async (req, res) => {
 
     // 2. Validate current level
     const currentLevel = student.currentLevel;
-    if (!currentLevel || currentLevel < 1 || currentLevel > 6) {
+    if (!currentLevel || currentLevel < 1 || currentLevel > TOTAL_LEVELS) {
       return res.status(400).json({
         success: false,
         code: 'INVALID_STUDENT_LEVEL',
@@ -608,9 +609,9 @@ const allocateQuestion = async (req, res) => {
     // 3. Determine question difficulty from academic year
     const year = student.year;
     let difficulty;
-    if (year === '1st Year') {
+    if (year === FIRST_YEAR) {
       difficulty = 'EASY';
-    } else if (['2nd Year', '3rd Year', '4th Year'].includes(year)) {
+    } else if (ACADEMIC_YEARS.includes(year)) {
       difficulty = 'HARD';
     } else {
       return res.status(400).json({
@@ -647,7 +648,7 @@ const allocateQuestion = async (req, res) => {
       const freshStudent = await Student.findById(student._id);
       const existingDebitTx = await Transaction.findOne({
         roundId: existingRound._id,
-        type: 'STAKE_DEBIT',
+        type: TRANSACTION_TYPES.STAKE_DEBIT,
       });
 
       return res.status(200).json({
@@ -742,7 +743,7 @@ const allocateQuestion = async (req, res) => {
             isRaceExisting = true;
             raceExistingDebitTx = await Transaction.findOne({
               roundId: raceExisting._id,
-              type: 'STAKE_DEBIT',
+              type: TRANSACTION_TYPES.STAKE_DEBIT,
             }).session(session);
             return;
           }
@@ -787,7 +788,7 @@ const allocateQuestion = async (req, res) => {
           if (entryFee > 0) {
             const debitTx = new Transaction({
               studentId: student._id,
-              type: 'STAKE_DEBIT',
+              type: TRANSACTION_TYPES.STAKE_DEBIT,
               status: 'SUCCESS',
               amount: entryFee,
               balanceAfter: updatedStudent.walletBalance,
@@ -821,7 +822,7 @@ const allocateQuestion = async (req, res) => {
             const currentStudent = await Student.findById(student._id);
             const existingTx = await Transaction.findOne({
               roundId: raceExistingRound._id,
-              type: 'STAKE_DEBIT',
+              type: TRANSACTION_TYPES.STAKE_DEBIT,
             });
             return res.status(200).json({
               success: true,
@@ -871,7 +872,7 @@ const allocateQuestion = async (req, res) => {
         const currentStudent = await Student.findById(student._id);
         const existingTx = await Transaction.findOne({
           roundId: raceExisting._id,
-          type: 'STAKE_DEBIT',
+          type: TRANSACTION_TYPES.STAKE_DEBIT,
         });
         return res.status(200).json({
           success: true,
@@ -946,7 +947,7 @@ const allocateQuestion = async (req, res) => {
             const currentStudent = await Student.findById(student._id);
             const existingTx = await Transaction.findOne({
               roundId: raceExistingRound._id,
-              type: 'STAKE_DEBIT',
+              type: TRANSACTION_TYPES.STAKE_DEBIT,
             });
             return res.status(200).json({
               success: true,
@@ -966,7 +967,7 @@ const allocateQuestion = async (req, res) => {
         try {
           const debitTx = new Transaction({
             studentId: student._id,
-            type: 'STAKE_DEBIT',
+            type: TRANSACTION_TYPES.STAKE_DEBIT,
             status: 'SUCCESS',
             amount: entryFee,
             balanceAfter: updatedStudent.walletBalance,
@@ -1056,7 +1057,7 @@ const getActiveRoundStatus = async (req, res) => {
 
     // 2. Validate current level from authoritative Student DB document
     const currentLevel = student.currentLevel;
-    if (!currentLevel || currentLevel < 1 || currentLevel > 6) {
+    if (!currentLevel || currentLevel < 1 || currentLevel > TOTAL_LEVELS) {
       return res.status(400).json({
         success: false,
         code: 'INVALID_STUDENT_LEVEL',

@@ -3,12 +3,12 @@ const { Student, Round, Evaluation, Transaction, Question, Volunteer } = require
 const { parsePaginationQuery, buildPaginationMeta } = require('./studentController');
 const { computeTimerFields } = require('./roundController');
 const { escapeRegex } = require('./adminController');
+const { TOTAL_LEVELS, ACADEMIC_YEARS, USN_REGEX, TRANSACTION_TYPES } = require('../constants');
 
 const MAX_SEARCH_LENGTH = 100;
 const OBJECT_ID_HEX_REGEX = /^[0-9a-fA-F]{24}$/;
-const USN_REGEX = /^[A-Z0-9]{8,15}$/;
 
-const VALID_YEARS = new Set(['1st Year', '2nd Year', '3rd Year', '4th Year']);
+const VALID_YEARS = new Set(ACADEMIC_YEARS);
 const VALID_COMPETITION_STATUSES = new Set([
   'registered',
   'inProgress',
@@ -25,14 +25,7 @@ const VALID_ROUND_STATUSES = new Set([
   'abandoned',
 ]);
 const VALID_EVALUATION_STATUSES = new Set(['PENDING', 'PASS', 'FAIL']);
-const VALID_TRANSACTION_TYPES = new Set([
-  'STAKE_DEBIT',
-  'REWARD_CREDIT',
-  'REFUND',
-  'SAFE_ZONE_PAYOUT',
-  'ADMIN_ADJUSTMENT',
-  'ROUND_SETTLEMENT',
-]);
+const VALID_TRANSACTION_TYPES = new Set(Object.values(TRANSACTION_TYPES));
 
 // Explicit projections omit sensitive auth, staff audit IDs, notes, hidden tests, and internal keys.
 const SAFE_STUDENT_SELECT =
@@ -1095,7 +1088,7 @@ const getParticipantTransactions = async (req, res) => {
  */
 const buildLevelStatistics = ({ byLevel = [], highestLevelCounts = [], levelsClearedCounts = [] }) => {
   const levels = {};
-  for (let lvl = 1; lvl <= 6; lvl += 1) {
+  for (let lvl = 1; lvl <= TOTAL_LEVELS; lvl += 1) {
     levels[`L${lvl}`] = {
       levelNumber: lvl,
       participantCount: 0,
@@ -1109,7 +1102,7 @@ const buildLevelStatistics = ({ byLevel = [], highestLevelCounts = [], levelsCle
 
   for (const row of byLevel) {
     const lvl = Number(row?._id);
-    if (lvl >= 1 && lvl <= 6 && levels[`L${lvl}`]) {
+    if (lvl >= 1 && lvl <= TOTAL_LEVELS && levels[`L${lvl}`]) {
       levels[`L${lvl}`].participantCount = Number(row.participantCount) || 0;
       levels[`L${lvl}`].activeCount = Number(row.activeCount) || 0;
       levels[`L${lvl}`].eliminatedCount = Number(row.eliminatedCount) || 0;

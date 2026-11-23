@@ -1,11 +1,12 @@
 const mongoose = require('mongoose');
 const { Question, Round } = require('../models');
+const { TOTAL_LEVELS } = require('../constants');
 
 /**
  * Helper to validate level number strictly between 1 and 6
  */
 const isValidLevelNumber = (num) => {
-  return Number.isInteger(num) && num >= 1 && num <= 6;
+  return Number.isInteger(num) && num >= 1 && num <= TOTAL_LEVELS;
 };
 
 /**

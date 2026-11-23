@@ -1,6 +1,7 @@
 const { Level, Round, Evaluation, Transaction, Student } = require('../models');
 const { formatLevelResponse } = require('./roundController');
 const { runReadQuery } = require('./adminMonitoringController');
+const { TOTAL_LEVELS, LEVEL_NUMBERS } = require('../constants');
 
 const OPEN_ROUND_STATUSES = ['ready', 'inProgress', 'timeExpired', 'submitted'];
 const ACTIVE_COMPETITION_STATUSES = ['registered', 'inProgress', 'cleared'];
@@ -84,7 +85,7 @@ const getAllLevelUsageFlags = async () => {
       },
     ]),
     Transaction.aggregate([
-      { $match: { levelNumber: { $in: [1, 2, 3, 4, 5, 6] } } },
+      { $match: { levelNumber: { $in: LEVEL_NUMBERS } } },
       {
         $group: {
           _id: '$levelNumber',
@@ -95,7 +96,7 @@ const getAllLevelUsageFlags = async () => {
   ]);
 
   const usageByLevel = new Map();
-  for (let lvl = 1; lvl <= 6; lvl += 1) {
+  for (let lvl = 1; lvl <= TOTAL_LEVELS; lvl += 1) {
     usageByLevel.set(lvl, { isUsedInCompetition: false, hasOpenRounds: false });
   }
 

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { TOTAL_LEVELS, ACADEMIC_YEARS, USN_REGEX } = require('../constants');
 
 const studentSchema = new mongoose.Schema(
   {
@@ -64,7 +65,7 @@ const studentSchema = new mongoose.Schema(
         validator: function (value) {
           if (!value) return true; // Handled by conditional required validator above
           // Flexible alphanumeric validation (8-15 characters) matching current platform standard
-          return /^[A-Z0-9]{8,15}$/i.test(value);
+          return USN_REGEX.test(value);
         },
         message: (props) => `${props.value} is not a valid USN format (alphanumeric, 8-15 characters)`,
       },
@@ -73,7 +74,7 @@ const studentSchema = new mongoose.Schema(
     year: {
       type: String,
       enum: {
-        values: ['1st Year', '2nd Year', '3rd Year', '4th Year'],
+        values: ACADEMIC_YEARS,
         message: '{VALUE} is not a valid academic year',
       },
       trim: true,
@@ -96,21 +97,21 @@ const studentSchema = new mongoose.Schema(
       type: Number,
       default: 1,
       min: [1, 'Current level cannot be less than 1'],
-      max: [6, 'Current level cannot exceed 6'],
+      max: [TOTAL_LEVELS, `Current level cannot exceed ${TOTAL_LEVELS}`],
     },
     // Highest level reached during the competition
     highestLevelReached: {
       type: Number,
       default: 1,
       min: [1, 'Highest level cannot be less than 1'],
-      max: [6, 'Highest level cannot exceed 6'],
+      max: [TOTAL_LEVELS, `Highest level cannot exceed ${TOTAL_LEVELS}`],
     },
     // Count of levels cleared successfully
     levelsCleared: {
       type: Number,
       default: 0,
       min: [0, 'Levels cleared cannot be negative'],
-      max: [6, 'Levels cleared cannot exceed 6'],
+      max: [TOTAL_LEVELS, `Levels cleared cannot exceed ${TOTAL_LEVELS}`],
     },
     // Overall student competition status
     competitionStatus: {
