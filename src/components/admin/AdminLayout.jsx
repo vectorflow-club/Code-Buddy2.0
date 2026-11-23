@@ -26,7 +26,7 @@ const navItems = [
   { to: "/admin/questions", label: "Question Bank", icon: BookOpen },
   { to: "/admin/levels", label: "Levels", icon: Layers },
   { to: "/admin/participants", label: "Participants", icon: Users },
-  { to: "/admin/volunteers", label: "Volunteers", icon: UserCog },
+  { to: "/admin/volunteers", label: "Organizers", icon: UserCog },
   { to: "/admin/reports", label: "Reports", icon: ChartNoAxesCombined },
   { to: "/admin/rounds", label: "Rounds", icon: ClipboardList },
   { to: "/admin/transactions", label: "Transactions", icon: Receipt },

@@ -209,7 +209,7 @@ export default function EvaluationWorkspace() {
           ? "Participant and round details were loaded from the Dashboard USN lookup."
           : lookupResult
             ? "The participant lookup response is incomplete. Return to the Dashboard and retry the USN lookup."
-            : "Look up a participant by USN from the Volunteer Dashboard to view their round."}
+            : "Look up a participant by USN from the Organizer Dashboard to view their round."}
       </div>
 
       {actionError && (
@@ -289,7 +289,7 @@ export default function EvaluationWorkspace() {
                 className="evaluation-primary-btn"
                 onClick={() => navigate("/volunteer/dashboard")}
               >
-                Return to Volunteer Dashboard
+                Return to Organizer Dashboard
               </button>
             </div>
           )}
@@ -302,13 +302,13 @@ export default function EvaluationWorkspace() {
                 <Users size={27} />
               </div>
               <h2>No participant selected</h2>
-              <p>Return to the Volunteer Dashboard and look up a participant by USN.</p>
+              <p>Return to the Organizer Dashboard and look up a participant by USN.</p>
               <button
                 type="button"
                 className="evaluation-primary-btn"
                 onClick={() => navigate("/volunteer/dashboard")}
               >
-                Return to Volunteer Dashboard
+                Return to Organizer Dashboard
               </button>
             </div>
           )}

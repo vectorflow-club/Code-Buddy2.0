@@ -40,7 +40,7 @@ export default function AdminDashboard() {
         <div>
           <span className="admin-eyebrow">VVCE CODE SPRINT</span>
           <h2>Competition control center.</h2>
-          <p>Manage questions, levels, volunteers and participants.</p>
+          <p>Manage questions, levels, organizers and participants.</p>
         </div>
         <Activity size={38} />
       </div>
@@ -81,7 +81,7 @@ export default function AdminDashboard() {
         {[
           { title: "Question Bank", detail: "Add and manage coding questions.", icon: Trophy },
           { title: "Participants", detail: "View registered students.", icon: Users },
-          { title: "Volunteers", detail: "Manage volunteer accounts.", icon: UserX },
+          { title: "Organizers", detail: "Manage organizer accounts.", icon: UserX },
           { title: "Wallet Records", detail: "Review competition transactions.", icon: Wallet },
         ].map(({ title, detail, icon: Icon }) => (
           <article className="admin-quick-card" key={title}>

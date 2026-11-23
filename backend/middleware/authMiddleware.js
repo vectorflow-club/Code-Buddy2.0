@@ -140,12 +140,12 @@ const ROLE_CONFIG = {
   VOLUNTEER: {
     model: Volunteer,
     reqKey: 'volunteer',
-    label: 'Volunteer',
-    notFoundMessage: 'Volunteer account belonging to this token no longer exists.',
-    roleMismatchMessage: 'Access denied. Account does not have volunteer privileges.',
+    label: 'Organizer',
+    notFoundMessage: 'Organizer account belonging to this token no longer exists.',
+    roleMismatchMessage: 'Access denied. Account does not have organizer privileges.',
     normalizeRole: true,
     checkActive: true,
-    deactivatedMessage: 'Volunteer account has been deactivated. Please contact an administrator.',
+    deactivatedMessage: 'Organizer account has been deactivated. Please contact an administrator.',
   },
 };
 

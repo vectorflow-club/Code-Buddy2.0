@@ -66,11 +66,22 @@ staffSchema.set('toObject', {
 });
 
 /**
- * Compare plain candidate password against securely hashed password
+ * Compare plain candidate password against the stored value.
+ *
+ * Dual-mode on purpose: organizer (VOLUNTEER-role) passwords are stored as
+ * plain text by the event team's decision, while the admin account stays
+ * bcrypt-hashed. bcrypt is tried first so pre-existing hashed rows keep
+ * working with no migration; a non-hash stored value makes bcrypt throw,
+ * and the plain-text comparison below then decides.
  */
 staffSchema.methods.comparePassword = async function (candidatePassword) {
   if (!candidatePassword || !this.passwordHash) return false;
-  return bcrypt.compare(candidatePassword, this.passwordHash);
+  try {
+    if (await bcrypt.compare(candidatePassword, this.passwordHash)) return true;
+  } catch (_) {
+    // Stored value is not a bcrypt hash; fall through to plain comparison.
+  }
+  return candidatePassword === this.passwordHash;
 };
 
 /**

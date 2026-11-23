@@ -26,10 +26,10 @@ export default function VolunteerLayout() {
     loginPath: "/volunteer/login",
     profileKey: "volunteer",
     expiredCodes: VOLUNTEER_EXPIRED_CODES,
-    validateErrorMessage: "Could not validate the volunteer session.",
+    validateErrorMessage: "Could not validate the organizer session.",
   });
 
-  if (checking) return <div role="status" style={{ padding: 24 }}>Checking volunteer session…</div>;
+  if (checking) return <div role="status" style={{ padding: 24 }}>Checking organizer session…</div>;
   if (!session && validationError) {
     return (
       <div role="alert" style={{ padding: 24 }}>
@@ -41,7 +41,7 @@ export default function VolunteerLayout() {
   }
   if (!session) return null;
 
-  const volunteerName = session.volunteer.name || "Volunteer";
+  const volunteerName = session.volunteer.name || "Organizer";
 
   return (
     <div className="vol-layout">
@@ -77,7 +77,7 @@ export default function VolunteerLayout() {
             <div className="vol-avatar">{volunteerName.charAt(0).toUpperCase()}</div>
             <div>
               <strong>{volunteerName}</strong>
-              <span>Volunteer</span>
+              <span>Organizer</span>
             </div>
           </div>
 

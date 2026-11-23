@@ -5,12 +5,14 @@ const {
   adminLogin,
   getAdminMe,
   createVolunteer,
+  createVolunteersBulk,
   listVolunteers,
   getVolunteerById,
   updateVolunteer,
   resetVolunteerPassword,
   deactivateVolunteer,
   reactivateVolunteer,
+  deleteVolunteer,
 } = require('../controllers/adminController');
 
 const {
@@ -62,6 +64,13 @@ router.get('/me', protectAdmin, authorizeAdmin, getAdminMe);
 router.post('/volunteers', protectAdmin, authorizeAdmin, createVolunteer);
 
 /**
+ * @route   POST /api/admin/volunteers/bulk
+ * @desc    Create multiple volunteer accounts, one per row, reporting each row's outcome
+ * @access  Protected (Admin only)
+ */
+router.post('/volunteers/bulk', protectAdmin, authorizeAdmin, createVolunteersBulk);
+
+/**
  * @route   GET /api/admin/volunteers
  * @desc    List volunteer accounts with optional isActive, search, and pagination filters
  * @access  Protected (Admin only)
@@ -109,6 +118,13 @@ router.patch('/volunteers/:id/deactivate', protectAdmin, authorizeAdmin, deactiv
  * @access  Protected (Admin only)
  */
 router.patch('/volunteers/:id/reactivate', protectAdmin, authorizeAdmin, reactivateVolunteer);
+
+/**
+ * @route   DELETE /api/admin/volunteers/:id
+ * @desc    Permanently delete a volunteer account with no linked competition records
+ * @access  Protected (Admin only)
+ */
+router.delete('/volunteers/:id', protectAdmin, authorizeAdmin, deleteVolunteer);
 
 /**
  * @route   GET /api/admin/dashboard

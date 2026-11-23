@@ -36,6 +36,10 @@ const TRANSACTION_TYPES = Object.freeze({
   ROUND_SETTLEMENT: 'ROUND_SETTLEMENT',
 });
 
+// The three event spots. Organizer locations must be one of these; the
+// admin UI offers them as a dropdown and the API validates against this list.
+const ORGANIZER_LOCATIONS = Object.freeze(['M Block Entrance', 'CCD', 'Mangaluru Canteen']);
+
 const DEFAULT_LEVEL_DURATION_SECONDS = 180;
 
 const EXTENDED_LEVEL_DURATION_SECONDS = 300;
@@ -47,6 +51,7 @@ module.exports = {
   ACADEMIC_YEARS,
   USN_REGEX,
   TRANSACTION_TYPES,
+  ORGANIZER_LOCATIONS,
   DEFAULT_LEVEL_DURATION_SECONDS,
   EXTENDED_LEVEL_DURATION_SECONDS,
 };

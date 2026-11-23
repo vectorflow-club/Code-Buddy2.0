@@ -17,12 +17,12 @@ const adminRequest = createAdminRequest({
     "API is not configured. Set VITE_API_BASE_URL and restart the frontend.",
   networkMessage: "Could not reach the server. Check your connection and try again.",
   unauthorizedMessage: "Your admin session is no longer authorized. Please sign in again.",
-  failureMessage: (status) => `The volunteer request failed (HTTP ${status}). Please try again.`,
+  failureMessage: (status) => `The organizer request failed (HTTP ${status}). Please try again.`,
 });
 
-function validateVolunteer(payload, context = "volunteer response") {
+function validateVolunteer(payload, context = "organizer response") {
   if (!payload?.volunteer || typeof payload.volunteer !== "object" || Array.isArray(payload.volunteer)) {
-    throw new AdminVolunteerApiError(`The ${context} is missing valid volunteer data.`, {
+    throw new AdminVolunteerApiError(`The ${context} is missing valid organizer data.`, {
       kind: "response",
     });
   }
@@ -32,7 +32,7 @@ function validateVolunteer(payload, context = "volunteer response") {
 export async function getAdminVolunteers() {
   const result = await adminRequest("/api/admin/volunteers");
   if (!Array.isArray(result.volunteers)) {
-    throw new AdminVolunteerApiError("The volunteer list response is missing a valid volunteers array.", {
+    throw new AdminVolunteerApiError("The organizer list response is missing a valid organizers array.", {
       kind: "response",
     });
   }
@@ -77,4 +77,23 @@ export async function setAdminVolunteerActive(id, isActive) {
     method: "PATCH",
   });
   return validateVolunteer(payload, `${action} response`);
+}
+
+export async function deleteAdminVolunteer(id) {
+  return adminRequest(`/api/admin/volunteers/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+}
+
+export async function bulkCreateAdminVolunteers(volunteers) {
+  const payload = await adminRequest("/api/admin/volunteers/bulk", {
+    method: "POST",
+    body: { volunteers },
+  });
+  if (!Array.isArray(payload.results) || typeof payload.summary !== "object" || payload.summary === null) {
+    throw new AdminVolunteerApiError("The bulk add response is missing per-row results.", {
+      kind: "response",
+    });
+  }
+  return payload;
 }

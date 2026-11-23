@@ -324,7 +324,8 @@
 }
 
 .volunteer-form-field input,
-.volunteer-form-field select {
+.volunteer-form-field select,
+.volunteer-form-field textarea {
   width: 100%;
   padding: 12px;
   border: 1px solid var(--forest-muted);
@@ -336,8 +337,55 @@
 }
 
 .volunteer-form-field input:focus,
-.volunteer-form-field select:focus {
+.volunteer-form-field select:focus,
+.volunteer-form-field textarea:focus {
   border-color: var(--forest);
+}
+
+.volunteer-form-field textarea {
+  min-height: 140px;
+  resize: vertical;
+}
+
+.volunteer-bulk-hint {
+  margin: -6px 0 17px;
+  color: #5c665f;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.volunteer-bulk-results {
+  list-style: none;
+  margin: 0 0 17px;
+  padding: 12px;
+  border: 1px solid var(--forest-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.volunteer-bulk-created {
+  color: #2f6b4f;
+}
+
+.volunteer-bulk-skipped {
+  color: #b33b35;
+}
+
+.volunteer-delete-warning {
+  margin-right: auto;
+  color: #b33b35;
+  font-size: 12px;
+  line-height: 1.5;
+  align-self: center;
+}
+
+.volunteer-form-actions button.volunteer-danger-btn {
+  border-color: #b33b35;
+  background: #b33b35;
+  color: #fff;
 }
 
 .volunteer-form-actions {

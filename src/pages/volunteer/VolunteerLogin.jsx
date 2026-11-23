@@ -34,12 +34,12 @@ export default function VolunteerLogin() {
           <UserRound size={25} />
         </div>
 
-        <p className="vol-login-eyebrow">VOLUNTEER PORTAL</p>
+        <p className="vol-login-eyebrow">ORGANIZER PORTAL</p>
 
         <h1>Welcome back</h1>
 
         <p className="vol-login-description">
-          Sign in with your volunteer username to manage
+          Sign in with your organizer username to manage
           your assigned participants and evaluations.
         </p>
 
@@ -53,7 +53,7 @@ export default function VolunteerLogin() {
               <input
                 id="vol-username"
                 type="text"
-                placeholder="Enter your volunteer username"
+                placeholder="Enter your organizer username"
                 value={username}
                 onChange={(e) => {
                   setUsername(e.target.value);
@@ -115,7 +115,7 @@ export default function VolunteerLogin() {
       </div>
 
       <p className="vol-login-bottom">
-        CODE BUDDY 2.0 · VOLUNTEER ACCESS
+        CODE BUDDY 2.0 · ORGANIZER ACCESS
       </p>
     </div>
   );

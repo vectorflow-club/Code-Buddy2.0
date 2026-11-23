@@ -240,12 +240,12 @@ export default function Reports() {
 
       <section className="reports-panel volunteer-performance">
         <div className="reports-section-heading">
-          <div><h2>Volunteer Performance</h2><p>Evaluation progress by volunteer</p></div>
+          <div><h2>Organizer Performance</h2><p>Evaluation progress by organizer</p></div>
         </div>
         <div className="reports-table-wrap">
           <table className="reports-table">
-            <thead><tr><th>Volunteer</th><th>Assigned</th><th>Evaluated</th><th>Pending</th><th>Progress</th></tr></thead>
-            <tbody><tr><td colSpan="5">Per-volunteer assigned, evaluated and pending totals are unavailable until Likith provides a backend API.</td></tr></tbody>
+            <thead><tr><th>Organizer</th><th>Assigned</th><th>Evaluated</th><th>Pending</th><th>Progress</th></tr></thead>
+            <tbody><tr><td colSpan="5">Per-organizer assigned, evaluated and pending totals are unavailable until Likith provides a backend API.</td></tr></tbody>
           </table>
         </div>
       </section>

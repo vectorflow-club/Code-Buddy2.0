@@ -237,7 +237,7 @@ async function run() {
           name: 'Integration Volunteer One',
           username: 'vol_int_1',
           password: 'VolPassword!123',
-          assignedLab: 'CS-Lab-101',
+          assignedLab: 'CCD',
         });
       checkEqual(createVolRes.status, 201, 'POST /api/admin/volunteers -> 201');
       volunteerId = createVolRes.body.volunteer.id;
@@ -629,7 +629,7 @@ async function run() {
           name: 'Temp Volunteer Two',
           username: 'vol_temp_2',
           password: 'InitialVolPass!99',
-          assignedLab: 'CS-Lab-202',
+          assignedLab: 'M Block Entrance',
         });
       checkEqual(tempVolRes.status, 201, 'Create temp volunteer -> 201');
       const tempVolId = tempVolRes.body.volunteer.id;
@@ -1055,6 +1055,201 @@ async function run() {
 
       const healthExempt = await tightReq.get('/api/health').set('X-Forwarded-For', '203.0.113.20');
       checkEqual(healthExempt.status, 200, 'GET /api/health remains exempt -> 200');
+    });
+
+    await runSuite('Suite F: Organizer Delete Guard, Bulk Add, Location Enum & Plain-Text Passwords', async () => {
+      // Location enum: a spot outside the three event locations is rejected.
+      const badLocCreate = await env
+        .http()
+        .post('/api/admin/volunteers')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Bad Location Volunteer',
+          username: 'vol_bad_loc',
+          password: 'BadLocPass!123',
+          assignedLab: 'Lab 1',
+        });
+      checkEqual(badLocCreate.status, 400, 'Create with non-enum location -> 400');
+      checkEqual(badLocCreate.body.code, 'INVALID_ASSIGNED_LAB', 'Code INVALID_ASSIGNED_LAB');
+
+      // Bulk add: one valid row, one duplicate username, one bad location.
+      const bulkRes = await env
+        .http()
+        .post('/api/admin/volunteers/bulk')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          volunteers: [
+            { name: 'Bulk Plain One', username: 'bulk_plain_1', password: 'BulkPlainPass!1', assignedLab: 'ccd' },
+            { name: 'Bulk Duplicate', username: 'vol_int_1', password: 'BulkDupPass!123', assignedLab: 'CCD' },
+            { name: 'Bulk Bad Spot', username: 'bulk_bad_spot', password: 'BulkBadPass!123', assignedLab: 'Lab 9' },
+          ],
+        });
+      checkEqual(bulkRes.status, 200, 'POST /api/admin/volunteers/bulk -> 200');
+      checkEqual(bulkRes.body.summary.created, 1, 'Bulk summary created 1');
+      checkEqual(bulkRes.body.summary.skipped, 2, 'Bulk summary skipped 2');
+      checkEqual(bulkRes.body.results[0].status, 'created', 'Bulk row 0 created');
+      checkEqual(bulkRes.body.results[1].status, 'skipped', 'Bulk duplicate row skipped');
+      checkEqual(bulkRes.body.results[2].status, 'skipped', 'Bulk bad-location row skipped');
+      check(
+        bulkRes.body.results[2].reason.includes('M Block Entrance'),
+        'Bulk bad-location reason names the valid locations'
+      );
+      const bulkVol = await env.models.Staff.findOne({ username: 'bulk_plain_1' });
+      check(Boolean(bulkVol), 'Bulk-created organizer exists in DB');
+      env.trackStaffId(bulkVol._id);
+      checkEqual(bulkVol.assignedLab, 'CCD', 'Bulk location stored with canonical spelling');
+
+      // Organizer passwords are stored as plain text by the event team's decision.
+      checkEqual(bulkVol.passwordHash, 'BulkPlainPass!1', 'Organizer password stored as plain text');
+
+      // Detail endpoint exposes the password for admin eyes only; the list never does.
+      const detailRes = await env
+        .http()
+        .get(`/api/admin/volunteers/${bulkVol._id.toString()}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      checkEqual(detailRes.status, 200, 'Organizer detail -> 200');
+      checkEqual(detailRes.body.volunteer.password, 'BulkPlainPass!1', 'Detail response includes the password');
+      const listRes = await env
+        .http()
+        .get('/api/admin/volunteers')
+        .set('Authorization', `Bearer ${adminToken}`);
+      checkEqual(listRes.status, 200, 'Organizer list -> 200');
+      check(
+        listRes.body.volunteers.every((vol) => !('password' in vol)),
+        'List response never includes passwords'
+      );
+
+      // Dual-mode login: the plain-text row logs in, and so does a row whose
+      // password is still bcrypt-hashed from before the change.
+      const plainLogin = await env.http().post('/api/volunteer/login').send({
+        username: 'bulk_plain_1',
+        password: 'BulkPlainPass!1',
+      });
+      checkEqual(plainLogin.status, 200, 'Plain-text organizer password logs in -> 200');
+      const hashedHash = await env.models.Staff.hashPassword('HashedPass!123');
+      const hashedVol = await env.models.Volunteer.create({
+        name: 'Hashed Legacy Volunteer',
+        username: 'vol_hashed_legacy',
+        passwordHash: hashedHash,
+        role: 'VOLUNTEER',
+        isActive: true,
+        assignedLab: 'CCD',
+      });
+      env.trackStaffId(hashedVol._id);
+      const hashedLogin = await env.http().post('/api/volunteer/login').send({
+        username: 'vol_hashed_legacy',
+        password: 'HashedPass!123',
+      });
+      checkEqual(hashedLogin.status, 200, 'Bcrypt-hashed organizer row still logs in -> 200');
+      const wrongLogin = await env.http().post('/api/volunteer/login').send({
+        username: 'bulk_plain_1',
+        password: 'WrongPassword!1',
+      });
+      checkEqual(wrongLogin.status, 401, 'Wrong organizer password still rejected -> 401');
+
+      // Update: lowercase location canonicalizes; a non-enum location is refused.
+      const updateOk = await env
+        .http()
+        .patch(`/api/admin/volunteers/${bulkVol._id.toString()}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ assignedLab: 'mangaluru canteen' });
+      checkEqual(updateOk.status, 200, 'Update location with lowercase value -> 200');
+      checkEqual(updateOk.body.volunteer.assignedLab, 'Mangaluru Canteen', 'Update stores canonical location');
+      const updateBad = await env
+        .http()
+        .patch(`/api/admin/volunteers/${bulkVol._id.toString()}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ assignedLab: 'Lab 1' });
+      checkEqual(updateBad.status, 400, 'Update with non-enum location -> 400');
+
+      // Delete guard: the Suite A volunteer ran rounds in Suite B, so the
+      // delete must be refused and the account must survive.
+      const linkedEvaluations = await env.models.Evaluation.countDocuments({
+        $or: [{ evaluatedBy: volunteerId }, { settledBy: volunteerId }, { progressedBy: volunteerId }],
+      });
+      const linkedRounds = await env.models.Round.countDocuments({ startedBy: volunteerId });
+      check(linkedEvaluations + linkedRounds > 0, 'Suite A volunteer has linked records for the guard test');
+      const deleteBlocked = await env
+        .http()
+        .delete(`/api/admin/volunteers/${volunteerId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      checkEqual(deleteBlocked.status, 409, 'Delete organizer with linked records -> 409');
+      checkEqual(deleteBlocked.body.code, 'VOLUNTEER_HAS_LINKED_RECORDS', 'Code VOLUNTEER_HAS_LINKED_RECORDS');
+      const stillThere = await env
+        .http()
+        .get(`/api/admin/volunteers/${volunteerId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      checkEqual(stillThere.status, 200, 'Blocked delete leaves the account intact -> 200');
+
+      // Delete never touches the admin account and rejects malformed ids.
+      const adminDoc = await env.models.Staff.findOne({ username: env.seededAdminCredentials.username });
+      const deleteAdmin = await env
+        .http()
+        .delete(`/api/admin/volunteers/${adminDoc._id.toString()}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      checkEqual(deleteAdmin.status, 404, 'Delete admin via volunteer endpoint -> 404');
+      const deleteBadId = await env
+        .http()
+        .delete('/api/admin/volunteers/not-an-object-id')
+        .set('Authorization', `Bearer ${adminToken}`);
+      checkEqual(deleteBadId.status, 400, 'Delete with invalid id -> 400');
+
+      // Delete succeeds for an organizer with no linked records.
+      const tempDelRes = await env
+        .http()
+        .post('/api/admin/volunteers')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Delete Me Volunteer',
+          username: 'vol_delete_me',
+          password: 'DeleteMePass!1',
+          assignedLab: 'Mangaluru Canteen',
+        });
+      checkEqual(tempDelRes.status, 201, 'Create deletable organizer -> 201');
+      const tempDelId = tempDelRes.body.volunteer.id;
+      env.trackStaffId(tempDelId);
+      const deleteOk = await env
+        .http()
+        .delete(`/api/admin/volunteers/${tempDelId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      checkEqual(deleteOk.status, 200, 'Delete unlinked organizer -> 200');
+      const goneRes = await env
+        .http()
+        .get(`/api/admin/volunteers/${tempDelId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      checkEqual(goneRes.status, 404, 'Deleted organizer detail -> 404');
+      const goneLogin = await env.http().post('/api/volunteer/login').send({
+        username: 'vol_delete_me',
+        password: 'DeleteMePass!1',
+      });
+      checkEqual(goneLogin.status, 401, 'Deleted organizer login -> 401');
+
+      // Bulk cap: 51 rows are refused before anything is created.
+      const capRows = Array.from({ length: 51 }, (_, i) => ({
+        name: `Cap Volunteer ${i}`,
+        username: `bulk_cap_${i}`,
+        password: 'BulkCapPass!123',
+        assignedLab: 'CCD',
+      }));
+      const capRes = await env
+        .http()
+        .post('/api/admin/volunteers/bulk')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ volunteers: capRows });
+      checkEqual(capRes.status, 400, 'Bulk with 51 rows -> 400');
+      checkEqual(capRes.body.code, 'BULK_LIMIT_EXCEEDED', 'Code BULK_LIMIT_EXCEEDED');
+      const capProbe = await env
+        .http()
+        .post('/api/admin/volunteers')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Cap Probe Volunteer',
+          username: 'bulk_cap_0',
+          password: 'BulkCapPass!123',
+          assignedLab: 'CCD',
+        });
+      checkEqual(capProbe.status, 201, 'Capped bulk created nothing (probe username still free) -> 201');
+      env.trackStaffId(capProbe.body.volunteer.id);
     });
   } finally {
     await env.stop();

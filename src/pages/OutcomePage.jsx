@@ -7,7 +7,7 @@ import { Button, InlineTag } from '../components/ui'
 
 const outcomeCopy = {
   cleared: { eyebrow: 'Level cleared', title: 'A new level unlocked.', body: 'Your assigned question passed. Your next level becomes available when the competition system opens it.' },
-  pending: { eyebrow: 'Evaluation pending', title: 'Your solution is with the volunteer.', body: 'Evaluation is read-only here. Your volunteer will update the question status after the walkthrough.' },
+  pending: { eyebrow: 'Evaluation pending', title: 'Your solution is with the organizer.', body: 'Evaluation is read-only here. Your organizer will update the question status after the walkthrough.' },
   eliminated: { eyebrow: 'Competition update', title: 'Your run ends here.', body: 'Failing the assigned question or reaching the timer deadline means immediate elimination. There are no retries.' },
   completed: { eyebrow: 'Competition complete', title: 'You made it to the end.', body: 'You have completed the final level. A run worth remembering.' },
   insufficient: { eyebrow: 'Wallet update', title: 'Not quite enough to enter.', body: 'Your available balance is below the configured entry risk for this level. You are not eliminated and no fee is charged.' },

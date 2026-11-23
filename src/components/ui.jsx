@@ -34,7 +34,7 @@ export function CountdownDisplay({ seconds, status, running = false }) {
     const interval = window.setInterval(update, 1000)
     return () => window.clearInterval(interval)
   }, [seconds, running])
-  return <div className="timer-block"><span><Clock3 size={14} /> Volunteer controlled</span><strong>{Number.isFinite(displaySeconds) ? formatClock(displaySeconds) : '— — : — —'}</strong><small>{status || (Number.isFinite(seconds) ? `Reference duration · ${formatDuration(seconds)}` : 'Timer not started')}</small></div>
+  return <div className="timer-block"><span><Clock3 size={14} /> Organizer controlled</span><strong>{Number.isFinite(displaySeconds) ? formatClock(displaySeconds) : '— — : — —'}</strong><small>{status || (Number.isFinite(seconds) ? `Reference duration · ${formatDuration(seconds)}` : 'Timer not started')}</small></div>
 }
 export function NextArrow() { return <ArrowRight size={17} aria-hidden="true" /> }
 export function TrustNote({ children }) { return <p className="trust-note"><ShieldCheck size={15} />{children}</p> }

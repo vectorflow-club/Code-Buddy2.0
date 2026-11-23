@@ -13,7 +13,7 @@ import { getVolunteerSession } from "../../services/volunteerAuthService";
 import { getVolunteerStudentRound } from "../../services/volunteerRoundService";
 
 export default function VolunteerDashboard() {
-  const volunteerName = getVolunteerSession()?.volunteer?.name || "Volunteer";
+  const volunteerName = getVolunteerSession()?.volunteer?.name || "Organizer";
   const navigate = useNavigate();
   const [usn, setUsn] = useState("");
   const [lookupPending, setLookupPending] = useState(false);
@@ -69,7 +69,7 @@ export default function VolunteerDashboard() {
     <div className="vol-dashboard">
       <header className="vol-dashboard-header">
         <div>
-          <p className="vol-eyebrow">VOLUNTEER PANEL</p>
+          <p className="vol-eyebrow">ORGANIZER PANEL</p>
           <h1>Welcome back, {volunteerName}!</h1>
           <p className="vol-subtitle">
             Here's an overview of your assigned participants and evaluations.

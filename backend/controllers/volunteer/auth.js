@@ -39,7 +39,7 @@ const volunteerLogin = async (req, res) => {
       return res.status(403).json({
         success: false,
         code: 'ACCOUNT_DEACTIVATED',
-        message: 'Volunteer account has been deactivated. Please contact an administrator.',
+        message: 'Organizer account has been deactivated. Please contact an administrator.',
       });
     }
 
@@ -56,7 +56,7 @@ const volunteerLogin = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Volunteer authenticated successfully.',
+      message: 'Organizer authenticated successfully.',
       token,
       volunteer: formatVolunteerResponse(volunteer),
     });
@@ -65,7 +65,7 @@ const volunteerLogin = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'An internal error occurred during volunteer login.',
+      message: 'An internal error occurred during organizer login.',
     });
   }
 };
@@ -86,7 +86,7 @@ const getVolunteerMe = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_ERROR',
-      message: 'Failed to retrieve volunteer profile.',
+      message: 'Failed to retrieve organizer profile.',
     });
   }
 };

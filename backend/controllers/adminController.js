@@ -1,4 +1,5 @@
-const { Staff, Admin, Volunteer } = require('../models');
+const { Staff, Admin, Volunteer, Evaluation, Round, Transaction, Question } = require('../models');
+const { ORGANIZER_LOCATIONS } = require('../constants');
 const { signAdminToken } = require('../middleware/authMiddleware');
 const {
   parsePaginationQuery,
@@ -20,6 +21,46 @@ const formatAdminResponse = (admin) => ({
   createdAt: admin.createdAt,
   updatedAt: admin.updatedAt,
 });
+
+const USERNAME_REGEX = /^[a-z0-9_.-]+$/i;
+
+const ORGANIZER_LOCATION_MESSAGE = `Location must be one of: ${ORGANIZER_LOCATIONS.join(', ')}.`;
+
+// Match a location against the three event spots, case-insensitively, and
+// return the canonical spelling; null when the value is not a valid spot.
+const resolveOrganizerLocation = (value) => {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (trimmed === '') return null;
+  const lowered = trimmed.toLowerCase();
+  return ORGANIZER_LOCATIONS.find((location) => location.toLowerCase() === lowered) || null;
+};
+
+// Shared per-row validation for single and bulk organizer creation.
+// Returns { ok: true, cleaned } or { ok: false, code, message }.
+const validateVolunteerRow = (row) => {
+  const name = typeof row?.name === 'string' ? row.name.trim() : '';
+  if (name.length < 2) {
+    return { ok: false, code: 'INVALID_NAME', message: 'Organizer name must be at least 2 characters long.' };
+  }
+  const username = typeof row?.username === 'string' ? row.username.trim().toLowerCase() : '';
+  if (username.length < 3) {
+    return { ok: false, code: 'INVALID_USERNAME', message: 'Username must be at least 3 characters long.' };
+  }
+  if (!USERNAME_REGEX.test(username)) {
+    return { ok: false, code: 'INVALID_USERNAME_FORMAT', message: 'Username can only contain alphanumeric characters, underscores, dots, and hyphens.' };
+  }
+  if (!row || typeof row.password !== 'string' || row.password.length < 8) {
+    return { ok: false, code: 'WEAK_PASSWORD', message: 'Password must be at least 8 characters long.' };
+  }
+  const assignedLab = resolveOrganizerLocation(row.assignedLab);
+  if (!assignedLab) {
+    return { ok: false, code: 'INVALID_ASSIGNED_LAB', message: ORGANIZER_LOCATION_MESSAGE };
+  }
+  return { ok: true, cleaned: { name, username, password: row.password, assignedLab } };
+};
+
+const MAX_BULK_VOLUNTEERS = 50;
 
 /**
  * Admin Login Controller
@@ -129,43 +170,18 @@ const createVolunteer = async (req, res) => {
       });
     }
 
-    const { name, username, password, assignedLab } = body;
-
-    if (!name || typeof name !== 'string' || name.trim().length < 2) {
+    const validation = validateVolunteerRow(body);
+    if (!validation.ok) {
       return res.status(400).json({
         success: false,
-        code: 'INVALID_NAME',
-        message: 'Volunteer name must be at least 2 characters long.',
+        code: validation.code,
+        message: validation.message,
       });
     }
 
-    if (!username || typeof username !== 'string' || username.trim().length < 3) {
-      return res.status(400).json({
-        success: false,
-        code: 'INVALID_USERNAME',
-        message: 'Username must be at least 3 characters long.',
-      });
-    }
+    const { name, username, password, assignedLab } = validation.cleaned;
 
-    const normalizedUsername = username.trim().toLowerCase();
-    const usernameRegex = /^[a-z0-9_.-]+$/i;
-    if (!usernameRegex.test(normalizedUsername)) {
-      return res.status(400).json({
-        success: false,
-        code: 'INVALID_USERNAME_FORMAT',
-        message: 'Username can only contain alphanumeric characters, underscores, dots, and hyphens.',
-      });
-    }
-
-    if (!password || typeof password !== 'string' || password.length < 8) {
-      return res.status(400).json({
-        success: false,
-        code: 'WEAK_PASSWORD',
-        message: 'Password must be at least 8 characters long.',
-      });
-    }
-
-    const existingStaff = await Staff.findOne({ username: normalizedUsername });
+    const existingStaff = await Staff.findOne({ username });
     if (existingStaff) {
       return res.status(409).json({
         success: false,
@@ -174,22 +190,24 @@ const createVolunteer = async (req, res) => {
       });
     }
 
-    const passwordHash = await Staff.hashPassword(password);
-
+    // Organizer passwords are stored as plain text by the event team's
+    // decision (the admin account stays bcrypt-hashed). Login accepts both
+    // formats via Staff.comparePassword, so pre-existing hashed organizer
+    // rows keep working with no migration.
     const volunteer = new Volunteer({
-      name: name.trim(),
-      username: normalizedUsername,
-      passwordHash,
+      name,
+      username,
+      passwordHash: password,
       role: 'VOLUNTEER',
       isActive: true,
-      assignedLab: assignedLab && typeof assignedLab === 'string' ? assignedLab.trim() : '',
+      assignedLab,
     });
 
     await volunteer.save();
 
     return res.status(201).json({
       success: true,
-      message: 'Volunteer account created successfully.',
+      message: 'Organizer account created successfully.',
       volunteer: formatVolunteerResponse(volunteer),
     });
   } catch (error) {
@@ -204,7 +222,112 @@ const createVolunteer = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to create volunteer account.',
+      message: 'Failed to create organizer account.',
+    });
+  }
+};
+
+/**
+ * Bulk Create Volunteer Accounts
+ * Endpoint: POST /api/admin/volunteers/bulk
+ * Access: Protected (Admin only)
+ *
+ * Accepts { volunteers: [{ name, username, password, assignedLab }, ...] }
+ * (max 50 rows). Each row is validated with the same rules as single
+ * creation; valid rows are created, invalid ones are skipped, and the
+ * response reports every row's outcome. Existing accounts are never
+ * overwritten.
+ */
+const createVolunteersBulk = async (req, res) => {
+  try {
+    const rows = req.body?.volunteers;
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        code: 'INVALID_BULK_PAYLOAD',
+        message: 'Provide a non-empty organizers array.',
+      });
+    }
+    if (rows.length > MAX_BULK_VOLUNTEERS) {
+      return res.status(400).json({
+        success: false,
+        code: 'BULK_LIMIT_EXCEEDED',
+        message: `Bulk add is limited to ${MAX_BULK_VOLUNTEERS} organizers per request.`,
+      });
+    }
+
+    // One lookup for every username in the batch, so duplicates against
+    // existing accounts are caught without a query per row.
+    const batchUsernames = rows
+      .map((row) => (typeof row?.username === 'string' ? row.username.trim().toLowerCase() : ''))
+      .filter((username) => username !== '');
+    const taken = new Set(
+      (await Staff.find({ username: { $in: batchUsernames } }, 'username').lean()).map(
+        (doc) => doc.username
+      )
+    );
+
+    const results = [];
+    let createdCount = 0;
+    for (let index = 0; index < rows.length; index += 1) {
+      const row = rows[index];
+      const displayUsername = typeof row?.username === 'string' ? row.username.trim() : '';
+      const validation = validateVolunteerRow(row);
+      if (!validation.ok) {
+        results.push({ index, username: displayUsername, status: 'skipped', reason: validation.message });
+        continue;
+      }
+      const { name, username, password, assignedLab } = validation.cleaned;
+      if (taken.has(username)) {
+        results.push({
+          index,
+          username,
+          status: 'skipped',
+          reason: 'A staff account with this username already exists.',
+        });
+        continue;
+      }
+      try {
+        // Plain-text organizer password, same as single creation.
+        const volunteer = new Volunteer({
+          name,
+          username,
+          passwordHash: password,
+          role: 'VOLUNTEER',
+          isActive: true,
+          assignedLab,
+        });
+        await volunteer.save();
+        taken.add(username);
+        createdCount += 1;
+        results.push({ index, username, status: 'created', reason: null });
+      } catch (saveError) {
+        if (saveError.code === 11000) {
+          taken.add(username);
+          results.push({
+            index,
+            username,
+            status: 'skipped',
+            reason: 'A staff account with this username already exists.',
+          });
+        } else {
+          throw saveError;
+        }
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Bulk add complete: ${createdCount} created, ${rows.length - createdCount} skipped.`,
+      summary: { total: rows.length, created: createdCount, skipped: rows.length - createdCount },
+      results,
+    });
+  } catch (error) {
+    console.error('Bulk create volunteers error:', error.message);
+    return res.status(500).json({
+      success: false,
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Failed to add organizers in bulk.',
     });
   }
 };
@@ -313,7 +436,7 @@ const listVolunteers = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to retrieve volunteers list.',
+      message: 'Failed to retrieve organizers list.',
     });
   }
 };
@@ -331,7 +454,7 @@ const getVolunteerById = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_ID',
-        message: 'Invalid volunteer ID format.',
+        message: 'Invalid organizer ID format.',
       });
     }
 
@@ -341,20 +464,20 @@ const getVolunteerById = async (req, res) => {
       return res.status(404).json({
         success: false,
         code: 'VOLUNTEER_NOT_FOUND',
-        message: 'Volunteer account not found.',
+        message: 'Organizer account not found.',
       });
     }
 
     return res.status(200).json({
       success: true,
-      volunteer: formatVolunteerResponse(volunteer),
+      volunteer: formatVolunteerResponse(volunteer, { includePassword: true }),
     });
   } catch (error) {
     console.error('Get volunteer by ID error:', error.message);
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to retrieve volunteer details.',
+      message: 'Failed to retrieve organizer details.',
     });
   }
 };
@@ -372,7 +495,7 @@ const deactivateVolunteer = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_ID',
-        message: 'Invalid volunteer ID format.',
+        message: 'Invalid organizer ID format.',
       });
     }
 
@@ -382,7 +505,7 @@ const deactivateVolunteer = async (req, res) => {
       return res.status(404).json({
         success: false,
         code: 'VOLUNTEER_NOT_FOUND',
-        message: 'Volunteer account not found.',
+        message: 'Organizer account not found.',
       });
     }
 
@@ -391,7 +514,7 @@ const deactivateVolunteer = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Volunteer account deactivated successfully.',
+      message: 'Organizer account deactivated successfully.',
       volunteer: formatVolunteerResponse(volunteer),
     });
   } catch (error) {
@@ -399,7 +522,7 @@ const deactivateVolunteer = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to deactivate volunteer account.',
+      message: 'Failed to deactivate organizer account.',
     });
   }
 };
@@ -417,7 +540,7 @@ const reactivateVolunteer = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_ID',
-        message: 'Invalid volunteer ID format.',
+        message: 'Invalid organizer ID format.',
       });
     }
 
@@ -427,7 +550,7 @@ const reactivateVolunteer = async (req, res) => {
       return res.status(404).json({
         success: false,
         code: 'VOLUNTEER_NOT_FOUND',
-        message: 'Volunteer account not found.',
+        message: 'Organizer account not found.',
       });
     }
 
@@ -436,7 +559,7 @@ const reactivateVolunteer = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Volunteer account reactivated successfully.',
+      message: 'Organizer account reactivated successfully.',
       volunteer: formatVolunteerResponse(volunteer),
     });
   } catch (error) {
@@ -444,7 +567,74 @@ const reactivateVolunteer = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to reactivate volunteer account.',
+      message: 'Failed to reactivate organizer account.',
+    });
+  }
+};
+
+/**
+ * Permanently Delete Volunteer Account
+ * Endpoint: DELETE /api/admin/volunteers/:id
+ * Access: Protected (Admin only)
+ *
+ * Refused with 409 while any competition record still references this
+ * organizer (evaluations, rounds, transactions, questions they created):
+ * deleting would erase who ran those rounds. Deactivate instead; only
+ * organizers with no linked records can be deleted. Never deletes an ADMIN.
+ */
+const deleteVolunteer = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        code: 'INVALID_ID',
+        message: 'Invalid organizer ID format.',
+      });
+    }
+
+    const volunteer = await Volunteer.findById(id);
+
+    if (!volunteer || volunteer.role?.toUpperCase() !== 'VOLUNTEER') {
+      return res.status(404).json({
+        success: false,
+        code: 'VOLUNTEER_NOT_FOUND',
+        message: 'Organizer account not found.',
+      });
+    }
+
+    const [evaluationLinks, roundLinks, transactionLinks, questionLinks] = await Promise.all([
+      Evaluation.countDocuments({
+        $or: [{ evaluatedBy: id }, { settledBy: id }, { progressedBy: id }],
+      }),
+      Round.countDocuments({
+        $or: [{ startedBy: id }, { 'timerExtensions.extendedBy': id }],
+      }),
+      Transaction.countDocuments({ performedBy: id }),
+      Question.countDocuments({ createdBy: id }),
+    ]);
+    const linkedCount = evaluationLinks + roundLinks + transactionLinks + questionLinks;
+    if (linkedCount > 0) {
+      return res.status(409).json({
+        success: false,
+        code: 'VOLUNTEER_HAS_LINKED_RECORDS',
+        message: `Cannot delete this organizer: ${linkedCount} competition record(s) still reference this account. Deactivate the account instead.`,
+      });
+    }
+
+    await Volunteer.deleteOne({ _id: id });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Organizer account deleted permanently.',
+    });
+  } catch (error) {
+    console.error('Delete volunteer error:', error.message);
+    return res.status(500).json({
+      success: false,
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Failed to delete organizer account.',
     });
   }
 };
@@ -461,7 +651,7 @@ const resolveVolunteerMutationTarget = async (req, allowedFields) => {
       error: {
         status: 400,
         code: 'INVALID_ID',
-        message: 'Invalid volunteer ID format.',
+        message: 'Invalid organizer ID format.',
       },
     };
   }
@@ -495,7 +685,7 @@ const resolveVolunteerMutationTarget = async (req, allowedFields) => {
       error: {
         status: 404,
         code: 'VOLUNTEER_NOT_FOUND',
-        message: 'Volunteer account not found.',
+        message: 'Organizer account not found.',
       },
     };
   }
@@ -533,18 +723,18 @@ const updateVolunteer = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_NAME',
-        message: 'Volunteer name must be at least 2 characters long.',
+        message: 'Organizer name must be at least 2 characters long.',
       });
     }
 
     if (
       body.assignedLab !== undefined &&
-      (typeof body.assignedLab !== 'string' || body.assignedLab.trim().length > 100)
+      resolveOrganizerLocation(body.assignedLab) === null
     ) {
       return res.status(400).json({
         success: false,
         code: 'INVALID_ASSIGNED_LAB',
-        message: 'Assigned lab must be a string up to 100 characters long.',
+        message: ORGANIZER_LOCATION_MESSAGE,
       });
     }
 
@@ -552,14 +742,14 @@ const updateVolunteer = async (req, res) => {
       volunteer.name = body.name.trim();
     }
     if (body.assignedLab !== undefined) {
-      volunteer.assignedLab = body.assignedLab.trim();
+      volunteer.assignedLab = resolveOrganizerLocation(body.assignedLab);
     }
 
     await volunteer.save();
 
     return res.status(200).json({
       success: true,
-      message: 'Volunteer details updated successfully.',
+      message: 'Organizer details updated successfully.',
       volunteer: formatVolunteerResponse(volunteer),
     });
   } catch (error) {
@@ -567,7 +757,7 @@ const updateVolunteer = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to update volunteer details.',
+      message: 'Failed to update organizer details.',
     });
   }
 };
@@ -615,12 +805,13 @@ const resetVolunteerPassword = async (req, res) => {
       });
     }
 
-    volunteer.passwordHash = await Staff.hashPassword(candidatePassword);
+    // Plain-text organizer password, same as creation (admin stays hashed).
+    volunteer.passwordHash = candidatePassword;
     await volunteer.save();
 
     return res.status(200).json({
       success: true,
-      message: 'Volunteer password reset successfully.',
+      message: 'Organizer password reset successfully.',
       volunteer: formatVolunteerResponse(volunteer),
     });
   } catch (error) {
@@ -628,7 +819,7 @@ const resetVolunteerPassword = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to reset volunteer password.',
+      message: 'Failed to reset organizer password.',
     });
   }
 };
@@ -637,11 +828,13 @@ module.exports = {
   adminLogin,
   getAdminMe,
   createVolunteer,
+  createVolunteersBulk,
   listVolunteers,
   getVolunteerById,
   updateVolunteer,
   resetVolunteerPassword,
   deactivateVolunteer,
   reactivateVolunteer,
+  deleteVolunteer,
   formatAdminResponse,
 };

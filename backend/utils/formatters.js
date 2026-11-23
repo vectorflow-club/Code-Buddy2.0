@@ -150,9 +150,12 @@ const formatLevelResponse = (levelConfig) => ({
 });
 
 /**
- * Format Volunteer document for API responses, ensuring passwordHash is excluded.
+ * Format Volunteer document for API responses, ensuring passwordHash is excluded
+ * unless the caller explicitly asks for the password (admin detail view only:
+ * organizer passwords are stored as plain text, so the admin can read them
+ * back; the list endpoint never includes them).
  */
-const formatVolunteerResponse = (volunteer) => ({
+const formatVolunteerResponse = (volunteer, options = {}) => ({
   id: volunteer._id.toString(),
   name: volunteer.name,
   username: volunteer.username,
@@ -161,6 +164,7 @@ const formatVolunteerResponse = (volunteer) => ({
   assignedLab: volunteer.assignedLab || '',
   createdAt: volunteer.createdAt,
   updatedAt: volunteer.updatedAt,
+  ...(options.includePassword ? { password: volunteer.passwordHash || '' } : {}),
 });
 
 module.exports = {
