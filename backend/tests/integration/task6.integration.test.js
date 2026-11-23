@@ -483,7 +483,11 @@ async function run() {
         .get('/api/student/transactions')
         .set('Authorization', `Bearer ${champ.token}`);
       checkEqual(txRes.status, 200, 'Champion transactions -> 200');
-      checkEqual(txRes.body.transactions.length, 6, 'Champion has 6 immutable ledger transactions');
+      const championCredits = txRes.body.transactions.filter((tx) => tx.type === 'REWARD_CREDIT');
+      const championDebits = txRes.body.transactions.filter((tx) => tx.type === 'STAKE_DEBIT');
+      checkEqual(txRes.body.transactions.length, 10, 'Champion has 10 immutable ledger transactions');
+      checkEqual(championCredits.length, 6, 'Champion has 6 REWARD_CREDIT transactions (one per passed level)');
+      checkEqual(championDebits.length, 4, 'Champion has 4 STAKE_DEBIT transactions (risk levels L2/L3/L4/L6; L1 and L5 are free)');
       checkEqual(txRes.body.walletBalance, 500, 'Champion transactions endpoint walletBalance=500');
 
       const raceStudent = await provisionAndRegisterStudent({

@@ -8,7 +8,7 @@
     "dev": "nodemon server.js",
     "seed:admin": "node scripts/seedAdmin.js",
     "seed:levels": "node scripts/seedLevels.js",
-    "test": "node tests/walletAllocation.test.js",
+    "test": "node tests/runAllTests.js",
     "test:wallet": "node tests/walletAllocation.test.js",
     "test:integration": "node tests/integration/task6.integration.test.js"
   },

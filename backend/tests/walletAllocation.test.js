@@ -609,7 +609,7 @@ async function runWalletWorkflowTests() {
       assert.strictEqual(txCount, 1, 'Only 1 transaction should exist (no duplicate debit)');
     });
 
-    await test('8. Failed round allocation cleanly refunds student wallet and does not record charge', async () => {
+    await test('8. Failed round allocation on the standalone path cleanly refunds student wallet and does not record charge', async () => {
       const studentId = new mongoose.Types.ObjectId();
       const testStudent = {
         _id: studentId,
@@ -625,7 +625,16 @@ async function runWalletWorkflowTests() {
       };
       store.students.set(studentId.toString(), testStudent);
 
-      const failingSave = Round.prototype.save;
+      // Force the controller down its standalone fallback (no session), so
+      // the ONLY thing that can restore the balance is the controller's own
+      // compensating refund. The mocked withTransaction snapshots and
+      // restores the store on error, so a failure inside the transaction
+      // path would pass even if the refund were deleted.
+      const mockStartSession = mongoose.startSession;
+      mongoose.startSession = async function () {
+        throw new Error('Sessions unavailable (standalone-path test)');
+      };
+      const workingSave = Round.prototype.save;
       Round.prototype.save = async function () {
         throw new Error('Database disk write failure during round save simulation');
       };
@@ -638,18 +647,25 @@ async function runWalletWorkflowTests() {
         assert.strictEqual(res.statusCode, 500);
         assert.strictEqual(res.body.success, false);
       } finally {
-        Round.prototype.save = failingSave;
+        mongoose.startSession = mockStartSession;
+        Round.prototype.save = workingSave;
       }
 
       const dbStudent = store.students.get(studentId.toString());
-      assert.strictEqual(dbStudent.walletBalance, 100, 'Student balance must be restored to 100!');
-      assert.strictEqual(dbStudent.totalRisked, 0, 'Total risked must be restored to 0!');
+      assert.strictEqual(dbStudent.walletBalance, 100, 'Student balance must be restored to 100 by the compensating refund!');
+      assert.strictEqual(dbStudent.totalRisked, 0, 'Total risked must be restored to 0 by the compensating refund!');
 
       let rCount = 0;
       for (const r of store.rounds.values()) {
         if (r.studentId.toString() === studentId.toString()) rCount++;
       }
       assert.strictEqual(rCount, 0, 'No round should persist after failed allocation');
+
+      let txCount = 0;
+      for (const tx of store.transactions.values()) {
+        if (tx.studentId.toString() === studentId.toString()) txCount++;
+      }
+      assert.strictEqual(txCount, 0, 'No transaction should persist after failed allocation');
     });
 
     await test('9. GET /api/student/transactions returns accurate ledger with STAKE_DEBIT', async () => {
@@ -811,77 +827,72 @@ async function runWalletWorkflowTests() {
       assert.strictEqual(dbStudent.totalRisked, 300); // Not changed!
     });
 
-    await test('12. Unregistered student allocation is rejected with 403 REGISTRATION_INCOMPLETE', async () => {
-      const studentId = new mongoose.Types.ObjectId();
-      const unregStudent = {
-        _id: studentId,
-        name: 'Frank Unreg',
-        email: 'frank@vvce.ac.in',
-        usn: null,
-        year: null,
-        currentLevel: 1,
-        walletBalance: 0,
-        registrationComplete: false,
-        competitionStatus: 'registered',
-      };
+    const allocationRejectionCases = [
+      {
+        label: '12. Unregistered student',
+        student: {
+          name: 'Frank Unreg',
+          email: 'frank@vvce.ac.in',
+          usn: null,
+          year: null,
+          currentLevel: 1,
+          walletBalance: 0,
+          registrationComplete: false,
+          competitionStatus: 'registered',
+        },
+        expectedStatus: 403,
+        expectedCode: 'REGISTRATION_INCOMPLETE',
+      },
+      {
+        label: '13. Eliminated student',
+        student: {
+          name: 'Grace Elim',
+          email: 'grace@vvce.ac.in',
+          usn: '4VV21CS006',
+          year: '2nd Year',
+          currentLevel: 3,
+          walletBalance: 50,
+          registrationComplete: true,
+          competitionStatus: 'eliminated',
+        },
+        expectedStatus: 409,
+        expectedCode: 'STUDENT_ELIMINATED',
+      },
+      {
+        label: '14. Completed competition student',
+        student: {
+          name: 'Henry Champ',
+          email: 'henry@vvce.ac.in',
+          usn: '4VV21CS007',
+          year: '4th Year',
+          currentLevel: 6,
+          walletBalance: 500,
+          registrationComplete: true,
+          competitionStatus: 'completed',
+        },
+        expectedStatus: 409,
+        expectedCode: 'COMPETITION_COMPLETED',
+      },
+    ];
 
-      const req = { student: unregStudent, body: {} };
-      const res = mockRes();
+    for (const rejectionCase of allocationRejectionCases) {
+      await test(
+        `${rejectionCase.label} allocation is rejected with ${rejectionCase.expectedStatus} ${rejectionCase.expectedCode}`,
+        async () => {
+          const studentId = new mongoose.Types.ObjectId();
+          const student = { _id: studentId, ...rejectionCase.student };
 
-      await allocateQuestion(req, res);
+          const req = { student, body: {} };
+          const res = mockRes();
 
-      assert.strictEqual(res.statusCode, 403);
-      assert.strictEqual(res.body.success, false);
-      assert.strictEqual(res.body.code, 'REGISTRATION_INCOMPLETE');
-    });
+          await allocateQuestion(req, res);
 
-    await test('13. Eliminated student allocation is rejected with 409 STUDENT_ELIMINATED', async () => {
-      const studentId = new mongoose.Types.ObjectId();
-      const elimStudent = {
-        _id: studentId,
-        name: 'Grace Elim',
-        email: 'grace@vvce.ac.in',
-        usn: '4VV21CS006',
-        year: '2nd Year',
-        currentLevel: 3,
-        walletBalance: 50,
-        registrationComplete: true,
-        competitionStatus: 'eliminated',
-      };
-
-      const req = { student: elimStudent, body: {} };
-      const res = mockRes();
-
-      await allocateQuestion(req, res);
-
-      assert.strictEqual(res.statusCode, 409);
-      assert.strictEqual(res.body.success, false);
-      assert.strictEqual(res.body.code, 'STUDENT_ELIMINATED');
-    });
-
-    await test('14. Completed competition student allocation is rejected with 409 COMPETITION_COMPLETED', async () => {
-      const studentId = new mongoose.Types.ObjectId();
-      const champStudent = {
-        _id: studentId,
-        name: 'Henry Champ',
-        email: 'henry@vvce.ac.in',
-        usn: '4VV21CS007',
-        year: '4th Year',
-        currentLevel: 6,
-        walletBalance: 500,
-        registrationComplete: true,
-        competitionStatus: 'completed',
-      };
-
-      const req = { student: champStudent, body: {} };
-      const res = mockRes();
-
-      await allocateQuestion(req, res);
-
-      assert.strictEqual(res.statusCode, 409);
-      assert.strictEqual(res.body.success, false);
-      assert.strictEqual(res.body.code, 'COMPETITION_COMPLETED');
-    });
+          assert.strictEqual(res.statusCode, rejectionCase.expectedStatus);
+          assert.strictEqual(res.body.success, false);
+          assert.strictEqual(res.body.code, rejectionCase.expectedCode);
+        }
+      );
+    }
 
     await test('15. Student progression advances to Level 3 and preserves totalRisked accurately', async () => {
       const student = store.students.get(l2Round.studentId);
@@ -917,7 +928,7 @@ async function runWalletWorkflowTests() {
       assert.strictEqual(repeatProgRes.body.code, 'ROUND_ALREADY_PROGRESSED');
     });
 
-    await test('16. Concurrent race-allocated round in session.withTransaction returns HTTP 200 with isExisting: true and no double deduction', async () => {
+    await test('16. Concurrent race-allocated round returns HTTP 200 with isExisting: true and no double deduction', async () => {
       const studentId = new mongoose.Types.ObjectId();
       const raceStudent = {
         _id: studentId,
@@ -944,7 +955,6 @@ async function runWalletWorkflowTests() {
         questionSnapshot: { questionId: sampleQId, title: 'Concurrent Race Q', levelNumber: 2 },
         durationSeconds: 180,
       };
-      store.rounds.set(raceRoundId.toString(), existingRoundDoc);
 
       const raceTxId = new mongoose.Types.ObjectId();
       const existingTxDoc = {
@@ -958,38 +968,17 @@ async function runWalletWorkflowTests() {
         levelNumber: 2,
         timestamp: new Date(),
       };
-      store.transactions.set(raceTxId.toString(), existingTxDoc);
 
-      let step5Checked = false;
-      const baseRoundFindOne = Round.findOne;
-      Round.findOne = function (filter) {
-        if (filter.studentId && filter.studentId.toString() === studentId.toString() && filter.levelNumber === 2) {
-          const query = {
-            session(sess) {
-              return {
-                then(resolve) { resolve({ ...existingRoundDoc }); },
-                exec: async () => ({ ...existingRoundDoc }),
-              };
-            },
-            then(resolve) {
-              if (!step5Checked) {
-                step5Checked = true;
-                resolve(null); // Step 5 pre-check returns null
-              } else {
-                resolve({ ...existingRoundDoc });
-              }
-            },
-            exec: async () => {
-              if (!step5Checked) {
-                step5Checked = true;
-                return null;
-              }
-              return { ...existingRoundDoc };
-            },
-          };
-          return query;
-        }
-        return baseRoundFindOne(filter);
+      // Simulate the race at the session boundary: the concurrent request
+      // commits its round and debit after our pre-check ran (so the
+      // pre-check misses) but before our transaction re-checks (so the
+      // re-check finds it). The round is NOT in the store when the
+      // allocation starts, and no mock branches on query internals.
+      const mockStartSession = mongoose.startSession;
+      mongoose.startSession = async function () {
+        store.rounds.set(raceRoundId.toString(), existingRoundDoc);
+        store.transactions.set(raceTxId.toString(), existingTxDoc);
+        return mockStartSession();
       };
 
       try {
@@ -1010,8 +999,20 @@ async function runWalletWorkflowTests() {
         const dbStudent = store.students.get(studentId.toString());
         assert.strictEqual(dbStudent.walletBalance, 150, 'Wallet balance must not be deducted again');
         assert.strictEqual(dbStudent.totalRisked, 50, 'Total risked must remain 50');
+
+        let roundCount = 0;
+        for (const r of store.rounds.values()) {
+          if (r.studentId.toString() === studentId.toString()) roundCount++;
+        }
+        assert.strictEqual(roundCount, 1, 'Exactly 1 round must exist (no duplicate allocation)');
+
+        let txCount = 0;
+        for (const tx of store.transactions.values()) {
+          if (tx.studentId.toString() === studentId.toString()) txCount++;
+        }
+        assert.strictEqual(txCount, 1, 'Exactly 1 debit must exist (no double deduction)');
       } finally {
-        Round.findOne = baseRoundFindOne;
+        mongoose.startSession = mockStartSession;
       }
     });
 
