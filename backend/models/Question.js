@@ -85,6 +85,20 @@ const questionSchema = new mongoose.Schema(
       type: [hiddenTestCaseSchema],
       default: [],
     },
+    // Bank number (e.g. "E1", "H3"): the human-facing question number from
+    // the question bank. Unique within a level (enforced in the controller,
+    // not by an index, so blank numbers never collide).
+    bankNumber: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    // Whether the bank number is shown to the student on the round page.
+    // Volunteers and admins always see it.
+    showBankNumber: {
+      type: Boolean,
+      default: true,
+    },
     isActive: {
       type: Boolean,
       default: true,

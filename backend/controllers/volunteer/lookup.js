@@ -1,5 +1,5 @@
 const { Student, Round } = require('../../models');
-const { formatRoundStudentResponse } = require('../../utils');
+const { formatRoundVolunteerResponse } = require('../../utils');
 const { syncRoundDeadlineState, deriveStudentRoundAvailability } = require('../roundController');
 const { TOTAL_LEVELS, USN_REGEX } = require('../../constants');
 
@@ -135,7 +135,7 @@ const getStudentActiveRoundByUsn = async (req, res) => {
         ? 'Round timer has expired.'
         : 'Round details retrieved successfully.',
       student: formatStudentVolunteerResponse(student, syncedRound),
-      round: formatRoundStudentResponse(syncedRound, {
+      round: formatRoundVolunteerResponse(syncedRound, {
         remainingSeconds: timerSync.remainingSeconds,
         isExpired: timerSync.isExpired,
       }),

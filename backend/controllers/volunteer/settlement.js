@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const { Student, Round, Level, Evaluation, Transaction } = require('../../models');
-const { formatRoundStudentResponse, createHttpError } = require('../../utils');
+const { formatRoundVolunteerResponse, createHttpError } = require('../../utils');
 const { resolveRegisteredStudent, formatStudentVolunteerResponse } = require('./lookup');
 const { formatEvaluationResponse } = require('./lifecycle');
 const { TOTAL_LEVELS, TRANSACTION_TYPES } = require('../../constants');
@@ -558,7 +558,7 @@ const settleStudentRoundByUsn = async (req, res) => {
       evaluation: formatEvaluationResponse(settlementOutput.evaluation),
       transaction: formatTransactionResponse(settlementOutput.transaction),
       round: {
-        ...formatRoundStudentResponse(settlementOutput.round),
+        ...formatRoundVolunteerResponse(settlementOutput.round),
         startedBy: settlementOutput.round.startedBy ? settlementOutput.round.startedBy.toString() : null,
       },
       settledBy: {
@@ -904,7 +904,7 @@ const progressStudentRoundByUsn = async (req, res) => {
       evaluation: formatEvaluationResponse(progressionOutput.evaluation),
       transaction: formatTransactionResponse(progressionOutput.transaction),
       round: {
-        ...formatRoundStudentResponse(progressionOutput.round),
+        ...formatRoundVolunteerResponse(progressionOutput.round),
         startedBy: progressionOutput.round.startedBy ? progressionOutput.round.startedBy.toString() : null,
       },
       progressedBy: {

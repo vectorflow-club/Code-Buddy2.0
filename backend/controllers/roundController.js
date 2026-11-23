@@ -595,6 +595,8 @@ const allocateQuestion = async (req, res) => {
       examples: selectedQuestion.examples || [],
       difficulty: selectedQuestion.difficulty,
       levelNumber: selectedQuestion.levelNumber,
+      bankNumber: selectedQuestion.bankNumber || '',
+      showBankNumber: selectedQuestion.showBankNumber !== false,
     };
 
     let savedRound = null;

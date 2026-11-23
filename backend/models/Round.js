@@ -58,6 +58,17 @@ const questionSnapshotSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    // Frozen at allocation: the question's bank number and its visibility
+    // flag at the moment the round was created. The student response shows
+    // the number only when showBankNumber is true; volunteers always see it.
+    bankNumber: {
+      type: String,
+      default: '',
+    },
+    showBankNumber: {
+      type: Boolean,
+      default: true,
+    },
   },
   { _id: false }
 );

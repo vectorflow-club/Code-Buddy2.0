@@ -383,6 +383,12 @@ export default function EvaluationWorkspace() {
             </p>
             {hasLookupResult && (
               <>
+                {question.bankNumber ? (
+                  <p>
+                    Question number: {displayValue(question.bankNumber)}
+                    {question.showBankNumber === false ? " · hidden from student" : ""}
+                  </p>
+                ) : null}
                 <p>Difficulty: {displayValue(question.difficulty)}</p>
                 <div className="evaluation-example">
                   <strong>Constraints</strong>

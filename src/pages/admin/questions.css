@@ -352,6 +352,47 @@
   border-color: var(--forest);
 }
 
+.question-checkbox-field label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.question-checkbox-field input[type="checkbox"] {
+  width: auto;
+}
+
+.test-case-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.test-case-row-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.test-case-row-actions button,
+.test-case-add-btn {
+  padding: 8px 10px;
+  border: 1px solid var(--forest-muted);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.test-case-add-btn {
+  align-self: flex-start;
+}
+
 .question-form-actions {
   display: flex;
   justify-content: flex-end;
@@ -415,6 +456,14 @@
 
   .question-form-field.full-width {
     grid-column: auto;
+  }
+
+  .test-case-row {
+    grid-template-columns: 1fr;
+  }
+
+  .test-case-row-actions {
+    flex-direction: row;
   }
 
   .question-page-header {

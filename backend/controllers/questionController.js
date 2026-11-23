@@ -17,6 +17,26 @@ const isValidDifficulty = (diff) => {
 };
 
 /**
+ * Helper to validate a bank number: a string of at most 20 characters.
+ * Empty is valid and means the question has no number.
+ */
+const isValidBankNumber = (value) => {
+  return typeof value === 'string' && value.trim().length <= 20;
+};
+
+/**
+ * Find another question in the same level already using this bank number.
+ * Empty numbers are never duplicates. Pass the question's own id when
+ * updating so a question never clashes with itself.
+ */
+const findBankNumberClash = async (levelNumber, bankNumber, excludeId = null) => {
+  if (!bankNumber) return null;
+  const filter = { levelNumber, bankNumber };
+  if (excludeId) filter._id = { $ne: excludeId };
+  return Question.findOne(filter);
+};
+
+/**
  * Helper to format question response for admin inspection
  */
 const formatQuestionAdminResponse = (q) => ({
@@ -28,6 +48,8 @@ const formatQuestionAdminResponse = (q) => ({
   difficulty: q.difficulty,
   levelNumber: q.levelNumber,
   hiddenTestCases: q.hiddenTestCases || [],
+  bankNumber: q.bankNumber || '',
+  showBankNumber: q.showBankNumber !== false,
   isActive: q.isActive,
   createdBy: q.createdBy ? q.createdBy.toString() : null,
   createdAt: q.createdAt,
@@ -49,6 +71,8 @@ const createQuestion = async (req, res) => {
       difficulty,
       levelNumber,
       hiddenTestCases = [],
+      bankNumber = '',
+      showBankNumber = true,
     } = req.body || {};
 
     if (!title || typeof title !== 'string' || title.trim().length < 3) {
@@ -128,6 +152,32 @@ const createQuestion = async (req, res) => {
       }
     }
 
+    if (!isValidBankNumber(bankNumber)) {
+      return res.status(400).json({
+        success: false,
+        code: 'INVALID_BANK_NUMBER',
+        message: 'Question number must be a string of at most 20 characters.',
+      });
+    }
+
+    if (typeof showBankNumber !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        code: 'INVALID_SHOW_BANK_NUMBER',
+        message: 'showBankNumber must be a boolean.',
+      });
+    }
+
+    const trimmedBankNumber = bankNumber.trim();
+    const clash = await findBankNumberClash(parsedLevel, trimmedBankNumber);
+    if (clash) {
+      return res.status(400).json({
+        success: false,
+        code: 'DUPLICATE_BANK_NUMBER',
+        message: `Another question in Level ${parsedLevel} already uses the number "${trimmedBankNumber}".`,
+      });
+    }
+
     const question = new Question({
       title: title.trim(),
       statement: statement.trim(),
@@ -145,6 +195,8 @@ const createQuestion = async (req, res) => {
         input: tc.input,
         expectedOutput: tc.expectedOutput,
       })),
+      bankNumber: trimmedBankNumber,
+      showBankNumber,
       isActive: true,
       createdBy: req.user?.id || null,
     });
@@ -345,6 +397,39 @@ const updateQuestion = async (req, res) => {
         });
       }
       question.difficulty = newDiff;
+    }
+
+    if (body.bankNumber !== undefined) {
+      if (!isValidBankNumber(body.bankNumber)) {
+        return res.status(400).json({
+          success: false,
+          code: 'INVALID_BANK_NUMBER',
+          message: 'Question number must be a string of at most 20 characters.',
+        });
+      }
+      const newBankNumber = body.bankNumber.trim();
+      // Runs after the levelNumber block above, so the check uses the
+      // (possibly new) level this question will belong to.
+      const clash = await findBankNumberClash(question.levelNumber, newBankNumber, question._id);
+      if (clash) {
+        return res.status(400).json({
+          success: false,
+          code: 'DUPLICATE_BANK_NUMBER',
+          message: `Another question in Level ${question.levelNumber} already uses the number "${newBankNumber}".`,
+        });
+      }
+      question.bankNumber = newBankNumber;
+    }
+
+    if (body.showBankNumber !== undefined) {
+      if (typeof body.showBankNumber !== 'boolean') {
+        return res.status(400).json({
+          success: false,
+          code: 'INVALID_SHOW_BANK_NUMBER',
+          message: 'showBankNumber must be a boolean.',
+        });
+      }
+      question.showBankNumber = body.showBankNumber;
     }
 
     if (body.title !== undefined) {

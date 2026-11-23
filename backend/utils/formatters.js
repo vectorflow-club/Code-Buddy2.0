@@ -77,11 +77,13 @@ const computeTimerFields = (round, now = new Date()) => {
 
 /**
  * Format round response for client consumption.
- * Strictly sanitizes question content: hiddenTestCases are NEVER exposed.
+ * Strictly sanitizes question content: hiddenTestCases are NEVER exposed,
+ * and the bank number is exposed only when showBankNumber is true.
  */
 const formatRoundStudentResponse = (round, timerState = null) => {
   const snapshot = round.questionSnapshot || {};
   const timer = timerState || computeTimerFields(round);
+  const showBankNumber = snapshot.showBankNumber !== false && Boolean(snapshot.bankNumber);
   return {
     id: (round._id || '').toString(),
     studentId: (round.studentId || '').toString(),
@@ -105,6 +107,26 @@ const formatRoundStudentResponse = (round, timerState = null) => {
       examples: snapshot.examples || [],
       difficulty: snapshot.difficulty,
       levelNumber: snapshot.levelNumber,
+      ...(showBankNumber ? { bankNumber: snapshot.bankNumber } : {}),
+    },
+  };
+};
+
+/**
+ * Format round response for volunteer consumption. Volunteers always see the
+ * bank number and its visibility flag — they need the number to match the
+ * student to the right test sheet — even when the number is hidden from the
+ * student. Hidden test cases are still never exposed here.
+ */
+const formatRoundVolunteerResponse = (round, timerState = null) => {
+  const studentView = formatRoundStudentResponse(round, timerState);
+  const snapshot = round.questionSnapshot || {};
+  return {
+    ...studentView,
+    question: {
+      ...studentView.question,
+      bankNumber: snapshot.bankNumber || '',
+      showBankNumber: snapshot.showBankNumber !== false,
     },
   };
 };
@@ -146,6 +168,7 @@ module.exports = {
   parseValidDeadlineMs,
   computeTimerFields,
   formatRoundStudentResponse,
+  formatRoundVolunteerResponse,
   formatLevelResponse,
   formatVolunteerResponse,
 };

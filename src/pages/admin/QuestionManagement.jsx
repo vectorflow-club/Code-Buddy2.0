@@ -22,8 +22,10 @@ const emptyForm = {
   difficulty: "EASY",
   statement: "",
   constraints: "",
-  sampleInput: "",
-  sampleOutput: "",
+  bankNumber: "",
+  showBankNumber: true,
+  examples: [{ input: "", output: "" }],
+  hiddenTestCases: [],
 };
 
 export default function QuestionManagement() {
@@ -31,15 +33,16 @@ export default function QuestionManagement() {
     const data = await getAdminQuestions();
     return data.map((question) => ({
       id: question.id,
-      number: question.id,
+      number: question.bankNumber || question.id,
+      bankNumber: question.bankNumber || "",
+      showBankNumber: question.showBankNumber !== false,
       title: question.title,
       level: question.levelNumber,
       difficulty: question.difficulty,
       statement: question.statement,
       constraints: Array.isArray(question.constraints) ? question.constraints.join("\n") : "",
-      sampleInput: question.examples?.[0]?.input || "",
-      sampleOutput: question.examples?.[0]?.output || "",
       examples: Array.isArray(question.examples) ? question.examples : [],
+      hiddenTestCases: Array.isArray(question.hiddenTestCases) ? question.hiddenTestCases : [],
       assigned: question.isAssigned === true,
       isActive: question.isActive === true,
     }));
@@ -83,8 +86,12 @@ export default function QuestionManagement() {
       difficulty: question.difficulty,
       statement: question.statement,
       constraints: question.constraints,
-      sampleInput: question.sampleInput,
-      sampleOutput: question.sampleOutput,
+      bankNumber: question.bankNumber || "",
+      showBankNumber: question.showBankNumber !== false,
+      examples: question.examples.length > 0
+        ? question.examples.map((example) => ({ ...example }))
+        : [{ input: "", output: "" }],
+      hiddenTestCases: question.hiddenTestCases.map((testCase) => ({ ...testCase })),
     });
 
     setShowForm(true);
@@ -96,25 +103,98 @@ export default function QuestionManagement() {
     setForm({ ...emptyForm });
   };
 
+  const updateExample = (index, field, value) => {
+    setForm((prev) => ({
+      ...prev,
+      examples: prev.examples.map((example, i) =>
+        i === index ? { ...example, [field]: value } : example
+      ),
+    }));
+  };
+
+  const updateHiddenCase = (index, field, value) => {
+    setForm((prev) => ({
+      ...prev,
+      hiddenTestCases: prev.hiddenTestCases.map((testCase, i) =>
+        i === index ? { ...testCase, [field]: value } : testCase
+      ),
+    }));
+  };
+
+  const addExample = () => {
+    setForm((prev) => ({ ...prev, examples: [...prev.examples, { input: "", output: "" }] }));
+  };
+
+  const addHiddenCase = () => {
+    setForm((prev) => ({
+      ...prev,
+      hiddenTestCases: [...prev.hiddenTestCases, { input: "", expectedOutput: "" }],
+    }));
+  };
+
+  const removeExample = (index) => {
+    setForm((prev) => ({ ...prev, examples: prev.examples.filter((_, i) => i !== index) }));
+  };
+
+  const removeHiddenCase = (index) => {
+    setForm((prev) => ({
+      ...prev,
+      hiddenTestCases: prev.hiddenTestCases.filter((_, i) => i !== index),
+    }));
+  };
+
+  const moveExampleToHidden = (index) => {
+    setForm((prev) => {
+      const example = prev.examples[index];
+      return {
+        ...prev,
+        examples: prev.examples.filter((_, i) => i !== index),
+        hiddenTestCases: [
+          ...prev.hiddenTestCases,
+          { input: example.input, expectedOutput: example.output },
+        ],
+      };
+    });
+  };
+
+  const moveHiddenToVisible = (index) => {
+    setForm((prev) => {
+      const testCase = prev.hiddenTestCases[index];
+      return {
+        ...prev,
+        hiddenTestCases: prev.hiddenTestCases.filter((_, i) => i !== index),
+        examples: [...prev.examples, { input: testCase.input, output: testCase.expectedOutput }],
+      };
+    });
+  };
+
   const handleSave = (event) => {
     event.preventDefault();
     if (savingRef.current) return;
+    const constraints = form.constraints.split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
+    // Rows left completely blank are dropped, not saved as empty test cases.
+    // Example objects keep their other fields (id, title, explanation) —
+    // only input/output are ever edited here.
+    const examples = form.examples.filter((example) => example.input !== "" || example.output !== "");
+    const hiddenTestCases = form.hiddenTestCases.filter(
+      (testCase) => testCase.input !== "" || testCase.expectedOutput !== ""
+    );
+    if (examples.length === 0) {
+      setError("Add at least one visible test case.");
+      return;
+    }
     savingRef.current = true;
     setSaving(true);
-    const constraints = form.constraints.split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
-    const firstExample = { input: form.sampleInput, output: form.sampleOutput };
     const payload = {
       title: form.title.trim(),
       statement: form.statement.trim(),
       levelNumber: Number(form.level),
       difficulty: form.difficulty,
       constraints,
-      examples: editingId === null
-        ? [firstExample]
-        : [
-            { ...(questions.find((question) => question.id === editingId)?.examples?.[0] || {}), ...firstExample },
-            ...(questions.find((question) => question.id === editingId)?.examples?.slice(1) || []),
-          ],
+      bankNumber: form.bankNumber.trim(),
+      showBankNumber: form.showBankNumber,
+      examples,
+      hiddenTestCases,
     };
 
     const save = async () => {
@@ -400,29 +480,119 @@ export default function QuestionManagement() {
                 </div>
 
                 <div className="question-form-field">
-                  <label>Sample Input</label>
-                  <textarea
-                    rows="3"
-                    placeholder="Enter sample input"
-                    value={form.sampleInput}
+                  <label>Question Number</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. E1"
+                    maxLength={20}
+                    value={form.bankNumber}
                     onChange={(event) =>
-                      setForm({ ...form, sampleInput: event.target.value })
+                      setForm({ ...form, bankNumber: event.target.value })
                     }
-                    required
                   />
                 </div>
 
-                <div className="question-form-field">
-                  <label>Sample Output</label>
-                  <textarea
-                    rows="3"
-                    placeholder="Enter sample output"
-                    value={form.sampleOutput}
-                    onChange={(event) =>
-                      setForm({ ...form, sampleOutput: event.target.value })
-                    }
-                    required
-                  />
+                <div className="question-form-field question-checkbox-field">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={form.showBankNumber}
+                      onChange={(event) =>
+                        setForm({ ...form, showBankNumber: event.target.checked })
+                      }
+                    />
+                    Show number to student
+                  </label>
+                </div>
+
+                <div className="question-form-field full-width">
+                  <label>Visible test cases (shown to students)</label>
+                  {form.examples.map((example, index) => (
+                    <div className="test-case-row" key={index}>
+                      <textarea
+                        rows="2"
+                        placeholder="Input"
+                        value={example.input}
+                        onChange={(event) =>
+                          updateExample(index, "input", event.target.value)
+                        }
+                      />
+                      <textarea
+                        rows="2"
+                        placeholder="Expected output"
+                        value={example.output}
+                        onChange={(event) =>
+                          updateExample(index, "output", event.target.value)
+                        }
+                      />
+                      <div className="test-case-row-actions">
+                        <button
+                          type="button"
+                          onClick={() => moveExampleToHidden(index)}
+                        >
+                          Make hidden
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeExample(index)}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    className="test-case-add-btn"
+                    onClick={addExample}
+                  >
+                    + Add visible test case
+                  </button>
+                </div>
+
+                <div className="question-form-field full-width">
+                  <label>Hidden test cases (not shown to students)</label>
+                  {form.hiddenTestCases.map((testCase, index) => (
+                    <div className="test-case-row" key={index}>
+                      <textarea
+                        rows="2"
+                        placeholder="Input"
+                        value={testCase.input}
+                        onChange={(event) =>
+                          updateHiddenCase(index, "input", event.target.value)
+                        }
+                      />
+                      <textarea
+                        rows="2"
+                        placeholder="Expected output"
+                        value={testCase.expectedOutput}
+                        onChange={(event) =>
+                          updateHiddenCase(index, "expectedOutput", event.target.value)
+                        }
+                      />
+                      <div className="test-case-row-actions">
+                        <button
+                          type="button"
+                          onClick={() => moveHiddenToVisible(index)}
+                        >
+                          Make visible
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeHiddenCase(index)}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    className="test-case-add-btn"
+                    onClick={addHiddenCase}
+                  >
+                    + Add hidden test case
+                  </button>
                 </div>
 
               </div>

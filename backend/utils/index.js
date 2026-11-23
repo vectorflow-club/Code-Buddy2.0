@@ -4,6 +4,7 @@ const {
   parseValidDeadlineMs,
   computeTimerFields,
   formatRoundStudentResponse,
+  formatRoundVolunteerResponse,
   formatLevelResponse,
   formatVolunteerResponse,
 } = require('./formatters');
@@ -18,6 +19,7 @@ module.exports = {
   parseValidDeadlineMs,
   computeTimerFields,
   formatRoundStudentResponse,
+  formatRoundVolunteerResponse,
   formatLevelResponse,
   formatVolunteerResponse,
   buildErrorResponse,

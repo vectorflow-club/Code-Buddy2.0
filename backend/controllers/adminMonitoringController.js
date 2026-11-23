@@ -415,6 +415,8 @@ const formatAdminRoundResponse = (round, participant = null, evaluation = null) 
       examples: Array.isArray(snap.examples) ? snap.examples : [],
       difficulty: snap.difficulty ?? null,
       levelNumber: snap.levelNumber ?? round.levelNumber ?? null,
+      bankNumber: snap.bankNumber || '',
+      showBankNumber: snap.showBankNumber !== false,
     },
     evaluation: formatAdminEvaluationSummary(evaluation),
   };

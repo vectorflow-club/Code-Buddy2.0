@@ -1,5 +1,5 @@
 const { Round, Level, Evaluation } = require('../../models');
-const { formatRoundStudentResponse, computeTimerFields } = require('../../utils');
+const { formatRoundVolunteerResponse, computeTimerFields } = require('../../utils');
 const { syncRoundDeadlineState } = require('../roundController');
 const { resolveRegisteredStudent, formatStudentVolunteerResponse } = require('./lookup');
 
@@ -113,7 +113,7 @@ const startStudentRoundByUsn = async (req, res) => {
       message: 'Round started successfully.',
       student: formatStudentVolunteerResponse(student, startedRound),
       round: {
-        ...formatRoundStudentResponse(startedRound),
+        ...formatRoundVolunteerResponse(startedRound),
         startedBy: startedRound.startedBy ? startedRound.startedBy.toString() : req.volunteer._id.toString(),
       },
       startedBy: {
@@ -352,7 +352,7 @@ const extendStudentRoundByUsn = async (req, res) => {
       extensionSeconds: parsedExtensionSeconds,
       student: formatStudentVolunteerResponse(student, extendedRound),
       round: {
-        ...formatRoundStudentResponse(extendedRound, updatedTimer),
+        ...formatRoundVolunteerResponse(extendedRound, updatedTimer),
         startedBy: extendedRound.startedBy ? extendedRound.startedBy.toString() : null,
         timerExtensions: Array.isArray(extendedRound.timerExtensions)
           ? extendedRound.timerExtensions.map((ext) => ({
@@ -655,7 +655,7 @@ const evaluateStudentRoundByUsn = async (req, res) => {
       evaluation: formatEvaluationResponse(savedEvaluation),
       student: formatStudentVolunteerResponse(student, evaluatedRound),
       round: {
-        ...formatRoundStudentResponse(evaluatedRound),
+        ...formatRoundVolunteerResponse(evaluatedRound),
         startedBy: evaluatedRound.startedBy ? evaluatedRound.startedBy.toString() : null,
       },
       evaluatedBy: {

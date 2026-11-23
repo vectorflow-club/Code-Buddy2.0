@@ -21,7 +21,7 @@ function QuestionCard({ question, status }) {
   return <article className="question-card" aria-labelledby={`question-title-${question.id}`}>
     <header className="question-header">
       <div className="question-number" title="Assigned question ID">{question.id}</div>
-      <div className="question-title"><InlineTag tone={question.difficulty?.toLowerCase()}>{question.difficulty}</InlineTag><h3 id={`question-title-${question.id}`}>{question.title}</h3></div>
+      <div className="question-title"><InlineTag tone={question.difficulty?.toLowerCase()}>{question.difficulty}</InlineTag><h3 id={`question-title-${question.id}`}>{question.title}</h3>{question.bankNumber ? <span className="question-bank-number">Question {question.bankNumber}</span> : null}</div>
       <span className={`evaluation-status${passed ? ' evaluation-pass' : failed ? ' evaluation-fail' : ''}`} aria-label={`Evaluation status: ${status}`}><span />{status}</span>
     </header>
     <div className="question-body">
