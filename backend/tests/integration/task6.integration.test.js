@@ -55,7 +55,6 @@ async function runSuite(name, fn) {
 }
 
 async function run() {
-  // 0. Database safety guard tests (must block Atlas, non-local, empty, and production-matching URIs)
   await runSuite('Safety Guard: assertSafeTestMongoUri rejects unsafe targets', async () => {
     assert.throws(
       () => assertSafeTestMongoUri('mongodb+srv://user:pass@cluster0.abcde.mongodb.net/codebuddy'),
@@ -82,7 +81,6 @@ async function run() {
   let volunteerId = null;
   let adminToken = null;
 
-  // Helpers that call real Express endpoints via Supertest
   const loginAdmin = async () => {
     const res = await env.http().post('/api/admin/login').send({
       username: env.seededAdminCredentials.username,
@@ -213,13 +211,11 @@ async function run() {
     await env.seedBaseData();
 
     await runSuite('Suite A: Core Auth, Volunteer Provisioning & Student Registration + All 4 Academic Years Allocation', async () => {
-      // Check health endpoint
       const healthRes = await env.http().get('/api/health');
       checkEqual(healthRes.status, 200, 'GET /api/health returns 200');
       checkEqual(healthRes.body.status, 'ok', 'Health check status ok');
       checkEqual(healthRes.body.server, 'healthy', 'Health check server healthy');
 
-      // Admin login via both /api/admin/login and /api/auth/admin/login alias
       adminToken = await loginAdmin();
       const aliasAdminRes = await env.http().post('/api/auth/admin/login').send({
         username: env.seededAdminCredentials.username,
@@ -233,7 +229,6 @@ async function run() {
         .set('Authorization', `Bearer ${adminToken}`);
       checkEqual(adminMeRes.status, 200, 'GET /api/admin/me -> 200');
 
-      // Admin creates primary volunteer
       const createVolRes = await env
         .http()
         .post('/api/admin/volunteers')
@@ -248,7 +243,6 @@ async function run() {
       volunteerId = createVolRes.body.volunteer.id;
       env.trackStaffId(volunteerId);
 
-      // Volunteer login via /api/volunteer/login and alias /api/auth/volunteer/login
       const vLoginRes = await env.http().post('/api/volunteer/login').send({
         username: 'vol_int_1',
         password: 'VolPassword!123',
@@ -262,7 +256,6 @@ async function run() {
       });
       checkEqual(vAliasRes.status, 200, 'POST /api/auth/volunteer/login alias -> 200');
 
-      // Negative Google Auth tests
       env.registerGoogleIdentity('gmail-token', {
         payload: {
           sub: 'sub-gmail',
@@ -285,7 +278,6 @@ async function run() {
       const missingIdTokenRes = await env.http().post('/api/auth/google').send({});
       checkEqual(missingIdTokenRes.status, 400, 'Empty Google auth payload rejected 400');
 
-      // Unregistered student tries to allocate before completing registration
       const unregistered = await provisionAndRegisterStudent({
         tag: 'unreg',
         name: 'Unregistered Student',
@@ -298,7 +290,6 @@ async function run() {
         .set('Authorization', `Bearer ${unregistered.token}`);
       checkEqual(unregAllocRes.status, 403, 'Unregistered student cannot allocate round');
 
-      // Pre-unused Level 6 deactivate + reactivate check before any student reaches Level 6
       const deactL6Res = await env
         .http()
         .patch('/api/admin/levels/6/deactivate')
@@ -313,7 +304,6 @@ async function run() {
       checkEqual(reactL6Res.status, 200, 'Level 6 can be reactivated -> 200');
       checkEqual(reactL6Res.body.level.isActive, true, 'Level 6 isActive true after activate');
 
-      // Academic year question allocation rules: 1st Year -> EASY; 2nd/3rd/4th Year -> HARD
       const y1 = await provisionAndRegisterStudent({
         tag: 'yr1check',
         name: 'Year 1 Student',
@@ -339,7 +329,6 @@ async function run() {
         year: '4th Year',
       });
 
-      // Duplicate USN guard
       const dupUsnStudent = await provisionAndRegisterStudent({
         tag: 'dupUsn',
         name: 'Dup USN Candidate',
@@ -354,7 +343,6 @@ async function run() {
       checkEqual(dupRegRes.status, 409, 'Duplicate USN returns 409');
       checkEqual(dupRegRes.body.code, 'DUPLICATE_USN', 'Duplicate USN code matches');
 
-      // Allocate concurrent check on y1 (two parallel POST /api/rounds/allocate -> single DB Round!)
       const [allocY1A, allocY1B] = await Promise.all([
         env.http().post('/api/rounds/allocate').set('Authorization', `Bearer ${y1.token}`),
         env.http().post('/api/rounds/allocate').set('Authorization', `Bearer ${y1.token}`),
@@ -373,7 +361,6 @@ async function run() {
       checkEqual(allocY1A.body.round.question.difficulty, 'EASY', 'Year 1 allocates EASY');
       assertNoSensitiveLeak(allocY1A.body, 'allocate response');
 
-      // Idempotent second sequential allocation returns 200 + isExisting: true
       const idempRes = await env
         .http()
         .post('/api/rounds/allocate')
@@ -382,7 +369,6 @@ async function run() {
       checkEqual(idempRes.body.isExisting, true, 'Repeated allocate marks isExisting: true');
       checkEqual(idempRes.body.round.id, allocY1A.body.round.id, 'Same round kept');
 
-      // Year 2, 3, 4 -> HARD
       const allocY2 = await env.http().post('/api/rounds/allocate').set('Authorization', `Bearer ${y2.token}`);
       const allocY3 = await env.http().post('/api/rounds/allocate').set('Authorization', `Bearer ${y3.token}`);
       const allocY4 = await env.http().post('/api/rounds/allocate').set('Authorization', `Bearer ${y4.token}`);
@@ -393,7 +379,6 @@ async function run() {
       checkEqual(allocY4.status, 201, 'Year 4 alloc -> 201');
       checkEqual(allocY4.body.round.question.difficulty, 'HARD', 'Year 4 allocates HARD');
 
-      // Student profile, level-info, and active round endpoint
       const meRes = await env.http().get('/api/auth/me').set('Authorization', `Bearer ${y1.token}`);
       checkEqual(meRes.status, 200, 'GET /api/auth/me -> 200');
       checkEqual(meRes.body.student.currentLevel, 1, 'GET /api/auth/me currentLevel=1');
@@ -408,7 +393,6 @@ async function run() {
       checkEqual(activeRes.status, 200, 'GET /api/rounds/active -> 200');
       checkEqual(activeRes.body.round.status, 'ready', 'Active round status ready');
 
-      // Volunteer lookup + extension + timer expiration DB sync verification
       const lookupRes = await env
         .http()
         .get(`/api/volunteer/students/${y2.usn}/round`)
@@ -432,7 +416,6 @@ async function run() {
       checkEqual(extendRes.body.extensionSeconds, 45, 'Extension seconds reported');
       checkEqual(extendRes.body.round.timerExtensions.length, 1, 'One extension logged');
 
-      // Simulate past deadline in real DB, verify real controller sync transitions to timeExpired
       await env.models.Round.findByIdAndUpdate(startY2Res.body.round.id, {
         $set: { deadline: new Date(Date.now() - 10000) },
       });
@@ -447,7 +430,6 @@ async function run() {
     });
 
     await runSuite('Suite B: Full L1-L6 PASS Journey, L1-L6 FAIL Paths, Safe Zones, Concurrency & History/Transactions', async () => {
-      // 1. Full L1 -> L6 PASS champion (2nd year -> HARD throughout)
       const champ = await provisionAndRegisterStudent({
         tag: 'champion',
         name: 'Champion Student',
@@ -483,14 +465,12 @@ async function run() {
         }
       }
 
-      // Guard: completed student cannot allocate further rounds
       const postCompleteAlloc = await env
         .http()
         .post('/api/rounds/allocate')
         .set('Authorization', `Bearer ${champ.token}`);
       checkEqual(postCompleteAlloc.status, 409, 'Completed student cannot allocate more rounds -> 409');
 
-      // Student history & ledger transactions for champion
       const histRes = await env
         .http()
         .get('/api/student/rounds/history')
@@ -506,7 +486,6 @@ async function run() {
       checkEqual(txRes.body.transactions.length, 6, 'Champion has 6 immutable ledger transactions');
       checkEqual(txRes.body.walletBalance, 500, 'Champion transactions endpoint walletBalance=500');
 
-      // 2. Duplicate evaluation / settlement / progression & concurrency races on a separate student
       const raceStudent = await provisionAndRegisterStudent({
         tag: 'racer',
         name: 'Race Guard Student',
@@ -524,7 +503,6 @@ async function run() {
         .set('Authorization', `Bearer ${volunteerToken}`);
       checkEqual(rStart.status, 200, 'Race student L1 started');
 
-      // Concurrent evaluations (only 1 succeeds with 200, 1 gets 409 ROUND_ALREADY_EVALUATED)
       const [evA, evB] = await Promise.all([
         env
           .http()
@@ -543,7 +521,6 @@ async function run() {
       const evalDbCount = await env.models.Evaluation.countDocuments({ roundId: rAlloc.body.round.id });
       checkEqual(evalDbCount, 1, 'Exactly 1 Evaluation document exists in DB');
 
-      // Concurrent settlements (only 1 succeeds with 200, second gets 409 ROUND_ALREADY_SETTLED or SETTLEMENT_CONFLICT)
       const [stA, stB] = await Promise.all([
         env
           .http()
@@ -560,14 +537,12 @@ async function run() {
       const txDbCount = await env.models.Transaction.countDocuments({ roundId: rAlloc.body.round.id });
       checkEqual(txDbCount, 1, 'Exactly 1 Transaction document exists in DB');
 
-      // Sequential duplicate settle check
       const dupSettle = await env
         .http()
         .post(`/api/volunteer/students/${raceStudent.usn}/round/settle`)
         .set('Authorization', `Bearer ${volunteerToken}`);
       checkEqual(dupSettle.status, 409, 'Duplicate settle rejected 409');
 
-      // Concurrent progression (only 1 succeeds with 200, second gets 409)
       const [prA, prB] = await Promise.all([
         env
           .http()
@@ -585,7 +560,6 @@ async function run() {
       checkEqual(racerInDb.currentLevel, 2, 'Race student progressed exactly once to level 2');
       checkEqual(racerInDb.walletBalance, 50, 'Race student wallet settled once to 50');
 
-      // 3. Dedicated FAIL tests across ALL six levels (L1..L6) verifying canonical losing payouts & elimination
       const failScenarios = [
         { failAt: 1, expectedWallet: 0, expectedSafeZone: 0 },
         { failAt: 2, expectedWallet: 50, expectedSafeZone: 50 },
@@ -634,7 +608,6 @@ async function run() {
           `L${scenario.failAt} FAIL sets competitionStatus='eliminated'`
         );
 
-        // Eliminated student cannot allocate next round
         const blockedAlloc = await env
           .http()
           .post('/api/rounds/allocate')
@@ -644,7 +617,6 @@ async function run() {
     });
 
     await runSuite('Suite C: Volunteer Management, Admin Monitoring, Dashboard, Level Config & Guarded Recovery', async () => {
-      // 1. Volunteer lifecycle (create, deactivate -> block token, reactivate, reset password)
       const tempVolRes = await env
         .http()
         .post('/api/admin/volunteers')
@@ -703,7 +675,6 @@ async function run() {
       });
       checkEqual(newPwOk.status, 200, 'New password succeeds after reset -> 200');
 
-      // 2. Question Bank CRUD
       const qCreate = await env
         .http()
         .post('/api/admin/questions')
@@ -733,7 +704,6 @@ async function run() {
         .set('Authorization', `Bearer ${adminToken}`);
       checkEqual(qReact.status, 200, 'Admin reactivate question -> 200');
 
-      // 3. Guarded Abandoned Round Recovery (POST /api/admin/rounds/:roundId/recover)
       const recStudent = await provisionAndRegisterStudent({
         tag: 'recovery_user',
         name: 'Recovery Target Student',
@@ -747,7 +717,6 @@ async function run() {
       checkEqual(recAlloc.status, 201, 'Allocated round for recovery scenario -> 201');
       const recRoundId = recAlloc.body.round.id;
 
-      // Trying to recover an active non-abandoned round -> 409 ROUND_NOT_ABANDONED
       const nonAbandRes = await env
         .http()
         .post(`/api/admin/rounds/${recRoundId}/recover`)
@@ -755,11 +724,8 @@ async function run() {
       checkEqual(nonAbandRes.status, 409, 'Recovering non-abandoned round rejected 409');
       checkEqual(nonAbandRes.body.code, 'ROUND_NOT_ABANDONED', 'Code ROUND_NOT_ABANDONED');
 
-      // Mark round abandoned in DB (no evaluation, no transaction) and also mark student abandoned-like state?
-      // Student stays registered/inProgress; round becomes abandoned
       await env.models.Round.findByIdAndUpdate(recRoundId, { $set: { status: 'abandoned' } });
 
-      // Invalid ObjectId -> 400; missing ObjectId -> 404
       const badIdRec = await env
         .http()
         .post('/api/admin/rounds/not-an-object-id/recover')
@@ -772,7 +738,6 @@ async function run() {
         .set('Authorization', `Bearer ${adminToken}`);
       checkEqual(missingIdRec.status, 404, 'Nonexistent roundId on recover -> 404');
 
-      // Concurrent recovery test: two parallel POST /recover -> 1 wins (200), 1 conflicts (409)
       const [recA, recB] = await Promise.all([
         env
           .http()
@@ -795,7 +760,6 @@ async function run() {
         'Recovered round preserved original questionId'
       );
 
-      // Verify recovered round returns as existing ready round (200) and completes & settles cleanly
       const recPlay = await playOneLevel({
         studentToken: recStudent.token,
         usn: recStudent.usn,
@@ -808,7 +772,6 @@ async function run() {
       checkEqual(recPlay.allocRes.body.round.id, recRoundId, 'Re-allocated recovered round preserves _id');
       checkEqual(recPlay.progRes.body.student.walletBalance, 50, 'Recovered round completes and settles cleanly');
 
-      // 4. Admin Level Config + Locking after competition usage
       const levelsRes = await env
         .http()
         .get('/api/admin/levels')
@@ -839,7 +802,6 @@ async function run() {
         .set('Authorization', `Bearer ${adminToken}`);
       checkEqual(deactUsedL1.status, 409, 'Deactivating in-use Level 1 blocked with 409');
 
-      // 5. Admin Monitoring (read-only + zero email leak) & Dashboard
       const txBefore = await env.models.Transaction.countDocuments({});
       const rndBefore = await env.models.Round.countDocuments({});
 
@@ -863,7 +825,6 @@ async function run() {
       assertNoSensitiveLeak(roundsMonRes.body, 'admin rounds');
       assertNoSensitiveLeak(txMonRes.body, 'admin transactions');
 
-      // Cross-check Dashboard aggregates against real DB state
       const dbCompletedStudents = await env.models.Student.countDocuments({ competitionStatus: 'completed' });
       const dbEliminatedStudents = await env.models.Student.countDocuments({ competitionStatus: 'eliminated' });
       checkEqual(
@@ -886,8 +847,6 @@ async function run() {
     });
 
     await runSuite('Suite D: Leaderboard Integration (Student, Volunteer & Admin)', async () => {
-      // Pick champion student or create quick student token? We can mint or use an existing active student token:
-      // Let's register one student in Suite D for calling Student leaderboard + /me cleanly
       const lbStudent = await provisionAndRegisterStudent({
         tag: 'lb_viewer',
         name: 'Leaderboard Viewer',
@@ -938,7 +897,6 @@ async function run() {
     });
 
     await runSuite('Suite E: Task 5 Security Middleware, RBAC, Validation & Real Rate-Limiting Negative Tests', async () => {
-      // 1. Missing, malformed, expired, not-before, invalid-sub, and wrong-role JWTs
       const noAuth = await env.http().get('/api/admin/dashboard');
       checkEqual(noAuth.status, 401, 'Missing Authorization header -> 401');
 
@@ -992,7 +950,6 @@ async function run() {
         .set('Authorization', `Bearer ${ghostJwt}`);
       checkEqual(ghostRes.status, 401, 'Nonexistent/deleted Student subject JWT -> 401');
 
-      // Wrong role isolation
       const volToAdmin = await env
         .http()
         .get('/api/admin/dashboard')
@@ -1005,7 +962,6 @@ async function run() {
         .set('Authorization', `Bearer ${adminToken}`);
       checkEqual(adminToRound.status, 403, 'Admin hitting /api/rounds/allocate -> 403');
 
-      // 2. CORS allowlist & Helmet security headers
       const badOriginRes = await env
         .http()
         .get('/api/health')
@@ -1027,7 +983,6 @@ async function run() {
       checkEqual(goodOriginRes.headers['x-frame-options'], 'DENY', 'Helmet x-frame-options DENY');
       checkEqual(goodOriginRes.headers['x-powered-by'], undefined, 'X-Powered-By stripped');
 
-      // 3. Malformed JSON, Payload Too Large, and Unknown Route 404
       const malformedRes = await env
         .http()
         .post('/api/admin/login')
@@ -1049,7 +1004,6 @@ async function run() {
       checkEqual(unknownRes.status, 404, 'Unknown API route -> 404');
       checkEqual(unknownRes.body.code, 'ROUTE_NOT_FOUND', 'Code ROUTE_NOT_FOUND');
 
-      // Ensure zero stack trace or secret exposure in error responses
       for (const errBody of [badOriginRes.body, malformedRes.body, oversizedRes.body, unknownRes.body]) {
         const s = JSON.stringify(errBody);
         check(!/"stack"/i.test(s), 'Error response must not expose stack field');
@@ -1057,7 +1011,6 @@ async function run() {
         check(!s.includes('127.0.0.1'), 'Error response must not leak Mongo URI');
       }
 
-      // 4. Real Rate Limiter integration via Supertest (reload Express app with tight limits)
       const { app: tightApp } = env.reloadAppWithEnv({
         API_RATE_LIMIT_MAX: '5',
         LOGIN_RATE_LIMIT_MAX: '2',
@@ -1065,7 +1018,6 @@ async function run() {
       });
       const tightReq = request(tightApp);
 
-      // Login rate limit (max 2 requests for same IP -> 3rd returns 429)
       const rl1 = await tightReq
         .post('/api/admin/login')
         .set('X-Forwarded-For', '203.0.113.10')
@@ -1083,7 +1035,6 @@ async function run() {
       checkEqual(rl3.status, 429, 'Login attempt 3 exceeds LOGIN_RATE_LIMIT_MAX -> 429');
       checkEqual(rl3.body.code, 'RATE_LIMIT_EXCEEDED', 'Login rate limiter returns RATE_LIMIT_EXCEEDED');
 
-      // General /api limiter (distinct IP on non-exempt route; max 5 requests -> 6th returns 429)
       for (let i = 1; i <= 5; i += 1) {
         const r = await tightReq
           .get('/api/admin/me')
@@ -1098,7 +1049,6 @@ async function run() {
       checkEqual(api6.status, 429, 'General API call 6/5 hits 429 RATE_LIMIT_EXCEEDED');
       checkEqual(api6.body.code, 'RATE_LIMIT_EXCEEDED', 'General API rate limit code matches');
 
-      // Confirm /api/health remains exempt even from the rate-limited IP
       const healthExempt = await tightReq.get('/api/health').set('X-Forwarded-For', '203.0.113.20');
       checkEqual(healthExempt.status, 200, 'GET /api/health remains exempt -> 200');
     });

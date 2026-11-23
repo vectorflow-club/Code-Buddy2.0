@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const { TOTAL_LEVELS } = require('../constants');
 
-// Subdocument schema for question examples/samples
 const exampleSchema = new mongoose.Schema(
   {
     id: {
@@ -31,7 +30,6 @@ const exampleSchema = new mongoose.Schema(
   { _id: false }
 );
 
-// Subdocument schema for hidden volunteer test cases
 const hiddenTestCaseSchema = new mongoose.Schema(
   {
     input: {
@@ -48,24 +46,20 @@ const hiddenTestCaseSchema = new mongoose.Schema(
 
 const questionSchema = new mongoose.Schema(
   {
-    // Question title
     title: {
       type: String,
       required: [true, 'Question title is required'],
       trim: true,
     },
-    // Detailed problem statement
     statement: {
       type: String,
       required: [true, 'Problem statement is required'],
       trim: true,
     },
-    // Problem constraints (e.g. 1 <= N <= 10^5)
     constraints: {
       type: [String],
       default: [],
     },
-    // Sample inputs and outputs shown to the student
     examples: {
       type: [exampleSchema],
       default: [],
@@ -80,7 +74,6 @@ const questionSchema = new mongoose.Schema(
       required: [true, 'Difficulty is required'],
       index: true,
     },
-    // Target competition level (1 to 6)
     levelNumber: {
       type: Number,
       required: [true, 'Level number is required'],
@@ -88,18 +81,15 @@ const questionSchema = new mongoose.Schema(
       max: [TOTAL_LEVELS, `Level number cannot exceed ${TOTAL_LEVELS}`],
       index: true,
     },
-    // Optional hidden test cases for volunteer code verification
     hiddenTestCases: {
       type: [hiddenTestCaseSchema],
       default: [],
     },
-    // Active status flag
     isActive: {
       type: Boolean,
       default: true,
       index: true,
     },
-    // Reference to Admin staff who authored/uploaded the question
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Staff',
@@ -114,7 +104,6 @@ const questionSchema = new mongoose.Schema(
 // Compound index for efficient random question selection by level and difficulty
 questionSchema.index({ levelNumber: 1, difficulty: 1, isActive: 1 });
 
-// Compile and export Question model
 const Question = mongoose.model('Question', questionSchema);
 
 module.exports = Question;

@@ -3,7 +3,6 @@ const { TOTAL_LEVELS, ACADEMIC_YEARS, USN_REGEX } = require('../constants');
 
 const studentSchema = new mongoose.Schema(
   {
-    // Google authentication subject identifier
     googleSubjectId: {
       type: String,
       required: [true, 'Google subject ID is required'],
@@ -11,13 +10,11 @@ const studentSchema = new mongoose.Schema(
       trim: true,
       index: true,
     },
-    // Student full name
     name: {
       type: String,
       required: [true, 'Student name is required'],
       trim: true,
     },
-    // Official college email (must end in @vvce.ac.in)
     email: {
       type: String,
       required: [true, 'Email is required'],
@@ -32,12 +29,10 @@ const studentSchema = new mongoose.Schema(
         message: (props) => `${props.value} is not a valid VVCE college email address (@vvce.ac.in)`,
       },
     },
-    // Email verification status from Google Identity Services
     emailVerified: {
       type: Boolean,
       default: false,
     },
-    // Authorization role
     role: {
       type: String,
       enum: {
@@ -47,7 +42,6 @@ const studentSchema = new mongoose.Schema(
       default: 'STUDENT',
       required: [true, 'Role is required'],
     },
-    // University Seat Number (unique per student; required when registration is complete)
     usn: {
       type: String,
       unique: true,
@@ -64,13 +58,11 @@ const studentSchema = new mongoose.Schema(
       validate: {
         validator: function (value) {
           if (!value) return true; // Handled by conditional required validator above
-          // Flexible alphanumeric validation (8-15 characters) matching current platform standard
           return USN_REGEX.test(value);
         },
         message: (props) => `${props.value} is not a valid USN format (alphanumeric, 8-15 characters)`,
       },
     },
-    // Academic year of study (required when registration is complete)
     year: {
       type: String,
       enum: {
@@ -86,34 +78,29 @@ const studentSchema = new mongoose.Schema(
         'Academic year is required when registration is complete',
       ],
     },
-    // Registration completion status
     registrationComplete: {
       type: Boolean,
       default: false,
       index: true,
     },
-    // Current level (1 to 6)
     currentLevel: {
       type: Number,
       default: 1,
       min: [1, 'Current level cannot be less than 1'],
       max: [TOTAL_LEVELS, `Current level cannot exceed ${TOTAL_LEVELS}`],
     },
-    // Highest level reached during the competition
     highestLevelReached: {
       type: Number,
       default: 1,
       min: [1, 'Highest level cannot be less than 1'],
       max: [TOTAL_LEVELS, `Highest level cannot exceed ${TOTAL_LEVELS}`],
     },
-    // Count of levels cleared successfully
     levelsCleared: {
       type: Number,
       default: 0,
       min: [0, 'Levels cleared cannot be negative'],
       max: [TOTAL_LEVELS, `Levels cleared cannot exceed ${TOTAL_LEVELS}`],
     },
-    // Overall student competition status
     competitionStatus: {
       type: String,
       enum: {
@@ -123,7 +110,6 @@ const studentSchema = new mongoose.Schema(
       default: 'registered',
       index: true,
     },
-    // Student round availability state for the UI
     roundAvailability: {
       type: String,
       enum: {
@@ -141,25 +127,21 @@ const studentSchema = new mongoose.Schema(
       },
       default: 'ready',
     },
-    // Current wallet balance available for staking
     walletBalance: {
       type: Number,
       default: 0,
       min: [0, 'Wallet balance cannot be negative'],
     },
-    // Cumulative gross rewards won across all cleared levels (separate neutral aggregate)
     totalEarned: {
       type: Number,
       default: 0,
       min: [0, 'Total earned cannot be negative'],
     },
-    // Cumulative amount staked across all entered rounds (separate neutral aggregate)
     totalRisked: {
       type: Number,
       default: 0,
       min: [0, 'Total risked cannot be negative'],
     },
-    // Guaranteed earnings secured by clearing safe-zone checkpoints (separate neutral aggregate)
     safeZoneAmount: {
       type: Number,
       default: 0,
@@ -171,7 +153,6 @@ const studentSchema = new mongoose.Schema(
   }
 );
 
-// Compile and export Student model
 const Student = mongoose.model('Student', studentSchema);
 
 module.exports = Student;

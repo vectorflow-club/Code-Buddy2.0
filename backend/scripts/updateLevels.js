@@ -2,7 +2,6 @@ const path = require('path');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 
-// Load environment variables from backend/.env and current environment
 dotenv.config({ path: path.join(__dirname, '../.env') });
 dotenv.config();
 
@@ -96,7 +95,6 @@ const updateLevels = async () => {
   }
 };
 
-// Execute update if run directly
 if (require.main === module) {
   updateLevels();
 }

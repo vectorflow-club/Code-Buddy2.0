@@ -132,7 +132,6 @@ h1, h2, h3, h4, p { margin-top: 0; }
 .dashboard-links small { color: var(--subtle); font-size: 10px; }
 .site-footer { min-height: 58px; padding: 15px clamp(22px, 6.3vw, 104px); border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 15px; color: var(--subtle); font-size: 10px; }
 
-/* Round workspace */
 .round-page { padding-top: 0; }
 .back-link { display: inline-flex; margin: 2px 0 27px; font-size: 11px; color: var(--subtle); transition: color .16s ease; }
 .back-link:hover { color: var(--forest); }
@@ -198,7 +197,6 @@ h1, h2, h3, h4, p { margin-top: 0; }
 .round-readonly-note { font-size: 10px; line-height: 1.6; color: var(--subtle); margin: 14px 0 0; }
 .reset-round { margin-top: 14px; border: 0; background: none; cursor: pointer; color: var(--subtle); }
 
-/* Competition-wide record cards */
 .record-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 31px; }
 .record-card { min-height: 265px; padding: clamp(20px, 3.5vw, 31px); background: var(--forest); color: var(--white); display: flex; flex-direction: column; position: relative; overflow: hidden; }
 .record-card::after { content: ''; position: absolute; width: 210px; height: 210px; right: -77px; top: -87px; border: 1px solid rgb(255 255 255 / 14%); transform: rotate(45deg); box-shadow: 0 0 0 22px rgb(255 255 255 / 3%), 0 0 0 44px rgb(255 255 255 / 3%); pointer-events: none; }
@@ -216,7 +214,6 @@ h1, h2, h3, h4, p { margin-top: 0; }
 .record-footnote svg { flex: 0 0 auto; margin-top: 1px; }
 .record-source { margin: 12px 0 0; font: 9px var(--mono); color: #87928b; text-transform: uppercase; letter-spacing: .05em; }
 
-/* Student profile */
 .profile-sheet { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 18px 21px; padding: clamp(20px, 4vw, 34px); border: 1px solid var(--line); background: var(--white); margin-top: 29px; }
 .profile-avatar { width: 76px; height: 76px; display: grid; place-items: center; background: var(--forest); color: var(--lime); font: 700 20px var(--mono); }
 .profile-name { align-self: center; min-width: 0; }
@@ -234,7 +231,6 @@ h1, h2, h3, h4, p { margin-top: 0; }
 .profile-competition strong { font: 500 12px var(--mono); color: var(--lime); overflow-wrap: anywhere; }
 .profile-note { max-width: 740px; margin: 14px 0 0; color: var(--subtle); font-size: 10px; line-height: 1.65; }
 
-/* Outcome states */
 .outcome-screen { width: min(100% - 48px, 1010px); margin: 0 auto; padding: 31px 0 24px; min-height: 100vh; display: flex; flex-direction: column; }
 .outcome-topline { display: flex; justify-content: space-between; align-items: center; gap: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--line); }
 .outcome-topline>span { font: 9px var(--mono); letter-spacing: .07em; color: var(--subtle); text-align: right; }
@@ -265,7 +261,6 @@ h1, h2, h3, h4, p { margin-top: 0; }
 .outcome-footer>span { display: flex; align-items: center; gap: 7px; }
 .outcome-footer button { border: 0; background: none; font-size: 10px; text-decoration: underline; cursor: pointer; color: var(--subtle); }
 
-/* Login and registration */
 .auth-shell { min-height: 100vh; padding: 0 clamp(22px, 8vw, 128px); display: flex; flex-direction: column; background: var(--paper); }
 .auth-header { height: 76px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
 .auth-header>span, .auth-footer { font: 9px var(--mono); letter-spacing: .08em; color: var(--subtle); }
@@ -309,7 +304,6 @@ h1, h2, h3, h4, p { margin-top: 0; }
 .auth-back { align-self: center; padding: 10px; color: var(--subtle); font-size: 10px; }
 .auth-back a { display: flex; align-items: center; gap: 7px; }
 
-/* Shared loading, empty and error feedback */
 .state-message, .empty-state { display: flex; align-items: center; justify-content: center; min-height: 60vh; gap: 10px; color: var(--subtle); font-size: 12px; }
 .empty-state { flex-direction: column; text-align: center; padding: 32px 15px; }
 .empty-state h2 { margin: 0; color: var(--ink); font: 750 22px var(--display); }

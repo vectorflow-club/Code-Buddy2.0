@@ -3,13 +3,11 @@ const bcrypt = require('bcrypt');
 
 const staffSchema = new mongoose.Schema(
   {
-    // Full name of the staff member
     name: {
       type: String,
       required: [true, 'Staff name is required'],
       trim: true,
     },
-    // Unique username for credential login
     username: {
       type: String,
       required: [true, 'Username is required'],
@@ -20,12 +18,10 @@ const staffSchema = new mongoose.Schema(
       minlength: [3, 'Username must be at least 3 characters long'],
       match: [/^[a-z0-9_.-]+$/i, 'Username can only contain alphanumeric characters, underscores, dots, and hyphens'],
     },
-    // Securely hashed password (never plain text)
     passwordHash: {
       type: String,
       required: [true, 'Password hash is required'],
     },
-    // Staff role (discriminator key for ADMIN and VOLUNTEER models)
     role: {
       type: String,
       enum: {
@@ -37,13 +33,11 @@ const staffSchema = new mongoose.Schema(
       default: 'VOLUNTEER',
       index: true,
     },
-    // Account active status
     isActive: {
       type: Boolean,
       default: true,
       index: true,
     },
-    // Optional lab or station assigned to the volunteer
     assignedLab: {
       type: String,
       trim: true,
@@ -87,7 +81,6 @@ staffSchema.statics.hashPassword = async function (plainPassword) {
   return bcrypt.hash(plainPassword, saltRounds);
 };
 
-// Compile and export Staff base model
 const Staff = mongoose.models.Staff || mongoose.model('Staff', staffSchema);
 
 module.exports = Staff;

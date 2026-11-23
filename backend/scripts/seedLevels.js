@@ -2,7 +2,6 @@ const path = require('path');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 
-// Load environment variables from backend/.env and current environment
 dotenv.config({ path: path.join(__dirname, '../.env') });
 dotenv.config();
 
@@ -12,7 +11,6 @@ const {
   EXTENDED_LEVEL_DURATION_SECONDS,
 } = require('../constants');
 
-// Canonical configuration for the six competition levels
 const INITIAL_LEVELS = [
   {
     number: 1,
@@ -138,7 +136,6 @@ const seedLevels = async () => {
   }
 };
 
-// Execute seed if run directly
 if (require.main === module) {
   seedLevels();
 }

@@ -22,7 +22,6 @@ const buildRoundStartConflict = (status, currentLevel) => ({
  */
 const startStudentRoundByUsn = async (req, res) => {
   try {
-    // 1. Validate USN, find student, verify registrationComplete and currentLevel
     const resolved = await resolveRegisteredStudent(req.params.usn);
     if (resolved.error) {
       return res.status(resolved.error.status).json({
@@ -35,7 +34,6 @@ const startStudentRoundByUsn = async (req, res) => {
     const { student, normalizedUsn } = resolved;
     const currentLevel = student.currentLevel;
 
-    // 2. Locate student's round for their current level
     const existingRound = await Round.findOne({
       studentId: student._id,
       levelNumber: currentLevel,
@@ -49,7 +47,6 @@ const startStudentRoundByUsn = async (req, res) => {
       });
     }
 
-    // 3. Enforce strict state pre-check: only 'ready' rounds may be started
     if (existingRound.status !== 'ready') {
       return res.status(409).json(buildRoundStartConflict(existingRound.status, currentLevel));
     }
@@ -76,7 +73,6 @@ const startStudentRoundByUsn = async (req, res) => {
       });
     }
 
-    // 5. Compute authoritative timestamps and perform atomic conditional transition ready -> inProgress
     const startedAt = new Date();
     const deadline = new Date(startedAt.getTime() + durationSeconds * 1000);
 
@@ -100,7 +96,6 @@ const startStudentRoundByUsn = async (req, res) => {
       }
     );
 
-    // 6. Handle concurrent race condition where another volunteer started/modified the round first
     if (!startedRound) {
       const latestRound = await Round.findById(existingRound._id);
       if (!latestRound) {
@@ -113,7 +108,6 @@ const startStudentRoundByUsn = async (req, res) => {
       return res.status(409).json(buildRoundStartConflict(latestRound.status, currentLevel));
     }
 
-    // 7. Return sanitized response (no hiddenTestCases, no passwordHash, no googleSubjectId)
     return res.status(200).json({
       success: true,
       message: 'Round started successfully.',
@@ -215,7 +209,6 @@ const buildExtensionIneligibleResponse = (status, currentLevel) => {
  */
 const extendStudentRoundByUsn = async (req, res) => {
   try {
-    // 1. Validate request payload
     const parsedPayload = parseExtensionPayload(req.body);
     if (parsedPayload.error) {
       return res.status(parsedPayload.error.status).json({
@@ -227,7 +220,6 @@ const extendStudentRoundByUsn = async (req, res) => {
 
     const { extensionSeconds: parsedExtensionSeconds, reason: normalizedReason } = parsedPayload;
 
-    // 2. Validate USN, locate registered student, verify registrationComplete and currentLevel
     const resolved = await resolveRegisteredStudent(req.params.usn);
     if (resolved.error) {
       return res.status(resolved.error.status).json({
@@ -240,7 +232,6 @@ const extendStudentRoundByUsn = async (req, res) => {
     const { student, normalizedUsn } = resolved;
     const currentLevel = student.currentLevel;
 
-    // 3. Locate student's round for their current level
     const initialRound = await Round.findOne({
       studentId: student._id,
       levelNumber: currentLevel,
@@ -515,7 +506,6 @@ const formatEvaluationResponse = (evaluation) => ({
  */
 const evaluateStudentRoundByUsn = async (req, res) => {
   try {
-    // 1. Validate request payload
     const parsedPayload = parseEvaluationPayload(req.body);
     if (parsedPayload.error) {
       return res.status(parsedPayload.error.status).json({
@@ -527,7 +517,6 @@ const evaluateStudentRoundByUsn = async (req, res) => {
 
     const { result: normalizedResult, remarks: normalizedRemarks, programmingLanguage: normalizedLanguage } = parsedPayload;
 
-    // 2. Validate USN, locate registered student, verify registrationComplete and currentLevel
     const resolved = await resolveRegisteredStudent(req.params.usn);
     if (resolved.error) {
       return res.status(resolved.error.status).json({
@@ -540,7 +529,6 @@ const evaluateStudentRoundByUsn = async (req, res) => {
     const { student, normalizedUsn } = resolved;
     const currentLevel = student.currentLevel;
 
-    // 3. Locate student's round for their current level
     const existingRound = await Round.findOne({
       studentId: student._id,
       levelNumber: currentLevel,
@@ -576,7 +564,6 @@ const evaluateStudentRoundByUsn = async (req, res) => {
       targetRound = timerSync.round;
     }
 
-    // 5. Enforce eligibility: only 'inProgress' or 'timeExpired' rounds may be evaluated
     if (!['inProgress', 'timeExpired'].includes(targetRound.status)) {
       return res.status(409).json({
         success: false,
@@ -588,7 +575,6 @@ const evaluateStudentRoundByUsn = async (req, res) => {
       });
     }
 
-    // 6. Guard against existing Evaluation document for this round
     const existingEvaluation = await Evaluation.findOne({ roundId: targetRound._id });
     if (existingEvaluation) {
       return res.status(409).json({
@@ -598,7 +584,6 @@ const evaluateStudentRoundByUsn = async (req, res) => {
       });
     }
 
-    // 7. Atomically transition Round status from inProgress/timeExpired -> evaluated
     const evaluatedAt = new Date();
     const preEvaluationStatus = targetRound.status;
 
@@ -657,7 +642,6 @@ const evaluateStudentRoundByUsn = async (req, res) => {
         });
       }
 
-      // Compensating rollback if Evaluation persistence fails for a non-duplicate database error
       await Round.findOneAndUpdate(
         { _id: evaluatedRound._id, status: 'evaluated' },
         { $set: { status: preEvaluationStatus, completedAt: null } }
@@ -665,7 +649,6 @@ const evaluateStudentRoundByUsn = async (req, res) => {
       throw saveError;
     }
 
-    // 9. Return sanitized evaluation summary (no hiddenTestCases, passwordHash, or googleSubjectId)
     return res.status(200).json({
       success: true,
       message: `Round evaluated as ${normalizedResult}.`,

@@ -74,7 +74,6 @@ const syncRoundDeadlineState = async (round, now = new Date()) => {
       };
     }
 
-    // Deadline reached (diffMs === 0) or passed (diffMs < 0): atomically transition inProgress -> timeExpired
     const expiredRound = await Round.findOneAndUpdate(
       {
         _id: round._id,
@@ -466,7 +465,6 @@ const buildInsufficientBalanceResponse = (currentLevel, entryFee, currentBalance
  */
 const allocateQuestion = async (req, res) => {
   try {
-    // 0. Reject any client-supplied question, difficulty, level, or student overrides
     const bodyKeys = Object.keys(req.body || {});
     if (bodyKeys.length > 0) {
       return res.status(400).json({
@@ -478,7 +476,6 @@ const allocateQuestion = async (req, res) => {
 
     const student = req.student;
 
-    // 1. Verify registration is complete
     if (!student.registrationComplete) {
       return res.status(403).json({
         success: false,
@@ -487,7 +484,6 @@ const allocateQuestion = async (req, res) => {
       });
     }
 
-    // 1b. Block eliminated or completed participants from allocating new rounds or retrying
     if (student.competitionStatus === 'eliminated') {
       return res.status(409).json({
         success: false,
@@ -504,7 +500,6 @@ const allocateQuestion = async (req, res) => {
       });
     }
 
-    // 2. Validate current level
     const currentLevel = student.currentLevel;
     if (!currentLevel || currentLevel < 1 || currentLevel > TOTAL_LEVELS) {
       return res.status(400).json({
@@ -514,7 +509,6 @@ const allocateQuestion = async (req, res) => {
       });
     }
 
-    // 3. Determine question difficulty from academic year
     const year = student.year;
     let difficulty;
     if (year === FIRST_YEAR) {
@@ -529,7 +523,6 @@ const allocateQuestion = async (req, res) => {
       });
     }
 
-    // 4. Verify that corresponding Level is active and fetch entry fee
     const levelConfig = await Level.findOne({ number: currentLevel, isActive: true });
     if (!levelConfig) {
       return res.status(404).json({
@@ -546,7 +539,6 @@ const allocateQuestion = async (req, res) => {
         ? levelConfig.entryRiskAmount
         : 0;
 
-    // 5. Check whether a Round already exists for this student and current level (Idempotent)
     const existingRound = await Round.findOne({
       studentId: student._id,
       levelNumber: currentLevel,
@@ -562,7 +554,6 @@ const allocateQuestion = async (req, res) => {
       return res.status(200).json(buildExistingRoundResponse(student, freshStudent, existingDebitTx, existingRound));
     }
 
-    // 6. Check student wallet balance before allowing level entry
     const freshStudent = await Student.findById(student._id);
     const currentBalance = freshStudent ? (freshStudent.walletBalance ?? 0) : (student.walletBalance ?? 0);
 
@@ -570,7 +561,6 @@ const allocateQuestion = async (req, res) => {
       return res.status(400).json(buildInsufficientBalanceResponse(currentLevel, entryFee, currentBalance));
     }
 
-    // 7. Find all active matching questions for this level and difficulty
     const eligibleQuestions = await Question.find({
       levelNumber: currentLevel,
       difficulty,
@@ -585,7 +575,6 @@ const allocateQuestion = async (req, res) => {
       });
     }
 
-    // 8. Avoid re-allocating questions previously assigned to this student in other rounds if possible
     const pastRounds = await Round.find({ studentId: student._id }).select('questionId');
     const pastQuestionIds = new Set(pastRounds.map((r) => r.questionId.toString()));
 
@@ -608,7 +597,6 @@ const allocateQuestion = async (req, res) => {
       levelNumber: selectedQuestion.levelNumber,
     };
 
-    // 10. Atomic Execution: Round allocation + conditional wallet deduction + STAKE_DEBIT Transaction
     let savedRound = null;
     let savedDebitTx = null;
     let finalStudent = freshStudent;
@@ -787,7 +775,6 @@ const allocateQuestion = async (req, res) => {
         });
         savedRound = await round.save();
       } catch (saveError) {
-        // Compensating refund on round creation failure
         if (didDeduct) {
           await Student.findByIdAndUpdate(student._id, {
             $inc: {
@@ -829,7 +816,6 @@ const allocateQuestion = async (req, res) => {
           });
           savedDebitTx = await debitTx.save();
         } catch (txSaveErr) {
-          // Compensating rollback if transaction save fails
           await Round.findByIdAndDelete(savedRound._id);
           await Student.findByIdAndUpdate(student._id, {
             $inc: {
@@ -896,7 +882,6 @@ const getActiveRoundStatus = async (req, res) => {
   try {
     const student = req.student;
 
-    // 1. Verify registration is complete
     if (!student.registrationComplete) {
       return res.status(403).json({
         success: false,
@@ -905,7 +890,6 @@ const getActiveRoundStatus = async (req, res) => {
       });
     }
 
-    // 2. Validate current level from authoritative Student DB document
     const currentLevel = student.currentLevel;
     if (!currentLevel || currentLevel < 1 || currentLevel > TOTAL_LEVELS) {
       return res.status(400).json({
@@ -915,7 +899,6 @@ const getActiveRoundStatus = async (req, res) => {
       });
     }
 
-    // 3. Locate current-level round exclusively for the authenticated student
     const round = await Round.findOne({
       studentId: student._id,
       levelNumber: currentLevel,
@@ -932,7 +915,6 @@ const getActiveRoundStatus = async (req, res) => {
       });
     }
 
-    // 4. Synchronize timer and expiration state atomically
     const timerSync = await syncRoundDeadlineState(round);
     if (timerSync.error) {
       return res.status(timerSync.error.status).json({
@@ -944,7 +926,6 @@ const getActiveRoundStatus = async (req, res) => {
 
     const syncedRound = timerSync.round;
 
-    // 5. Return student-safe active round details and synchronized availability
     return res.status(200).json({
       success: true,
       message: getActiveRoundStatusMessage(syncedRound.status, timerSync.isExpired),

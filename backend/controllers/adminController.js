@@ -30,7 +30,6 @@ const adminLogin = async (req, res) => {
   try {
     const { username, password } = req.body || {};
 
-    // 1. Missing credentials validation
     if (!username || typeof username !== 'string' || username.trim() === '' ||
       !password || typeof password !== 'string' || password === '') {
       return res.status(400).json({
@@ -42,7 +41,6 @@ const adminLogin = async (req, res) => {
 
     const normalizedUsername = username.trim().toLowerCase();
 
-    // 2. Query admin user in database using Admin discriminator model
     const admin = await Admin.findOne({
       username: normalizedUsername,
     });
@@ -56,7 +54,6 @@ const adminLogin = async (req, res) => {
       });
     }
 
-    // 4. Check active account status
     if (!admin.isActive) {
       return res.status(403).json({
         success: false,
@@ -65,7 +62,6 @@ const adminLogin = async (req, res) => {
       });
     }
 
-    // 5. Verify password hash using bcrypt
     const isMatch = await admin.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({
@@ -75,7 +71,6 @@ const adminLogin = async (req, res) => {
       });
     }
 
-    // 6. Generate signed HS256 JWT
     const token = signAdminToken(admin._id);
 
     return res.status(200).json({
@@ -124,7 +119,6 @@ const createVolunteer = async (req, res) => {
   try {
     const body = req.body || {};
 
-    // 1. Strict payload validation: reject unsupported fields (e.g. client supplying role)
     const allowedFields = ['name', 'username', 'password', 'assignedLab'];
     const extraFields = Object.keys(body).filter((key) => !allowedFields.includes(key));
     if (extraFields.length > 0) {
@@ -137,7 +131,6 @@ const createVolunteer = async (req, res) => {
 
     const { name, username, password, assignedLab } = body;
 
-    // 2. Validate required fields
     if (!name || typeof name !== 'string' || name.trim().length < 2) {
       return res.status(400).json({
         success: false,
@@ -172,7 +165,6 @@ const createVolunteer = async (req, res) => {
       });
     }
 
-    // 3. Check for duplicate username across all Staff
     const existingStaff = await Staff.findOne({ username: normalizedUsername });
     if (existingStaff) {
       return res.status(409).json({
@@ -182,10 +174,8 @@ const createVolunteer = async (req, res) => {
       });
     }
 
-    // 4. Securely hash password
     const passwordHash = await Staff.hashPassword(password);
 
-    // 5. Create new Volunteer document
     const volunteer = new Volunteer({
       name: name.trim(),
       username: normalizedUsername,

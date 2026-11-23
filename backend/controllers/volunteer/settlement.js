@@ -427,7 +427,6 @@ const handleTxErrorResponse = (res, error, {
  * fields (currentLevel, levelsCleared, competitionStatus, safeZoneAmount, totals) unchanged.
  */
 const settleStudentRoundByUsn = async (req, res) => {
-  // 1. Reject any client-supplied wallet amounts, evaluation results, or level overrides
   const bodyKeys = Object.keys(req.body || {});
   if (bodyKeys.length > 0) {
     return res.status(400).json({
@@ -437,7 +436,6 @@ const settleStudentRoundByUsn = async (req, res) => {
     });
   }
 
-  // 2. Validate USN, locate registered student, verify registrationComplete and currentLevel
   const resolved = await resolveRegisteredStudent(req.params.usn);
   if (resolved.error) {
     return res.status(resolved.error.status).json({
@@ -450,7 +448,6 @@ const settleStudentRoundByUsn = async (req, res) => {
   const { student, normalizedUsn } = resolved;
   const currentLevel = student.currentLevel;
 
-  // 3. Locate student's round for their current level
   const existingRound = await Round.findOne({
     studentId: student._id,
     levelNumber: currentLevel,
@@ -472,7 +469,6 @@ const settleStudentRoundByUsn = async (req, res) => {
     });
   }
 
-  // 4. Execute atomic MongoDB transaction covering Evaluation claim, Student wallet update, and Transaction insert
   const session = await mongoose.startSession();
   let settlementOutput = null;
 
@@ -594,7 +590,6 @@ const settleStudentRoundByUsn = async (req, res) => {
  * Access: Protected (Volunteer only)
  */
 const progressStudentRoundByUsn = async (req, res) => {
-  // 1. Reject any client-supplied progression, balance, level, or verdict parameters
   const bodyKeys = Object.keys(req.body || {});
   if (bodyKeys.length > 0) {
     return res.status(400).json({
@@ -604,7 +599,6 @@ const progressStudentRoundByUsn = async (req, res) => {
     });
   }
 
-  // 2. Validate USN, locate registered student, verify registrationComplete and currentLevel
   const resolved = await resolveRegisteredStudent(req.params.usn);
   if (resolved.error) {
     return res.status(resolved.error.status).json({
@@ -620,7 +614,6 @@ const progressStudentRoundByUsn = async (req, res) => {
 
   try {
     await session.withTransaction(async () => {
-      // 3. Load Student, current-level Round (detecting already-progressed prior level), and active Level inside tx
       const { sessionStudent, sessionCurrentLevel, sessionRound, levelConfig } =
         await loadTxStudentRoundAndLevel({
           session,
@@ -685,7 +678,6 @@ const progressStudentRoundByUsn = async (req, res) => {
         );
       }
 
-      // 5. Ensure settlement exists once: reuse if already settled, else settle atomically in same tx
       let didSettleNow = false;
       let previousWalletBalance;
       let targetBalance;
@@ -754,7 +746,6 @@ const progressStudentRoundByUsn = async (req, res) => {
         settlementTransaction = settlementResult.savedTransaction;
       }
 
-      // 6. Compute progression, safe-zone protection (strictly L1 & L4 on PASS), and cumulative statistics
       const isPass = finalizedEvaluation.status === 'PASS';
       const isFinalLevel = Boolean(levelConfig.isFinal) || sessionCurrentLevel === TOTAL_LEVELS;
       const isSafeZoneCheckpoint =

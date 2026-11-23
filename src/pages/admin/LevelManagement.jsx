@@ -120,7 +120,6 @@ export default function LevelManagement() {
       {error && <div className="levels-demo-note" role="alert"><AlertCircle size={17} />{error} <button type="button" onClick={loadLevels}>Retry</button></div>}
       {loading && <div className="levels-demo-note" role="status">Loading level configuration…</div>}
 
-      {/* Overview */}
       <section className="levels-overview">
         <OverviewCard
           icon={<Layers3 />}
@@ -144,7 +143,6 @@ export default function LevelManagement() {
         />
       </section>
 
-      {/* Level cards */}
       <section className="levels-section">
         <div className="levels-section-heading">
           <div>
@@ -236,7 +234,6 @@ export default function LevelManagement() {
         </div>
       </section>
 
-      {/* Question allocation */}
       <section className="levels-section allocation-panel">
         <div className="levels-section-heading">
           <div>
@@ -277,7 +274,6 @@ export default function LevelManagement() {
         </div>
       </section>
 
-      {/* Rules */}
       <section className="levels-section rules-panel">
         <div className="levels-section-heading">
           <div>
@@ -315,7 +311,6 @@ export default function LevelManagement() {
         </p>
       </section>
 
-      {/* Edit modal */}
       {editingLevel && (
         <div
           className="level-modal-overlay"

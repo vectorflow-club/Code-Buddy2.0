@@ -112,7 +112,6 @@ class IntegrationTestEnvironment {
     // Capture any pre-existing MONGO_URI strictly for negative safeguard comparison; NEVER connect to it.
     const preexistingEnvUri = process.env.MONGO_URI || null;
 
-    // 1. Boot isolated single-node WiredTiger MongoDB Replica Set in memory (ACID tx capable)
     this.replSet = await MongoMemoryReplSet.create({
       replSet: {
         count: 1,
@@ -128,7 +127,6 @@ class IntegrationTestEnvironment {
     const memUri = this.replSet.getUri();
     assertSafeTestMongoUri(memUri, preexistingEnvUri);
 
-    // 2. Prevent server.js from reading production backend/.env, then inject isolated test config
     dotenv.config = () => ({ parsed: {} });
     process.env.NODE_ENV = envOverrides.NODE_ENV || 'production';
     process.env.MONGO_URI = memUri;
@@ -148,7 +146,6 @@ class IntegrationTestEnvironment {
     process.env.LOGIN_IP_RATE_LIMIT_MAX = envOverrides.LOGIN_IP_RATE_LIMIT_MAX || '200';
     process.env.GOOGLE_AUTH_RATE_LIMIT_MAX = envOverrides.GOOGLE_AUTH_RATE_LIMIT_MAX || '500';
 
-    // 3. Connect Mongoose strictly to the verified loopback in-memory replica set
     await mongoose.connect(memUri);
 
     const connHost = String(mongoose.connection.host || '').toLowerCase();
@@ -160,7 +157,6 @@ class IntegrationTestEnvironment {
       throw new Error(`SAFETY_BLOCK: Connected host "${connHost}" is not an isolated local test instance.`);
     }
 
-    // 4. Install Google OAuth ID-token cryptographic verification stub ONLY
     const tokenMap = this.googleTokenMap;
     OAuth2Client.prototype.verifyIdToken = async function ({ idToken }) {
       const entry = tokenMap.get(idToken);
@@ -175,7 +171,6 @@ class IntegrationTestEnvironment {
       };
     };
 
-    // 5. Load real Express app and models, then synchronize real MongoDB indexes
     this.app = require('../../server');
     this.models = require('../../models');
 

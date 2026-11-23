@@ -66,7 +66,6 @@ const verifyGoogleAuth = async (req, res) => {
       });
     }
 
-    // 2. Validate server-side Google Client ID configuration
     let client;
     try {
       client = getGoogleClient();
@@ -79,7 +78,6 @@ const verifyGoogleAuth = async (req, res) => {
       });
     }
 
-    // 3. Cryptographically verify the Google ID token
     let ticket;
     try {
       ticket = await client.verifyIdToken({
@@ -115,7 +113,6 @@ const verifyGoogleAuth = async (req, res) => {
       iss,
     } = payload;
 
-    // 4. Verify token issuer
     const validIssuers = ['accounts.google.com', 'https://accounts.google.com'];
     if (!iss || !validIssuers.includes(iss)) {
       return res.status(401).json({
@@ -125,7 +122,6 @@ const verifyGoogleAuth = async (req, res) => {
       });
     }
 
-    // 5. Verify email_verified status
     if (emailVerified !== true) {
       return res.status(403).json({
         success: false,
@@ -134,7 +130,6 @@ const verifyGoogleAuth = async (req, res) => {
       });
     }
 
-    // 6. Strictly enforce @vvce.ac.in domain
     const vvceDomainRegex = /^[^\s@]+@vvce\.ac\.in$/i;
     if (!email || typeof email !== 'string' || !vvceDomainRegex.test(email)) {
       return res.status(403).json({
@@ -144,7 +139,6 @@ const verifyGoogleAuth = async (req, res) => {
       });
     }
 
-    // 7. Verify required profile information
     if (!googleSubjectId || !name || typeof name !== 'string' || name.trim() === '') {
       return res.status(400).json({
         success: false,
@@ -155,21 +149,17 @@ const verifyGoogleAuth = async (req, res) => {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // 8. Find existing student or check conflict or create a new student record
     let student;
     try {
-      // Step A: Search exclusively by Google subject ID
       student = await Student.findOne({ googleSubjectId });
 
       if (student) {
-        // Existing verified Google student: refresh verification flag and name if necessary
         student.emailVerified = true;
         if (!student.name && name) {
           student.name = name.trim();
         }
         await student.save();
       } else {
-        // Step B: No matching Google subject exists; check whether the normalized email already belongs to another student
         const emailConflict = await Student.findOne({ email: normalizedEmail });
         if (emailConflict) {
           return res.status(409).json({
@@ -179,7 +169,6 @@ const verifyGoogleAuth = async (req, res) => {
           });
         }
 
-        // Step C: Neither exists, provision new Student record
         student = new Student({
           googleSubjectId,
           name: name.trim(),
@@ -209,7 +198,6 @@ const verifyGoogleAuth = async (req, res) => {
       });
     }
 
-    // 9. Generate secure HS256 JWT session token
     let token;
     try {
       token = signStudentToken(student._id);
@@ -222,7 +210,6 @@ const verifyGoogleAuth = async (req, res) => {
       });
     }
 
-    // 10. Resolve read-only live competition state and return structured response
     const liveState = await resolveStudentLiveState(student);
     return res.status(200).json({
       success: true,
@@ -265,7 +252,6 @@ const completeRegistration = async (req, res) => {
     const studentId = req.student._id;
     const body = req.body || {};
 
-    // 1. Reject any unsupported fields in request body
     const allowedFields = ['usn', 'year'];
     const extraFields = Object.keys(body).filter((key) => !allowedFields.includes(key));
     if (extraFields.length > 0) {
@@ -278,7 +264,6 @@ const completeRegistration = async (req, res) => {
 
     const { usn, year } = body;
 
-    // 2. Validate presence and types
     if (!usn || typeof usn !== 'string' || usn.trim() === '') {
       return res.status(400).json({
         success: false,
@@ -295,11 +280,9 @@ const completeRegistration = async (req, res) => {
       });
     }
 
-    // 3. Normalize USN (trim and uppercase)
     const normalizedUsn = usn.trim().toUpperCase();
     const normalizedYear = year.trim();
 
-    // 4. Validate USN format (/^[A-Z0-9]{8,15}$/i)
     if (!USN_REGEX.test(normalizedUsn)) {
       return res.status(400).json({
         success: false,
@@ -308,7 +291,6 @@ const completeRegistration = async (req, res) => {
       });
     }
 
-    // 5. Validate academic year against the four schema enum values
     if (!ACADEMIC_YEARS.includes(normalizedYear)) {
       return res.status(400).json({
         success: false,
@@ -317,7 +299,6 @@ const completeRegistration = async (req, res) => {
       });
     }
 
-    // 6. Pre-check for duplicate USN across other accounts
     const existingWithUsn = await Student.findOne({
       usn: normalizedUsn,
       _id: { $ne: studentId },
@@ -331,7 +312,6 @@ const completeRegistration = async (req, res) => {
       });
     }
 
-    // 7. Atomic conditional update: only succeeds if registrationComplete is still false
     let updatedStudent;
     try {
       updatedStudent = await Student.findOneAndUpdate(
@@ -367,7 +347,6 @@ const completeRegistration = async (req, res) => {
       });
     }
 
-    // 8. If conditional update did not match, check latest record for idempotency or immutability violation
     if (!updatedStudent) {
       const latestStudent = await Student.findById(studentId);
       if (!latestStudent) {
@@ -378,7 +357,6 @@ const completeRegistration = async (req, res) => {
         });
       }
 
-      // Idempotency: same USN and academic year resubmitted
       if (
         latestStudent.registrationComplete &&
         latestStudent.usn === normalizedUsn &&
@@ -392,7 +370,6 @@ const completeRegistration = async (req, res) => {
         });
       }
 
-      // Immutability: reject any attempt to modify USN or academic year
       return res.status(400).json({
         success: false,
         code: 'REGISTRATION_ALREADY_COMPLETED',
@@ -400,7 +377,6 @@ const completeRegistration = async (req, res) => {
       });
     }
 
-    // 9. Return structured success response
     const liveState = await resolveStudentLiveState(updatedStudent);
     return res.status(200).json({
       success: true,

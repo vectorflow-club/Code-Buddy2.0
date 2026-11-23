@@ -3,7 +3,6 @@ const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
-// Load environment variables from backend/.env and current environment
 dotenv.config({ path: path.join(__dirname, '../.env') });
 dotenv.config();
 
@@ -20,7 +19,6 @@ const seedAdmin = async () => {
   const adminPassword = process.env.ADMIN_PASSWORD;
   const adminName = process.env.ADMIN_NAME || 'System Administrator';
 
-  // 1. Fail safely if required environment variables are missing
   if (!mongoUri) {
     console.error('[seedAdmin] Error: MONGO_URI environment variable is required.');
     process.exit(1);
@@ -39,10 +37,8 @@ const seedAdmin = async () => {
   const normalizedUsername = adminUsername.trim().toLowerCase();
 
   try {
-    // 2. Connect to MongoDB
     await mongoose.connect(mongoUri);
 
-    // 3. Check whether an Admin account already exists (by username or role)
     const existingAdmin = await Staff.findOne({
       $or: [
         { username: normalizedUsername },
@@ -56,11 +52,9 @@ const seedAdmin = async () => {
       process.exit(0);
     }
 
-    // 4. Securely hash password (never store plaintext)
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(adminPassword, saltRounds);
 
-    // 5. Create new Admin document
     const newAdmin = new Admin({
       name: adminName.trim(),
       username: normalizedUsername,
@@ -83,7 +77,6 @@ const seedAdmin = async () => {
   }
 };
 
-// Execute seed if run directly
 if (require.main === module) {
   seedAdmin();
 }

@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const { TOTAL_LEVELS } = require('../constants');
 
-// Subdocument schema for timer extension history
 const timerExtensionSchema = new mongoose.Schema(
   {
     extendedBy: {
@@ -27,7 +26,6 @@ const timerExtensionSchema = new mongoose.Schema(
   { _id: false }
 );
 
-// Subdocument schema for frozen question snapshot
 const questionSnapshotSchema = new mongoose.Schema(
   {
     questionId: {
@@ -66,14 +64,12 @@ const questionSnapshotSchema = new mongoose.Schema(
 
 const roundSchema = new mongoose.Schema(
   {
-    // Reference to the participating student
     studentId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Student',
       required: [true, 'Student ID is required'],
       index: true,
     },
-    // Level number being attempted (1 to 6)
     levelNumber: {
       type: Number,
       required: [true, 'Level number is required'],
@@ -81,18 +77,15 @@ const roundSchema = new mongoose.Schema(
       max: [TOTAL_LEVELS, `Level number cannot exceed ${TOTAL_LEVELS}`],
       index: true,
     },
-    // Reference to the assigned question
     questionId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Question',
       required: [true, 'Assigned question ID is required'],
     },
-    // Immutable snapshot of the assigned question at the time of allocation
     questionSnapshot: {
       type: questionSnapshotSchema,
       required: [true, 'Question snapshot is required'],
     },
-    // Current round status
     status: {
       type: String,
       enum: {
@@ -102,13 +95,11 @@ const roundSchema = new mongoose.Schema(
       default: 'ready',
       index: true,
     },
-    // Configured timer duration in seconds (default: 180s = 3 minutes)
     durationSeconds: {
       type: Number,
       default: 180,
       min: [10, 'Duration must be at least 10 seconds'],
     },
-    // Official timestamp when volunteer started the round timer
     startedAt: {
       type: Date,
       default: null,
@@ -119,18 +110,15 @@ const roundSchema = new mongoose.Schema(
       default: null,
       index: true,
     },
-    // Log of all timer extensions granted by volunteers
     timerExtensions: {
       type: [timerExtensionSchema],
       default: [],
     },
-    // Volunteer staff member who officially started this round
     startedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Staff',
       default: null,
     },
-    // Timestamp when the round was concluded/evaluated
     completedAt: {
       type: Date,
       default: null,
@@ -144,7 +132,6 @@ const roundSchema = new mongoose.Schema(
 // Compound unique index: A student can only have ONE round attempt per level
 roundSchema.index({ studentId: 1, levelNumber: 1 }, { unique: true });
 
-// Compile and export Round model
 const Round = mongoose.model('Round', roundSchema);
 
 module.exports = Round;

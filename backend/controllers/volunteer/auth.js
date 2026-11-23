@@ -11,7 +11,6 @@ const volunteerLogin = async (req, res) => {
   try {
     const { username, password } = req.body || {};
 
-    // 1. Missing credentials validation
     if (!username || typeof username !== 'string' || username.trim() === '' ||
       !password || typeof password !== 'string' || password === '') {
       return res.status(400).json({
@@ -23,7 +22,6 @@ const volunteerLogin = async (req, res) => {
 
     const normalizedUsername = username.trim().toLowerCase();
 
-    // 2. Query volunteer user in database using Volunteer discriminator model
     const volunteer = await Volunteer.findOne({
       username: normalizedUsername,
     });
@@ -37,7 +35,6 @@ const volunteerLogin = async (req, res) => {
       });
     }
 
-    // 4. Check active account status: deactivated volunteers cannot log in
     if (!volunteer.isActive) {
       return res.status(403).json({
         success: false,
@@ -46,7 +43,6 @@ const volunteerLogin = async (req, res) => {
       });
     }
 
-    // 5. Verify password hash using bcrypt
     const isMatch = await volunteer.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({
@@ -56,7 +52,6 @@ const volunteerLogin = async (req, res) => {
       });
     }
 
-    // 6. Generate signed HS256 JWT
     const token = signVolunteerToken(volunteer._id);
 
     return res.status(200).json({

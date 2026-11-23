@@ -1,7 +1,3 @@
-/* =====================================
-   VOLUNTEER MANAGEMENT
-===================================== */
-
 .volunteer-management {
   display: flex;
   flex-direction: column;
@@ -9,8 +5,6 @@
   width: 100%;
   color: #343d38;
 }
-
-/* HEADER */
 
 .volunteer-page-header {
   display: flex;
@@ -49,8 +43,6 @@
   background: var(--ink);
 }
 
-/* SUMMARY CARDS */
-
 .volunteer-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -80,8 +72,6 @@
   font-size: 27px;
   color: var(--forest);
 }
-
-/* SEARCH AND FILTER */
 
 .volunteer-toolbar {
   display: flex;
@@ -137,8 +127,6 @@
   font-size: 12px;
   line-height: 1.5;
 }
-
-/* VOLUNTEER TABLE */
 
 .volunteer-table-container {
   background: var(--paper);
@@ -216,8 +204,6 @@
   opacity: 1;
 }
 
-/* STATUS LABELS */
-
 .volunteer-status {
   display: inline-block;
   padding: 6px 9px;
@@ -234,8 +220,6 @@
   background: #f3e6df;
   color: #9a482d;
 }
-
-/* ACTION ICONS */
 
 .volunteer-actions {
   display: flex;
@@ -279,8 +263,6 @@
   padding: 35px !important;
   color: #59645e !important;
 }
-
-/* MODALS */
 
 .volunteer-modal-overlay {
   position: fixed;
@@ -327,8 +309,6 @@
   color: #34483c;
   cursor: pointer;
 }
-
-/* FORM */
 
 .volunteer-form-field {
   display: flex;
@@ -384,8 +364,6 @@
   color: var(--paper);
 }
 
-/* DETAILS POPUP */
-
 .volunteer-detail-list {
   display: flex;
   flex-direction: column;
@@ -421,8 +399,6 @@
   border: none;
   cursor: pointer;
 }
-
-/* RESPONSIVE */
 
 @media (max-width: 850px) {
   .volunteer-summary {

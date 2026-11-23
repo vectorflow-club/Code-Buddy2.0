@@ -1,13 +1,9 @@
-/* PARTICIPANT MANAGEMENT */
-
 .participant-management {
   display: flex;
   flex-direction: column;
   gap: 26px;
   width: 100%;
 }
-
-/* PAGE HEADER */
 
 .participant-page-header h1 {
   font-size: 32px;
@@ -20,8 +16,6 @@
   color: #59645e;
   font-size: 13px;
 }
-
-/* SUMMARY CARDS */
 
 .participant-summary {
   display: grid;
@@ -51,8 +45,6 @@
   font-size: 26px;
   color: var(--forest);
 }
-
-/* SEARCH AND FILTER */
 
 .participant-toolbar {
   display: flex;
@@ -102,8 +94,6 @@
   font-size: 12px;
   cursor: pointer;
 }
-
-/* TABLE */
 
 .participant-table-container {
   background: var(--paper);
@@ -179,8 +169,6 @@
   font-size: 10px;
 }
 
-/* STATUS LABELS */
-
 .participant-status {
   display: inline-block;
   padding: 6px 9px;
@@ -203,8 +191,6 @@
   background: #e8e8f0;
   color: #55558a;
 }
-
-/* VIEW BUTTON */
 
 .participant-view-btn {
   display: flex;
@@ -230,8 +216,6 @@
   color: #59645e !important;
   white-space: normal;
 }
-
-/* DETAILS MODAL */
 
 .participant-modal-overlay {
   position: fixed;
@@ -319,8 +303,6 @@
   font-size: 12px;
   cursor: pointer;
 }
-
-/* RESPONSIVE */
 
 @media (max-width: 900px) {
   .participant-summary {

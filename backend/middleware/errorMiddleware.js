@@ -33,21 +33,18 @@ const errorHandler = (err, req, res, next) => {
     );
   }
 
-  // 1. Disallowed CORS browser origin
   if (err.code === 'CORS_ORIGIN_NOT_ALLOWED' || err.isCorsError) {
     return res.status(403).json(
       buildErrorResponse('CORS_ORIGIN_NOT_ALLOWED', 'Origin is not allowed by CORS policy.')
     );
   }
 
-  // 2. Request body exceeds configured size limit (Express/raw-body PayloadTooLargeError)
   if (err.type === 'entity.too.large' || err.status === 413 || err.statusCode === 413) {
     return res.status(413).json(
       buildErrorResponse('PAYLOAD_TOO_LARGE', 'Request payload exceeds the maximum allowed size limit.')
     );
   }
 
-  // 3. Malformed JSON request body (Express body-parser SyntaxError)
   if (
     err.type === 'entity.parse.failed' ||
     (err instanceof SyntaxError && (err.status === 400 || err.statusCode === 400) && 'body' in err)
@@ -57,7 +54,6 @@ const errorHandler = (err, req, res, next) => {
     );
   }
 
-  // 4. Explicit operational 4xx errors forwarded via next(err)
   const explicitStatus = Number.isInteger(err.statusCode) ? err.statusCode : err.status;
   if (Number.isInteger(explicitStatus) && explicitStatus >= 400 && explicitStatus < 500) {
     const code =
@@ -71,7 +67,6 @@ const errorHandler = (err, req, res, next) => {
     return res.status(explicitStatus).json(buildErrorResponse(code, message));
   }
 
-  // 5. Mongoose schema ValidationError -> 400 VALIDATION_ERROR
   if (err.name === 'ValidationError' && err.errors && typeof err.errors === 'object') {
     const fieldMessages = Object.values(err.errors)
       .map((item) => (item && typeof item.message === 'string' ? item.message : null))
@@ -83,7 +78,6 @@ const errorHandler = (err, req, res, next) => {
     return res.status(400).json(buildErrorResponse('VALIDATION_ERROR', summary));
   }
 
-  // 6. Context-aware Mongoose CastError handling
   if (err.name === 'CastError') {
     if (explicitStatus >= 500 || err.isInternalError) {
       console.error(`[ErrorHandler] ${req.method} ${req.originalUrl} -> Internal CastError (${err.path || 'unknown'})`);
@@ -103,7 +97,6 @@ const errorHandler = (err, req, res, next) => {
     );
   }
 
-  // 7. MongoDB duplicate key error (E11000) -> 409 Conflict
   if (err.code === 11000 || (typeof err.message === 'string' && err.message.includes('E11000'))) {
     return res.status(409).json(
       buildErrorResponse('DUPLICATE_RESOURCE', 'A record with the provided unique value already exists.')

@@ -1,7 +1,6 @@
 const assert = require('assert');
 const mongoose = require('mongoose');
 
-// Import controllers and models
 const {
   getLevelInfo,
   allocateQuestion,
@@ -28,7 +27,6 @@ const {
 const { INITIAL_LEVELS } = require('../scripts/seedLevels');
 const { TOTAL_LEVELS } = require('../constants');
 
-// Test utilities
 const mockRes = () => {
   const res = {
     statusCode: 200,
@@ -68,7 +66,6 @@ async function runWalletWorkflowTests() {
     }
   };
 
-  // In-memory data store for isolated testing
   const store = {
     students: new Map(),
     rounds: new Map(),
@@ -78,13 +75,11 @@ async function runWalletWorkflowTests() {
     transactions: new Map(),
   };
 
-  // Populate canonical levels
   INITIAL_LEVELS.forEach((lvl) => {
     const doc = { ...lvl, _id: new mongoose.Types.ObjectId() };
     store.levels.set(lvl.number, doc);
   });
 
-  // Populate sample questions for levels 1-6
   for (let lvl = 1; lvl <= TOTAL_LEVELS; lvl++) {
     for (const diff of ['EASY', 'HARD']) {
       const qId = new mongoose.Types.ObjectId();
@@ -102,7 +97,6 @@ async function runWalletWorkflowTests() {
     }
   }
 
-  // Backup original Mongoose methods
   const origStudentFindById = Student.findById;
   const origStudentFindOne = Student.findOne;
   const origStudentFindOneAndUpdate = Student.findOneAndUpdate;
@@ -129,7 +123,6 @@ async function runWalletWorkflowTests() {
 
   const origMongooseStartSession = mongoose.startSession;
 
-  // Mock mongoose.startSession to support transactional testing in-memory
   mongoose.startSession = async function () {
     return {
       withTransaction: async (callback) => {
@@ -151,7 +144,6 @@ async function runWalletWorkflowTests() {
     };
   };
 
-  // Install test mocks on Mongoose models
   Student.findById = function (id) {
     const doc = store.students.get(id?.toString());
     const copy = doc ? { ...doc } : null;
@@ -176,7 +168,6 @@ async function runWalletWorkflowTests() {
     const student = store.students.get(filter._id?.toString());
     if (!student) return null;
 
-    // Check $gte walletBalance filter
     if (filter.walletBalance && filter.walletBalance.$gte !== undefined) {
       if ((student.walletBalance ?? 0) < filter.walletBalance.$gte) {
         return null; // Conditional update fails!
@@ -295,7 +286,6 @@ async function runWalletWorkflowTests() {
   Round.prototype.save = async function () {
     const r = this.toObject ? this.toObject() : { ...this._doc };
     if (!r._id) r._id = new mongoose.Types.ObjectId();
-    // Unique check { studentId, levelNumber }
     for (const existing of store.rounds.values()) {
       if (
         existing.studentId.toString() === r.studentId.toString() &&
@@ -411,9 +401,6 @@ async function runWalletWorkflowTests() {
   };
 
   try {
-    // -------------------------------------------------------------
-    // Test 1: GET /api/competition/config returns all 6 levels with correct fields
-    // -------------------------------------------------------------
     await test('1. GET /api/competition/config returns authoritative 6 levels with entryRiskAmount', async () => {
       const req = {};
       const res = mockRes();
@@ -440,9 +427,6 @@ async function runWalletWorkflowTests() {
       assert.strictEqual(l6.winningPayout, 500);
     });
 
-    // -------------------------------------------------------------
-    // Test 2: GET /api/rounds/level-info returns level details and hasSufficientBalance
-    // -------------------------------------------------------------
     await test('2. GET /api/rounds/level-info returns wallet balance and entry fee eligibility', async () => {
       const studentId = new mongoose.Types.ObjectId();
       const studentDoc = {
@@ -471,9 +455,6 @@ async function runWalletWorkflowTests() {
       assert.strictEqual(res.body.level.winningPayout, 50);
     });
 
-    // -------------------------------------------------------------
-    // Test 3: POST /api/rounds/allocate for Level 1 (Free entry, fee = 0)
-    // -------------------------------------------------------------
     let allocatedL1Round = null;
     await test('3. POST /api/rounds/allocate for Level 1 succeeds with 0 fee (no deduction)', async () => {
       const student = store.students.get(Array.from(store.students.keys())[0]);
@@ -493,14 +474,10 @@ async function runWalletWorkflowTests() {
       assert.strictEqual(res.body.round.status, 'ready');
 
       allocatedL1Round = res.body.round;
-      // Verify in-memory state
       const dbStudent = store.students.get(student._id.toString());
       assert.strictEqual(dbStudent.walletBalance, 0);
     });
 
-    // -------------------------------------------------------------
-    // Test 4: Repeated allocate for Level 1 is idempotent and charges nothing
-    // -------------------------------------------------------------
     await test('4. Repeated POST /api/rounds/allocate is idempotent (isExisting: true, no deduction)', async () => {
       const student = store.students.get(Array.from(store.students.keys())[0]);
       const req = { student, body: {} };
@@ -516,9 +493,6 @@ async function runWalletWorkflowTests() {
       assert.strictEqual(res.body.round.id, allocatedL1Round.id);
     });
 
-    // -------------------------------------------------------------
-    // Test 5: Insufficient balance blocks Level 2 allocation (fee = 50, balance = 0)
-    // -------------------------------------------------------------
     await test('5. POST /api/rounds/allocate rejects when wallet balance is insufficient (HTTP 400)', async () => {
       const studentId = new mongoose.Types.ObjectId();
       const brokeStudent = {
@@ -545,7 +519,6 @@ async function runWalletWorkflowTests() {
       assert.strictEqual(res.body.walletBalance, 0);
       assert.strictEqual(res.body.requiredAmount, 50);
 
-      // Verify no round was allocated
       let roundFound = false;
       for (const r of store.rounds.values()) {
         if (r.studentId.toString() === studentId.toString() && r.levelNumber === 2) {
@@ -554,7 +527,6 @@ async function runWalletWorkflowTests() {
       }
       assert.strictEqual(roundFound, false, 'No round should be created on insufficient balance');
 
-      // Verify no transaction was recorded
       let txFound = false;
       for (const tx of store.transactions.values()) {
         if (tx.studentId.toString() === studentId.toString()) txFound = true;
@@ -562,9 +534,6 @@ async function runWalletWorkflowTests() {
       assert.strictEqual(txFound, false, 'No transaction should be created on insufficient balance');
     });
 
-    // -------------------------------------------------------------
-    // Test 6: Successful Level 2 entry deduction (fee = 50, balance = 50 -> 0)
-    // -------------------------------------------------------------
     let l2Round = null;
     let l2DebitTx = null;
     await test('6. POST /api/rounds/allocate succeeds when student has 50, deducts 50, records STAKE_DEBIT', async () => {
@@ -605,12 +574,10 @@ async function runWalletWorkflowTests() {
       l2Round = res.body.round;
       l2DebitTx = res.body.transaction;
 
-      // Verify student in database was updated
       const dbStudent = store.students.get(studentId.toString());
       assert.strictEqual(dbStudent.walletBalance, 0);
       assert.strictEqual(dbStudent.totalRisked, 50);
 
-      // Verify immutable Transaction in database
       const dbTx = store.transactions.get(res.body.transaction.id);
       assert.ok(dbTx);
       assert.strictEqual(dbTx.type, 'STAKE_DEBIT');
@@ -619,9 +586,6 @@ async function runWalletWorkflowTests() {
       assert.strictEqual(dbTx.settlementKey, `round_entry:${l2Round.id}`);
     });
 
-    // -------------------------------------------------------------
-    // Test 7: Repeated allocation on Level 2 does NOT deduct fee again
-    // -------------------------------------------------------------
     await test('7. Repeated Level 2 allocate returns existing round and previous debit transaction without double charge', async () => {
       const student = store.students.get(l2Round.studentId);
       const req = { student, body: {} };
@@ -638,7 +602,6 @@ async function runWalletWorkflowTests() {
       assert.ok(res.body.transaction);
       assert.strictEqual(res.body.transaction.id, l2DebitTx.id);
 
-      // Verify only 1 transaction exists in store for this student
       let txCount = 0;
       for (const tx of store.transactions.values()) {
         if (tx.studentId.toString() === student._id.toString()) txCount++;
@@ -646,9 +609,6 @@ async function runWalletWorkflowTests() {
       assert.strictEqual(txCount, 1, 'Only 1 transaction should exist (no duplicate debit)');
     });
 
-    // -------------------------------------------------------------
-    // Test 8: Failed allocation triggers compensating rollback so student is NOT charged
-    // -------------------------------------------------------------
     await test('8. Failed round allocation cleanly refunds student wallet and does not record charge', async () => {
       const studentId = new mongoose.Types.ObjectId();
       const testStudent = {
@@ -665,7 +625,6 @@ async function runWalletWorkflowTests() {
       };
       store.students.set(studentId.toString(), testStudent);
 
-      // Force Round.prototype.save to fail temporarily
       const failingSave = Round.prototype.save;
       Round.prototype.save = async function () {
         throw new Error('Database disk write failure during round save simulation');
@@ -682,12 +641,10 @@ async function runWalletWorkflowTests() {
         Round.prototype.save = failingSave;
       }
 
-      // Check student in database was refunded!
       const dbStudent = store.students.get(studentId.toString());
       assert.strictEqual(dbStudent.walletBalance, 100, 'Student balance must be restored to 100!');
       assert.strictEqual(dbStudent.totalRisked, 0, 'Total risked must be restored to 0!');
 
-      // Check no round or transaction exists
       let rCount = 0;
       for (const r of store.rounds.values()) {
         if (r.studentId.toString() === studentId.toString()) rCount++;
@@ -695,9 +652,6 @@ async function runWalletWorkflowTests() {
       assert.strictEqual(rCount, 0, 'No round should persist after failed allocation');
     });
 
-    // -------------------------------------------------------------
-    // Test 9: GET /api/student/transactions returns debit transaction and balance
-    // -------------------------------------------------------------
     await test('9. GET /api/student/transactions returns accurate ledger with STAKE_DEBIT', async () => {
       const student = store.students.get(l2Round.studentId);
       const req = { student, query: {} };
@@ -720,11 +674,7 @@ async function runWalletWorkflowTests() {
       assert.strictEqual(tx.status, 'SUCCESS');
     });
 
-    // -------------------------------------------------------------
-    // Test 10: Reward credit on settlement and duplicate prevention
-    // -------------------------------------------------------------
     await test('10. Level settlement credits winning payout (REWARD_CREDIT) and prevents duplicate credits', async () => {
-      // Simulate volunteer evaluating Level 2 as PASS
       const student = store.students.get(l2Round.studentId);
       const volunteerId = new mongoose.Types.ObjectId();
       const evalId = new mongoose.Types.ObjectId();
@@ -790,7 +740,6 @@ async function runWalletWorkflowTests() {
         role: 'VOLUNTEER',
       };
 
-      // Mark round evaluated
       const roundDoc = store.rounds.get(l2Round.id);
       roundDoc.status = 'evaluated';
       store.rounds.set(l2Round.id, roundDoc);
@@ -814,11 +763,9 @@ async function runWalletWorkflowTests() {
       assert.strictEqual(settleRes.body.settlement.targetBalance, 100);
       assert.strictEqual(settleRes.body.settlement.deltaAmount, 100);
 
-      // Verify student balance in store is now 100
       const updatedStudent = store.students.get(student._id.toString());
       assert.strictEqual(updatedStudent.walletBalance, 100);
 
-      // Verify repeated settlement is REJECTED with 409 ROUND_ALREADY_SETTLED
       const repeatRes = mockRes();
       await settleStudentRoundByUsn(settleReq, repeatRes);
 
@@ -826,13 +773,9 @@ async function runWalletWorkflowTests() {
       assert.strictEqual(repeatRes.body.success, false);
       assert.strictEqual(repeatRes.body.code, 'ROUND_ALREADY_SETTLED');
 
-      // Verify student balance remains 100 (not 200!)
       assert.strictEqual(updatedStudent.walletBalance, 100);
     });
 
-    // -------------------------------------------------------------
-    // Test 11: Free entry at Level 5 (entryRiskAmount = 0, balance unchanged)
-    // -------------------------------------------------------------
     await test('11. Level 5 free entry (entryRiskAmount = 0) allocates without deducting balance', async () => {
       const studentId = new mongoose.Types.ObjectId();
       const l5Student = {
@@ -868,9 +811,6 @@ async function runWalletWorkflowTests() {
       assert.strictEqual(dbStudent.totalRisked, 300); // Not changed!
     });
 
-    // -------------------------------------------------------------
-    // Test 12: Unregistered student cannot allocate (HTTP 403)
-    // -------------------------------------------------------------
     await test('12. Unregistered student allocation is rejected with 403 REGISTRATION_INCOMPLETE', async () => {
       const studentId = new mongoose.Types.ObjectId();
       const unregStudent = {
@@ -895,9 +835,6 @@ async function runWalletWorkflowTests() {
       assert.strictEqual(res.body.code, 'REGISTRATION_INCOMPLETE');
     });
 
-    // -------------------------------------------------------------
-    // Test 13: Eliminated student cannot allocate (HTTP 409)
-    // -------------------------------------------------------------
     await test('13. Eliminated student allocation is rejected with 409 STUDENT_ELIMINATED', async () => {
       const studentId = new mongoose.Types.ObjectId();
       const elimStudent = {
@@ -922,9 +859,6 @@ async function runWalletWorkflowTests() {
       assert.strictEqual(res.body.code, 'STUDENT_ELIMINATED');
     });
 
-    // -------------------------------------------------------------
-    // Test 14: Completed student cannot allocate (HTTP 409)
-    // -------------------------------------------------------------
     await test('14. Completed competition student allocation is rejected with 409 COMPETITION_COMPLETED', async () => {
       const studentId = new mongoose.Types.ObjectId();
       const champStudent = {
@@ -949,9 +883,6 @@ async function runWalletWorkflowTests() {
       assert.strictEqual(res.body.code, 'COMPETITION_COMPLETED');
     });
 
-    // -------------------------------------------------------------
-    // Test 15: Progression reuses settlement and advances level without double-counting totalRisked
-    // -------------------------------------------------------------
     await test('15. Student progression advances to Level 3 and preserves totalRisked accurately', async () => {
       const student = store.students.get(l2Round.studentId);
       const volunteer = {
@@ -978,7 +909,6 @@ async function runWalletWorkflowTests() {
       assert.strictEqual(progRes.body.student.walletBalance, 100);
       assert.strictEqual(progRes.body.student.totalRisked, 50, 'totalRisked must remain 50 (not 100!)');
 
-      // Verify repeated progression is rejected with 409 ROUND_ALREADY_PROGRESSED
       const repeatProgRes = mockRes();
       await progressStudentRoundByUsn(progReq, repeatProgRes);
 
@@ -987,9 +917,6 @@ async function runWalletWorkflowTests() {
       assert.strictEqual(repeatProgRes.body.code, 'ROUND_ALREADY_PROGRESSED');
     });
 
-    // -------------------------------------------------------------
-    // Test 16: Concurrent duplicate allocation in session.withTransaction returns HTTP 200 with isExisting: true
-    // -------------------------------------------------------------
     await test('16. Concurrent race-allocated round in session.withTransaction returns HTTP 200 with isExisting: true and no double deduction', async () => {
       const studentId = new mongoose.Types.ObjectId();
       const raceStudent = {
@@ -1006,7 +933,6 @@ async function runWalletWorkflowTests() {
       };
       store.students.set(studentId.toString(), raceStudent);
 
-      // Create pre-existing round and debit tx simulating concurrent allocation committing right as this request enters transaction
       const raceRoundId = new mongoose.Types.ObjectId();
       const sampleQId = new mongoose.Types.ObjectId();
       const existingRoundDoc = {
@@ -1034,14 +960,12 @@ async function runWalletWorkflowTests() {
       };
       store.transactions.set(raceTxId.toString(), existingTxDoc);
 
-      // Simulate step 5 pre-check missing the round, but session.withTransaction() detecting it
       let step5Checked = false;
       const baseRoundFindOne = Round.findOne;
       Round.findOne = function (filter) {
         if (filter.studentId && filter.studentId.toString() === studentId.toString() && filter.levelNumber === 2) {
           const query = {
             session(sess) {
-              // With session: returns the existing round!
               return {
                 then(resolve) { resolve({ ...existingRoundDoc }); },
                 exec: async () => ({ ...existingRoundDoc }),
@@ -1083,7 +1007,6 @@ async function runWalletWorkflowTests() {
         assert.strictEqual(res.body.transaction.id, raceTxId.toString());
         assert.strictEqual(res.body.transaction.type, 'STAKE_DEBIT');
 
-        // Verify balance was NOT deducted again (still 150)
         const dbStudent = store.students.get(studentId.toString());
         assert.strictEqual(dbStudent.walletBalance, 150, 'Wallet balance must not be deducted again');
         assert.strictEqual(dbStudent.totalRisked, 50, 'Total risked must remain 50');
@@ -1093,7 +1016,6 @@ async function runWalletWorkflowTests() {
     });
 
   } finally {
-    // Restore original Mongoose methods
     Student.findById = origStudentFindById;
     Student.findOne = origStudentFindOne;
     Student.findOneAndUpdate = origStudentFindOneAndUpdate;

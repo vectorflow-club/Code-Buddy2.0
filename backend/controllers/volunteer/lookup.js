@@ -104,7 +104,6 @@ const getStudentActiveRoundByUsn = async (req, res) => {
     const { student, normalizedUsn } = resolved;
     const currentLevel = student.currentLevel;
 
-    // Retrieve student's allocated active round for their current level (excluding abandoned rounds)
     const round = await Round.findOne({
       studentId: student._id,
       levelNumber: currentLevel,
@@ -119,7 +118,6 @@ const getStudentActiveRoundByUsn = async (req, res) => {
       });
     }
 
-    // Synchronize deadline status (computes remainingSeconds and atomically expires timed-out rounds)
     const timerSync = await syncRoundDeadlineState(round);
     if (timerSync.error) {
       return res.status(timerSync.error.status).json({
@@ -131,7 +129,6 @@ const getStudentActiveRoundByUsn = async (req, res) => {
 
     const syncedRound = timerSync.round;
 
-    // Return student identity/registration summary, timer state, and public question snapshot (no hiddenTestCases)
     return res.status(200).json({
       success: true,
       message: timerSync.isExpired

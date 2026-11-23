@@ -331,7 +331,6 @@ const updateLevel = async (req, res) => {
       );
     }
 
-    // Validate safeZoneAmount <= winningPayout using effective resulting values
     const effectiveSafeZoneAmount = Object.prototype.hasOwnProperty.call(updates, 'safeZoneAmount')
       ? updates.safeZoneAmount
       : level.safeZoneAmount ?? 0;

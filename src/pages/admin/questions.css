@@ -1,13 +1,9 @@
-/* QUESTION MANAGEMENT */
-
 .question-management {
   display: flex;
   flex-direction: column;
   gap: 26px;
   width: 100%;
 }
-
-/* PAGE HEADER */
 
 .question-page-header {
   display: flex;
@@ -49,8 +45,6 @@
   transform: translateY(-2px);
 }
 
-/* SUMMARY CARDS */
-
 .question-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -76,8 +70,6 @@
   font-size: 27px;
   color: var(--forest);
 }
-
-/* SEARCH AND FILTER */
 
 .question-toolbar {
   display: flex;
@@ -128,8 +120,6 @@
   outline: none;
   cursor: pointer;
 }
-
-/* QUESTION TABLE */
 
 .question-table-container {
   background: var(--paper);
@@ -204,8 +194,6 @@
   color: #343d38;
 }
 
-/* DIFFICULTY LABELS */
-
 .question-difficulty,
 .question-status {
   display: inline-block;
@@ -234,8 +222,6 @@
   background: #eee9d9;
   color: #806527;
 }
-
-/* ACTION BUTTONS */
 
 .question-actions {
   display: flex;
@@ -271,8 +257,6 @@
   color: #59645e !important;
   white-space: normal;
 }
-
-/* ADD / EDIT MODAL */
 
 .question-modal-overlay {
   position: fixed;
@@ -396,8 +380,6 @@
   border: 1px solid var(--forest);
   color: var(--paper);
 }
-
-/* RESPONSIVE DESIGN */
 
 @media (max-width: 850px) {
   .question-summary {

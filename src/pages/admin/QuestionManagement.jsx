@@ -152,7 +152,6 @@ export default function QuestionManagement() {
   return (
     <div className="question-management">
 
-      {/* PAGE HEADER */}
       <div className="question-page-header">
         <div>
           <span className="admin-eyebrow">
@@ -173,7 +172,6 @@ export default function QuestionManagement() {
         </button>
       </div>
 
-      {/* STATISTICS */}
       <div className="question-summary">
         <div className="question-summary-card">
           <span>Total Questions</span>
@@ -198,7 +196,6 @@ export default function QuestionManagement() {
       {error && <p role="alert">{error} <button type="button" onClick={loadQuestions}>Retry</button></p>}
       {loading && <p role="status">Loading questions…</p>}
 
-      {/* SEARCH AND FILTER */}
       <div className="question-toolbar">
         <div className="question-search">
           <Search size={18} />
@@ -221,7 +218,6 @@ export default function QuestionManagement() {
         </select>
       </div>
 
-      {/* QUESTION TABLE */}
       <div className="question-table-container">
         <div className="question-table-heading">
           <div>
@@ -310,7 +306,6 @@ export default function QuestionManagement() {
         </div>
       </div>
 
-      {/* ADD / EDIT FORM */}
       {showForm && (
         <div className="question-modal-overlay">
           <div className="question-modal">

@@ -13,7 +13,6 @@ import ProfilePage from './pages/ProfilePage';
 import WalletPage from './pages/WalletPage';
 import HistoryPage from './pages/HistoryPage';
 
-// Admin imports
 import AdminLayout from './components/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import QuestionManagement from './pages/admin/QuestionManagement';
@@ -25,7 +24,6 @@ import RoundsManagement from './pages/admin/RoundsManagement';
 import TransactionsManagement from './pages/admin/TransactionsManagement';
 import AdminLogin from './pages/admin/AdminLogin';
 
-// Volunteer imports
 import VolunteerLayout from './components/volunteer/VolunteerLayout';
 import VolunteerDashboard from './pages/volunteer/VolunteerDashboard';
 import VolunteerLogin from './pages/volunteer/VolunteerLogin';

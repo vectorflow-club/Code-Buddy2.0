@@ -51,7 +51,6 @@ const createQuestion = async (req, res) => {
       hiddenTestCases = [],
     } = req.body || {};
 
-    // 1. Validate required text fields
     if (!title || typeof title !== 'string' || title.trim().length < 3) {
       return res.status(400).json({
         success: false,
@@ -68,7 +67,6 @@ const createQuestion = async (req, res) => {
       });
     }
 
-    // 2. Validate levelNumber (1 to 6)
     const parsedLevel = Number(levelNumber);
     if (!isValidLevelNumber(parsedLevel)) {
       return res.status(400).json({
@@ -78,7 +76,6 @@ const createQuestion = async (req, res) => {
       });
     }
 
-    // 3. Validate difficulty (EASY or HARD)
     if (!isValidDifficulty(difficulty)) {
       return res.status(400).json({
         success: false,
@@ -87,7 +84,6 @@ const createQuestion = async (req, res) => {
       });
     }
 
-    // 4. Validate constraints array
     if (!Array.isArray(constraints) || constraints.some((c) => typeof c !== 'string')) {
       return res.status(400).json({
         success: false,
@@ -96,7 +92,6 @@ const createQuestion = async (req, res) => {
       });
     }
 
-    // 5. Validate examples array
     if (!Array.isArray(examples)) {
       return res.status(400).json({
         success: false,
@@ -115,7 +110,6 @@ const createQuestion = async (req, res) => {
       }
     }
 
-    // 6. Validate hiddenTestCases array
     if (!Array.isArray(hiddenTestCases)) {
       return res.status(400).json({
         success: false,
@@ -134,7 +128,6 @@ const createQuestion = async (req, res) => {
       }
     }
 
-    // 7. Create Question document
     const question = new Question({
       title: title.trim(),
       statement: statement.trim(),
@@ -182,7 +175,6 @@ const listQuestions = async (req, res) => {
   try {
     const filter = {};
 
-    // Optional level filter
     if (req.query.levelNumber !== undefined) {
       const level = Number(req.query.levelNumber);
       if (!isValidLevelNumber(level)) {
@@ -195,7 +187,6 @@ const listQuestions = async (req, res) => {
       filter.levelNumber = level;
     }
 
-    // Optional difficulty filter
     if (req.query.difficulty !== undefined) {
       if (!isValidDifficulty(req.query.difficulty)) {
         return res.status(400).json({
@@ -207,7 +198,6 @@ const listQuestions = async (req, res) => {
       filter.difficulty = req.query.difficulty.trim().toUpperCase();
     }
 
-    // Optional active status filter (strictly 'true' or 'false')
     if (req.query.isActive !== undefined) {
       const activeStr = String(req.query.isActive).trim().toLowerCase();
       if (activeStr !== 'true' && activeStr !== 'false') {
@@ -267,7 +257,6 @@ const getQuestionById = async (req, res) => {
       });
     }
 
-    // Check if question has been assigned in any competition rounds
     const isAssigned = await Round.exists({ questionId: id });
 
     return res.status(200).json({
@@ -318,10 +307,8 @@ const updateQuestion = async (req, res) => {
 
     const body = req.body || {};
 
-    // Check if this question is referenced in historical/active rounds
     const isAssigned = await Round.exists({ questionId: id });
 
-    // Validate levelNumber change
     if (body.levelNumber !== undefined) {
       const newLevel = Number(body.levelNumber);
       if (!isValidLevelNumber(newLevel)) {
@@ -341,7 +328,6 @@ const updateQuestion = async (req, res) => {
       question.levelNumber = newLevel;
     }
 
-    // Validate difficulty change
     if (body.difficulty !== undefined) {
       if (!isValidDifficulty(body.difficulty)) {
         return res.status(400).json({
@@ -361,7 +347,6 @@ const updateQuestion = async (req, res) => {
       question.difficulty = newDiff;
     }
 
-    // Validate title update
     if (body.title !== undefined) {
       if (typeof body.title !== 'string' || body.title.trim().length < 3) {
         return res.status(400).json({
@@ -373,7 +358,6 @@ const updateQuestion = async (req, res) => {
       question.title = body.title.trim();
     }
 
-    // Validate statement update
     if (body.statement !== undefined) {
       if (typeof body.statement !== 'string' || body.statement.trim().length < 10) {
         return res.status(400).json({
@@ -385,7 +369,6 @@ const updateQuestion = async (req, res) => {
       question.statement = body.statement.trim();
     }
 
-    // Validate constraints update
     if (body.constraints !== undefined) {
       if (!Array.isArray(body.constraints) || body.constraints.some((c) => typeof c !== 'string')) {
         return res.status(400).json({
@@ -397,7 +380,6 @@ const updateQuestion = async (req, res) => {
       question.constraints = body.constraints.map((c) => c.trim());
     }
 
-    // Validate examples update
     if (body.examples !== undefined) {
       if (!Array.isArray(body.examples)) {
         return res.status(400).json({
@@ -425,7 +407,6 @@ const updateQuestion = async (req, res) => {
       }));
     }
 
-    // Validate hiddenTestCases update
     if (body.hiddenTestCases !== undefined) {
       if (!Array.isArray(body.hiddenTestCases)) {
         return res.status(400).json({
@@ -450,7 +431,6 @@ const updateQuestion = async (req, res) => {
       }));
     }
 
-    // Update active status if explicitly supplied
     if (body.isActive !== undefined && typeof body.isActive === 'boolean') {
       question.isActive = body.isActive;
     }

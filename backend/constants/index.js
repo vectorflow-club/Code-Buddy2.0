@@ -8,7 +8,6 @@
  * round/timer flow reads a timer value from here.
  */
 
-// Number of competition levels (L1..L6).
 const TOTAL_LEVELS = 6;
 
 // Level numbers 1..TOTAL_LEVELS, for queries that must cover every level.
@@ -37,10 +36,8 @@ const TRANSACTION_TYPES = Object.freeze({
   ROUND_SETTLEMENT: 'ROUND_SETTLEMENT',
 });
 
-// Default round length in seconds for Levels 1-3 (3 minutes).
 const DEFAULT_LEVEL_DURATION_SECONDS = 180;
 
-// Extended round length in seconds for Levels 4-6 (5 minutes).
 const EXTENDED_LEVEL_DURATION_SECONDS = 300;
 
 module.exports = {

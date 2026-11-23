@@ -230,7 +230,6 @@ const createRoleGuard = (role) => {
         });
       }
 
-      // Role check on JWT payload
       if (decoded.role !== role) {
         return res.status(403).json({
           success: false,
@@ -239,7 +238,6 @@ const createRoleGuard = (role) => {
         });
       }
 
-      // Live MongoDB verification
       const resolved = await resolveAuthenticatedAccount(req, role, decoded.sub.trim());
       if (resolved.error) {
         return res.status(resolved.error.status).json({
