@@ -1225,6 +1225,28 @@ async function run() {
       // Organizer passwords are stored as plain text by the event team's decision.
       checkEqual(bulkVol.passwordHash, 'BulkPlainPass!1', 'Organizer password stored as plain text');
 
+      // No minimum password length for organizers: a short password is
+      // accepted at create and at reset.
+      const shortCreate = await env
+        .http()
+        .post('/api/admin/volunteers')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Short Password Organizer',
+          username: 'vol_short_pw',
+          password: 'CCD1',
+          assignedLab: 'CCD',
+        });
+      checkEqual(shortCreate.status, 201, 'Create organizer with 4-char password -> 201');
+      const shortVolId = shortCreate.body.volunteer.id;
+      env.trackStaffId(shortVolId);
+      const shortReset = await env
+        .http()
+        .patch(`/api/admin/volunteers/${shortVolId}/reset-password`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ newPassword: 'M1' });
+      checkEqual(shortReset.status, 200, 'Reset organizer to 2-char password -> 200');
+
       // Detail endpoint exposes the password for admin eyes only; the list never does.
       const detailRes = await env
         .http()

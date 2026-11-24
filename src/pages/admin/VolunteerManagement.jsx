@@ -425,7 +425,7 @@ export default function VolunteerManagement() {
             <form onSubmit={handleSave}>
               <div className="volunteer-form-field"><label htmlFor="volunteer-name">Full Name</label><input id="volunteer-name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Enter organizer name" required minLength={2} /></div>
               <div className="volunteer-form-field"><label htmlFor="volunteer-username">Username</label><input id="volunteer-username" value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} placeholder="Enter username" autoComplete="off" required minLength={3} /></div>
-              <div className="volunteer-form-field"><label htmlFor="volunteer-password">Password</label><input id="volunteer-password" type="text" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder="Set an initial password" autoComplete="new-password" required minLength={8} /></div>
+              <div className="volunteer-form-field"><label htmlFor="volunteer-password">Password</label><input id="volunteer-password" type="text" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder="Set an initial password" autoComplete="new-password" required /></div>
               <div className="volunteer-form-field"><label htmlFor="volunteer-location">Assigned Location</label><select id="volunteer-location" value={form.assignedLab} onChange={(event) => setForm({ ...form, assignedLab: event.target.value })} required><option value="">Select a location</option>{ORGANIZER_LOCATIONS.map((location) => <option key={location} value={location}>{location}</option>)}</select></div>
               <div className="volunteer-form-actions"><button type="button" onClick={closeForm} disabled={saving}>Cancel</button><button type="submit" disabled={saving}>{saving ? "Adding…" : "Add Organizer"}</button></div>
             </form>
@@ -483,7 +483,7 @@ export default function VolunteerManagement() {
                   <div className="volunteer-form-actions"><button type="button" onClick={() => setEditing(false)} disabled={detailSaving}>Cancel</button><button type="submit" disabled={detailSaving}>{detailSaving ? "Saving…" : "Save changes"}</button></div>
                 </form>}
                 {resettingPassword && <form onSubmit={handlePasswordReset}>
-                  <div className="volunteer-form-field"><label htmlFor="reset-volunteer-password">New Password</label><input id="reset-volunteer-password" type="text" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} autoComplete="new-password" required minLength={8} /></div>
+                  <div className="volunteer-form-field"><label htmlFor="reset-volunteer-password">New Password</label><input id="reset-volunteer-password" type="text" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} autoComplete="new-password" required /></div>
                   <div className="volunteer-form-actions"><button type="button" onClick={() => setResettingPassword(false)} disabled={passwordSaving}>Cancel</button><button type="submit" disabled={passwordSaving}>{passwordSaving ? "Resetting…" : "Reset password"}</button></div>
                 </form>}
               </>

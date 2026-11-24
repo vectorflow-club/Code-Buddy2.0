@@ -50,8 +50,8 @@ const validateVolunteerRow = (row) => {
   if (!USERNAME_REGEX.test(username)) {
     return { ok: false, code: 'INVALID_USERNAME_FORMAT', message: 'Username can only contain alphanumeric characters, underscores, dots, and hyphens.' };
   }
-  if (!row || typeof row.password !== 'string' || row.password.length < 8) {
-    return { ok: false, code: 'WEAK_PASSWORD', message: 'Password must be at least 8 characters long.' };
+  if (!row || typeof row.password !== 'string' || row.password.length === 0) {
+    return { ok: false, code: 'WEAK_PASSWORD', message: 'Password is required.' };
   }
   const assignedLab = resolveOrganizerLocation(row.assignedLab);
   if (!assignedLab) {
@@ -797,11 +797,11 @@ const resetVolunteerPassword = async (req, res) => {
       });
     }
 
-    if (candidatePassword.length < 8 || candidatePassword.trim() === '') {
+    if (candidatePassword.trim() === '') {
       return res.status(400).json({
         success: false,
         code: 'WEAK_PASSWORD',
-        message: 'Password must be at least 8 characters long.',
+        message: 'Password cannot be blank.',
       });
     }
 
