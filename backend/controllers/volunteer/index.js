@@ -1,5 +1,6 @@
 const { volunteerLogin, getVolunteerMe } = require('./auth');
 const { getStudentActiveRoundByUsn } = require('./lookup');
+const { getVolunteerDashboard } = require('./dashboard');
 const {
   startStudentRoundByUsn,
   extendStudentRoundByUsn,
@@ -11,6 +12,7 @@ module.exports = {
   volunteerLogin,
   getVolunteerMe,
   getStudentActiveRoundByUsn,
+  getVolunteerDashboard,
   startStudentRoundByUsn,
   extendStudentRoundByUsn,
   evaluateStudentRoundByUsn,

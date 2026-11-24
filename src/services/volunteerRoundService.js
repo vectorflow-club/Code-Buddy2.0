@@ -18,6 +18,42 @@ const volunteerApiClient = createApiClient({
   getAccessToken: () => getVolunteerSession()?.token ?? null,
 });
 
+// Shared ApiError -> VolunteerApiError mapping, used by the round requests
+// and the dashboard request alike.
+function mapVolunteerApiError(error) {
+  if (error instanceof ApiError) {
+    if (error.code === API_ERROR_CODES.CONFIGURATION) {
+      throw new Error("Volunteer API is not configured. Set VITE_API_BASE_URL and restart the frontend.");
+    }
+    if (error.code === API_ERROR_CODES.NETWORK) {
+      throw new VolunteerApiError({
+        message: "Could not reach the server. Check that it is running and try again.",
+        kind: "network",
+      });
+    }
+    const responseBody = error.responseBody;
+    const status = error.status;
+    const ok = typeof status === "number" && status >= 200 && status < 300;
+    const isObjectPayload = responseBody && typeof responseBody === "object";
+    const hasBackendError = isObjectPayload && responseBody.success === false;
+    const message =
+      typeof responseBody?.message === "string" && responseBody.message
+        ? responseBody.message
+        : status === 401 || status === 403
+          ? "Your volunteer session is no longer authorized."
+          : !ok
+            ? `The round request failed (HTTP ${status}).`
+            : "The server returned an invalid response.";
+    const kind = !isObjectPayload
+      ? ok ? "invalid_response" : "http"
+      : !ok
+        ? "http"
+        : hasBackendError ? "api" : "invalid_response";
+    throw new VolunteerApiError({ message, kind, status, code: responseBody?.code });
+  }
+  throw error;
+}
+
 async function volunteerRequest(usn, action = "", body) {
   const session = getVolunteerSession();
   if (!session?.token) throw new Error("Your volunteer session is missing. Please sign in again.");
@@ -31,37 +67,7 @@ async function volunteerRequest(usn, action = "", body) {
       ...(body !== undefined ? { body } : {}),
     });
   } catch (error) {
-    if (error instanceof ApiError) {
-      if (error.code === API_ERROR_CODES.CONFIGURATION) {
-        throw new Error("Volunteer API is not configured. Set VITE_API_BASE_URL and restart the frontend.");
-      }
-      if (error.code === API_ERROR_CODES.NETWORK) {
-        throw new VolunteerApiError({
-          message: "Could not reach the server. Check that it is running and try again.",
-          kind: "network",
-        });
-      }
-      const responseBody = error.responseBody;
-      const status = error.status;
-      const ok = typeof status === "number" && status >= 200 && status < 300;
-      const isObjectPayload = responseBody && typeof responseBody === "object";
-      const hasBackendError = isObjectPayload && responseBody.success === false;
-      const message =
-        typeof responseBody?.message === "string" && responseBody.message
-          ? responseBody.message
-          : status === 401 || status === 403
-            ? "Your volunteer session is no longer authorized."
-            : !ok
-              ? `The round request failed (HTTP ${status}).`
-              : "The server returned an invalid response.";
-      const kind = !isObjectPayload
-        ? ok ? "invalid_response" : "http"
-        : !ok
-          ? "http"
-          : hasBackendError ? "api" : "invalid_response";
-      throw new VolunteerApiError({ message, kind, status, code: responseBody?.code });
-    }
-    throw error;
+    mapVolunteerApiError(error);
   }
 
   if (!payload || typeof payload !== "object" || payload.success !== true) {
@@ -83,6 +89,33 @@ async function volunteerRequest(usn, action = "", body) {
 
 export function getVolunteerStudentRound(usn) {
   return volunteerRequest(usn);
+}
+
+export async function getVolunteerDashboard({ page = 1, limit = 20 } = {}) {
+  const session = getVolunteerSession();
+  if (!session?.token) throw new Error("Your volunteer session is missing. Please sign in again.");
+
+  let payload;
+  try {
+    payload = await volunteerApiClient.request(
+      `/api/volunteer/dashboard?page=${page}&limit=${limit}`
+    );
+  } catch (error) {
+    mapVolunteerApiError(error);
+  }
+
+  if (!payload || typeof payload !== "object" || payload.success !== true) {
+    throw new VolunteerApiError({
+      message:
+        typeof payload?.message === "string" && payload.message
+          ? payload.message
+          : "The server returned an invalid response.",
+      kind: "invalid_response",
+      status: 200,
+      code: payload?.code,
+    });
+  }
+  return payload;
 }
 
 export function startVolunteerStudentRound(usn) {

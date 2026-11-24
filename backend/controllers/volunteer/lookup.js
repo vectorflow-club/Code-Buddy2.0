@@ -13,6 +13,7 @@ const formatStudentVolunteerResponse = (student, round = null) => ({
   email: student.email,
   usn: student.usn || null,
   year: student.year || null,
+  location: student.location || null,
   registrationComplete: Boolean(student.registrationComplete),
   currentLevel: student.currentLevel,
   highestLevelReached: student.highestLevelReached ?? 1,

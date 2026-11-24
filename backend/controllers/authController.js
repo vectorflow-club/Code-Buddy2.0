@@ -2,7 +2,7 @@ const { OAuth2Client } = require('google-auth-library');
 const { Student } = require('../models');
 const { signStudentToken } = require('../middleware/authMiddleware');
 const { resolveStudentLiveState } = require('./roundController');
-const { USN_REGEX, ACADEMIC_YEARS } = require('../constants');
+const { USN_REGEX, ACADEMIC_YEARS, ORGANIZER_LOCATIONS } = require('../constants');
 
 // Lazily initialize OAuth2Client to ensure process.env.GOOGLE_CLIENT_ID is read at runtime
 let googleClient = null;
@@ -28,6 +28,7 @@ const formatStudentResponse = (student, liveState = null) => ({
   registrationComplete: student.registrationComplete,
   usn: student.usn || null,
   year: student.year || null,
+  location: student.location || null,
   currentLevel: liveState?.currentLevel ?? student.currentLevel,
   highestLevelReached: liveState?.highestLevelReached ?? (student.highestLevelReached ?? 1),
   levelsCleared: liveState?.levelsCleared ?? (student.levelsCleared ?? 0),
@@ -237,32 +238,35 @@ const verifyGoogleAuth = async (req, res) => {
  * 2. Strict payload validation: Rejects any unsupported fields (e.g., name, role, email, walletBalance).
  * 3. Validates USN format (/^[A-Z0-9]{8,15}$/i) and normalizes via trim() and toUpperCase().
  * 4. Validates Academic Year against schema enum ('1st Year', '2nd Year', '3rd Year', '4th Year').
- * 5. Pre-checks for USN collision across other student accounts.
- * 6. Executes an atomic conditional update:
- *    - Updates only usn, year, and registrationComplete.
+ * 5. Validates event location against ORGANIZER_LOCATIONS (same three spots as
+ *    organizer assignedLab), canonicalizing case after trim.
+ * 6. Pre-checks for USN collision across other student accounts.
+ * 7. Executes an atomic conditional update:
+ *    - Updates only usn, year, location, and registrationComplete.
  *    - Only matches if registrationComplete is false.
  *    - Never resets or modifies competition fields or student name.
- * 7. If conditional update does not match, inspects latest student record:
- *    - If registration is already complete with identical USN and Year: returns idempotent 200 OK.
+ * 8. If conditional update does not match, inspects latest student record:
+ *    - If registration is already complete with identical USN, Year, and Location:
+ *      returns idempotent 200 OK.
  *    - Otherwise rejects modification attempts with 400 REGISTRATION_ALREADY_COMPLETED.
- * 8. Catches MongoDB E11000 duplicate key errors on the unique USN index.
+ * 9. Catches MongoDB E11000 duplicate key errors on the unique USN index.
  */
 const completeRegistration = async (req, res) => {
   try {
     const studentId = req.student._id;
     const body = req.body || {};
 
-    const allowedFields = ['usn', 'year'];
+    const allowedFields = ['usn', 'year', 'location'];
     const extraFields = Object.keys(body).filter((key) => !allowedFields.includes(key));
     if (extraFields.length > 0) {
       return res.status(400).json({
         success: false,
         code: 'UNSUPPORTED_FIELDS',
-        message: `Registration request contains unsupported fields: ${extraFields.join(', ')}. Only 'usn' and 'year' are permitted.`,
+        message: `Registration request contains unsupported fields: ${extraFields.join(', ')}. Only 'usn', 'year', and 'location' are permitted.`,
       });
     }
 
-    const { usn, year } = body;
+    const { usn, year, location } = body;
 
     if (!usn || typeof usn !== 'string' || usn.trim() === '') {
       return res.status(400).json({
@@ -280,8 +284,21 @@ const completeRegistration = async (req, res) => {
       });
     }
 
+    if (!location || typeof location !== 'string' || location.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        code: 'MISSING_LOCATION',
+        message: 'Event location is required.',
+      });
+    }
+
     const normalizedUsn = usn.trim().toUpperCase();
     const normalizedYear = year.trim();
+    // Canonicalize case after trim, mirroring the organizer assignedLab
+    // validation: 'ccd' stores as 'CCD'.
+    const normalizedLocation = ORGANIZER_LOCATIONS.find(
+      (spot) => spot.toLowerCase() === location.trim().toLowerCase()
+    );
 
     if (!USN_REGEX.test(normalizedUsn)) {
       return res.status(400).json({
@@ -296,6 +313,14 @@ const completeRegistration = async (req, res) => {
         success: false,
         code: 'INVALID_YEAR',
         message: 'Choose your year of study (1st Year, 2nd Year, 3rd Year, or 4th Year).',
+      });
+    }
+
+    if (!normalizedLocation) {
+      return res.status(400).json({
+        success: false,
+        code: 'INVALID_LOCATION',
+        message: `Choose your event location (${ORGANIZER_LOCATIONS.join(', ')}).`,
       });
     }
 
@@ -323,6 +348,7 @@ const completeRegistration = async (req, res) => {
           $set: {
             usn: normalizedUsn,
             year: normalizedYear,
+            location: normalizedLocation,
             registrationComplete: true,
           },
         },
@@ -360,7 +386,8 @@ const completeRegistration = async (req, res) => {
       if (
         latestStudent.registrationComplete &&
         latestStudent.usn === normalizedUsn &&
-        latestStudent.year === normalizedYear
+        latestStudent.year === normalizedYear &&
+        latestStudent.location === normalizedLocation
       ) {
         const liveState = await resolveStudentLiveState(latestStudent);
         return res.status(200).json({
@@ -373,7 +400,7 @@ const completeRegistration = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'REGISTRATION_ALREADY_COMPLETED',
-        message: 'Registration is already complete. Your USN and academic year cannot be modified.',
+        message: 'Registration is already complete. Your USN, academic year, and location cannot be modified.',
       });
     }
 

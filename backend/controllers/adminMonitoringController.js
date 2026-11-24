@@ -18,6 +18,7 @@ const VALID_COMPETITION_STATUSES = new Set([
   'cleared',
   'eliminated',
   'completed',
+  'stopped',
 ]);
 const VALID_ROUND_STATUSES = new Set([
   'ready',

@@ -74,10 +74,10 @@ export const studentAuthenticationService = {
       }
     } catch (error) { throw presentError(error) }
   },
-  async register({ usn, year }) {
+  async register({ usn, year, location }) {
     markRealMode()
     try {
-      const response = await apiClient.post('/api/auth/register', { usn, year })
+      const response = await apiClient.post('/api/auth/register', { usn, year, location })
       requireStudentResponse(response)
       return response
     } catch (error) { throw presentError(error) }

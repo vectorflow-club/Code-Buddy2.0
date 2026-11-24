@@ -16,6 +16,7 @@ import {
   settleVolunteerStudentRound,
   startVolunteerStudentRound,
 } from "../../services/volunteerRoundService";
+import { getVolunteerSession } from "../../services/volunteerAuthService";
 import TimerPanel from "./TimerPanel";
 import "./evaluation.css";
 
@@ -107,6 +108,14 @@ export default function EvaluationWorkspace() {
   const canProgress = hasLookupResult && hasEvaluation && !isProgressed;
   const studentName = typeof student?.name === "string" ? student.name.trim() : "";
   const participantDisplayName = studentName || student?.usn || "";
+  // The USN lookup is open across spots (a wrong-location student must stay
+  // reachable), so a cross-spot open is flagged visibly instead of blocked.
+  const organizerSpot = getVolunteerSession()?.volunteer?.assignedLab || "";
+  const isDifferentSpot =
+    hasLookupResult &&
+    Boolean(student?.location) &&
+    Boolean(organizerSpot) &&
+    student.location !== organizerSpot;
 
   async function runAction(actionName, operation) {
     if (activeActionRef.current || !student?.usn) return null;
@@ -319,9 +328,15 @@ export default function EvaluationWorkspace() {
               <h2>{hasLookupResult ? participantDisplayName : "Details unavailable"}</h2>
               <p>
                 {hasLookupResult
-                  ? `${student.usn} · Round status: ${displayValue(round.status)} · Student level: ${displayValue(student.currentLevel)}`
+                  ? `${student.usn} · Round status: ${displayValue(round.status)} · Student level: ${displayValue(student.currentLevel)} - Spot: ${displayValue(student.location)}`
                   : "Round details will appear after a valid Dashboard lookup."}
               </p>
+              {isDifferentSpot && (
+                <p className="evaluation-spot-note" role="status">
+                  This student registered at {student.location}, not your spot ({organizerSpot}).
+                  You can still run their round from here.
+                </p>
+              )}
             </div>
           </div>
 

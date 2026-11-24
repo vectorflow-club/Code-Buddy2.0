@@ -160,6 +160,11 @@ const deriveStudentRoundAvailability = (student, round = null, evaluation = null
   if (student.competitionStatus === 'eliminated') {
     return 'eliminated';
   }
+  // Voluntary cash-out: terminal, like completed/eliminated, and checked
+  // before any round state so a stopped student never looks allocatable.
+  if (student.competitionStatus === 'stopped') {
+    return 'stopped';
+  }
 
   if (round) {
     if (round.status === 'inProgress') {
@@ -497,6 +502,14 @@ const allocateQuestion = async (req, res) => {
         success: false,
         code: 'COMPETITION_COMPLETED',
         message: 'You have already completed all competition levels.',
+      });
+    }
+
+    if (student.competitionStatus === 'stopped') {
+      return res.status(409).json({
+        success: false,
+        code: 'STUDENT_STOPPED',
+        message: 'You stopped the competition and kept your balance. You cannot allocate another round.',
       });
     }
 

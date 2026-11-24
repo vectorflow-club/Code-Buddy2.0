@@ -2,7 +2,7 @@ const { Student, Evaluation, Transaction } = require('../models');
 const { parsePaginationQuery, buildPaginationMeta } = require('../utils');
 const { ACADEMIC_YEARS, TRANSACTION_TYPES } = require('../constants');
 
-const ALLOWED_COMPETITION_STATUSES = ['registered', 'inProgress', 'cleared', 'eliminated', 'completed'];
+const ALLOWED_COMPETITION_STATUSES = ['registered', 'inProgress', 'cleared', 'eliminated', 'completed', 'stopped'];
 
 /**
  * Safely parse optional competitionStatus and year query filters.

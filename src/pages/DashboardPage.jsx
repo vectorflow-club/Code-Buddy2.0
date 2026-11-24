@@ -11,6 +11,8 @@ export default function DashboardPage() {
   const navigate = useNavigate()
   const [entering, setEntering] = useState(false)
   const [enterError, setEnterError] = useState('')
+  const [confirmingStop, setConfirmingStop] = useState(false)
+  const [stopping, setStopping] = useState(false)
   const [liveRound, setLiveRound] = useState(null)
   const allocationInFlight = useRef(false)
   // Live round timer, mirroring the Round page: fetch the active round on
@@ -42,10 +44,15 @@ export default function DashboardPage() {
   const balance = state.levelInfo?.walletBalance ?? student.walletBalance
   const hasActiveRound = Boolean(state.activeRound?.round)
   const canAllocate = student.roundAvailability === 'ready' && !hasActiveRound
+  // Voluntary cash-out, between levels only: the student can stop once they
+  // have something to keep (a balance, or a cleared level behind them).
+  const canStop = canAllocate && ((typeof balance === 'number' && balance > 0) || (student.currentLevel || 1) > 1)
+  const stopAmount = typeof balance === 'number' ? formatCurrency(balance, state.competition?.currency, state.competition?.locale) : 'your balance'
   const roundMessage = student.roundAvailability === 'inProgress' ? 'Your organizer has started this round.'
     : student.roundAvailability === 'evaluationPending' ? 'Your solution is waiting for organizer evaluation.'
       : student.roundAvailability === 'eliminated' ? 'You have been eliminated from this competition.'
         : student.roundAvailability === 'completed' ? 'You have completed the competition.'
+          : student.roundAvailability === 'stopped' ? 'You stopped and kept your balance.'
           : hasActiveRound ? 'Your question assignment is ready.'
             : student.roundAvailability === 'ready' ? typeof level?.entryRiskAmount === 'number' ? 'You can request this round.' : 'The active entry-risk configuration is unavailable.'
               : 'Round availability is not currently reported.'
@@ -65,9 +72,25 @@ export default function DashboardPage() {
       setEntering(false)
     }
   }
+  const stopCompetition = async () => {
+    if (stopping) return
+    setStopping(true)
+    setEnterError('')
+    try {
+      await backendCompetitionService.stopCompetition()
+      setConfirmingStop(false)
+      await refresh()
+      navigate('/result/stopped')
+    } catch (error) {
+      setEnterError(error.message || 'Stopping did not complete. Please try again.')
+      setConfirmingStop(false)
+    } finally {
+      setStopping(false)
+    }
+  }
   return <div className="page dashboard-page">
     <div className="dashboard-heading"><div><p className="eyebrow">Verified student portal · {student.year}</p><h1>Good to see you,<br /><span>{student.name.split(' ')[0]}.</span></h1><p className="hero-subtitle">Your authenticated competition profile.</p></div><div className="dashboard-id"><span className="id-label">STUDENT IDENTIFICATION</span><strong>{student.usn}</strong><span>{student.email}</span><span>{student.year}</span></div></div>
-    <section className="round-banner"><div className="round-copy"><span className="round-mark"><Zap size={18} /></span><div><p className="eyebrow">Competition status</p><h2>{student.competitionStatus || 'Status unavailable'} · L{student.currentLevel || '—'}</h2><p>{roundMessage}</p>{level && <p>{level.name} · Entry risk {typeof level.entryFee === 'number' ? formatCurrency(level.entryFee, state.competition?.currency, state.competition?.locale) : 'Unavailable'} · Pass payout {typeof level.passReward === 'number' ? formatCurrency(level.passReward, state.competition?.currency, state.competition?.locale) : 'Unavailable'}</p>}</div></div><div className="round-banner-action"><InlineTag>{student.roundAvailability || 'Availability unavailable'}</InlineTag>{liveRound?.status === 'inProgress' && <CountdownDisplay seconds={liveRound.remainingSeconds} status="Backend timer · live display" running />}{hasActiveRound ? <Button to="/round" variant="lime">Continue round <NextArrow /></Button> : canAllocate ? <Button disabled={entering} onClick={allocateRealRound} variant="lime">{entering ? 'Loading assignment…' : 'Enter current level'} <NextArrow /></Button> : student.roundAvailability === 'ready' && level && typeof balance === 'number' && typeof level.entryRiskAmount === 'number' && balance < level.entryRiskAmount ? <Button to="/result/insufficient" variant="outline">Wallet requirement</Button> : student.roundAvailability === 'eliminated' ? <Button to="/result/eliminated" variant="outline">View result</Button> : student.roundAvailability === 'completed' ? <Button to="/result/completed" variant="lime">View completion</Button> : student.roundAvailability === 'evaluationPending' ? <Button to="/round" variant="lime">View evaluation status</Button> : <span className="round-unavailable">{state.dataErrors?.levelInfo?.message || 'Current level information unavailable'}</span>}</div><div className="banner-index" aria-hidden="true">{String(student.currentLevel || 0).padStart(2, '0')}</div></section>
+    <section className="round-banner"><div className="round-copy"><span className="round-mark"><Zap size={18} /></span><div><p className="eyebrow">Competition status</p><h2>{student.competitionStatus || 'Status unavailable'} · L{student.currentLevel || '—'}</h2><p>{roundMessage}</p>{level && <p>{level.name} · Entry risk {typeof level.entryFee === 'number' ? formatCurrency(level.entryFee, state.competition?.currency, state.competition?.locale) : 'Unavailable'} · Pass payout {typeof level.passReward === 'number' ? formatCurrency(level.passReward, state.competition?.currency, state.competition?.locale) : 'Unavailable'}</p>}</div></div><div className="round-banner-action"><InlineTag>{student.roundAvailability || 'Availability unavailable'}</InlineTag>{liveRound?.status === 'inProgress' && <CountdownDisplay seconds={liveRound.remainingSeconds} status="Backend timer · live display" running />}{confirmingStop ? <div className="stop-confirm" role="alertdialog" aria-label="Confirm stopping"><p>Stop here and keep {stopAmount}? You won&apos;t be able to continue.</p><div className="stop-confirm-actions"><Button variant="outline" disabled={stopping} onClick={() => setConfirmingStop(false)}>Keep playing</Button><Button variant="dark" disabled={stopping} onClick={stopCompetition}>{stopping ? 'Stopping...' : 'Yes, stop'}</Button></div></div> : hasActiveRound ? <Button to="/round" variant="lime">Start round <NextArrow /></Button> : canAllocate ? <><Button disabled={entering} onClick={allocateRealRound} variant="lime">{entering ? 'Loading assignment…' : 'Enter current level'} <NextArrow /></Button>{canStop && <Button variant="outline" onClick={() => setConfirmingStop(true)}>Stop here</Button>}</> : student.roundAvailability === 'ready' && level && typeof balance === 'number' && typeof level.entryRiskAmount === 'number' && balance < level.entryRiskAmount ? <Button to="/result/insufficient" variant="outline">Wallet requirement</Button> : student.roundAvailability === 'eliminated' ? <Button to="/result/eliminated" variant="outline">View result</Button> : student.roundAvailability === 'stopped' ? <Button to="/result/stopped" variant="outline">View result</Button> : student.roundAvailability === 'completed' ? <Button to="/result/completed" variant="lime">View completion</Button> : student.roundAvailability === 'evaluationPending' ? <Button to="/round" variant="lime">View evaluation status</Button> : <span className="round-unavailable">{state.dataErrors?.levelInfo?.message || 'Current level information unavailable'}</span>}</div><div className="banner-index" aria-hidden="true">{String(student.currentLevel || 0).padStart(2, '0')}</div></section>
     {enterError && <p className="error-state" role="alert">{enterError}</p>}
     {state.dataErrors?.configuration && <p className="error-state" role="alert">Competition configuration unavailable: {state.dataErrors.configuration.message}</p>}
     <SectionHeading kicker="Verified account" title="Your profile, at a glance." detail="Competition settings and wallet information are read from the authenticated backend." />

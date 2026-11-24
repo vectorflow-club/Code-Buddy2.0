@@ -46,6 +46,13 @@ export const backendCompetitionService = {
     return { ...response, round: normalizeBackendRound(response.round), source: 'backend' }
   },
 
+  async stopCompetition() {
+    // Voluntary cash-out between levels. No body; the backend guards
+    // against stopping mid-round and answers idempotently.
+    const response = requireSuccess(await apiClient.post('/api/student/stop'), 'stop competition')
+    return { ...response, source: 'backend' }
+  },
+
   async getActiveRound() {
     try {
       const response = requireSuccess(await apiClient.get('/api/rounds/active'), 'active round')

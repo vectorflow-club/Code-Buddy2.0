@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { TOTAL_LEVELS, ACADEMIC_YEARS, USN_REGEX } = require('../constants');
+const { TOTAL_LEVELS, ACADEMIC_YEARS, USN_REGEX, ORGANIZER_LOCATIONS } = require('../constants');
 
 const studentSchema = new mongoose.Schema(
   {
@@ -83,6 +83,20 @@ const studentSchema = new mongoose.Schema(
       default: false,
       index: true,
     },
+    // Event spot the student registered at. Organizers only see students
+    // whose location matches their own assignedLab. Null for accounts
+    // registered before locations existed; the registration endpoint
+    // requires it for new registrations, the schema does not.
+    location: {
+      type: String,
+      enum: {
+        values: ORGANIZER_LOCATIONS,
+        message: '{VALUE} is not a valid event location',
+      },
+      trim: true,
+      default: null,
+      index: true,
+    },
     currentLevel: {
       type: Number,
       default: 1,
@@ -104,7 +118,10 @@ const studentSchema = new mongoose.Schema(
     competitionStatus: {
       type: String,
       enum: {
-        values: ['registered', 'inProgress', 'cleared', 'eliminated', 'completed'],
+        // 'stopped' is the voluntary cash-out: the student chose to stop
+        // between levels and keep the balance. It is terminal like
+        // 'eliminated'/'completed' but is neither a fail nor a full clear.
+        values: ['registered', 'inProgress', 'cleared', 'eliminated', 'completed', 'stopped'],
         message: '{VALUE} is not a valid competition status',
       },
       default: 'registered',
@@ -121,6 +138,7 @@ const studentSchema = new mongoose.Schema(
           'cleared',
           'eliminated',
           'completed',
+          'stopped',
           'insufficientBalance',
         ],
         message: '{VALUE} is not a valid round availability state',

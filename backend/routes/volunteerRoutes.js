@@ -5,6 +5,7 @@ const {
   volunteerLogin,
   getVolunteerMe,
   getStudentActiveRoundByUsn,
+  getVolunteerDashboard,
   startStudentRoundByUsn,
   extendStudentRoundByUsn,
   evaluateStudentRoundByUsn,
@@ -33,6 +34,13 @@ router.post('/login', ...volunteerLoginLimiters, volunteerLogin);
  * @access  Protected (Volunteer only)
  */
 router.get('/me', protectVolunteer, authorizeVolunteer, getVolunteerMe);
+
+/**
+ * @route   GET /api/volunteer/dashboard
+ * @desc    Spot-scoped organizer stats and participant roster (paginated)
+ * @access  Protected (Volunteer only)
+ */
+router.get('/dashboard', protectVolunteer, authorizeVolunteer, getVolunteerDashboard);
 
 /**
  * @route   GET /api/volunteer/students/:usn/round

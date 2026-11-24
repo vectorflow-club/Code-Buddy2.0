@@ -1,4 +1,4 @@
-const { Transaction, Round, Evaluation, Level } = require('../models');
+const { Student, Transaction, Round, Evaluation, Level } = require('../models');
 const {
   formatLevelResponse,
   formatRoundStudentResponse,
@@ -202,9 +202,109 @@ const getCompetitionConfig = async (req, res) => {
   }
 };
 
+/**
+ * Controller: stopCompetition
+ * Endpoint: POST /api/student/stop
+ * Access: Protected (Student only)
+ *
+ * Voluntary cash-out: the student stops between levels and keeps the current
+ * wallet balance. Terminal state is competitionStatus 'stopped' - not
+ * 'eliminated' (a fail) and not 'completed' (clearing all six levels).
+ *
+ * Guards:
+ * - Only between levels: any open round (ready, inProgress, timeExpired,
+ *   submitted) refuses with 409. A running round ends via the organizer's
+ *   evaluation, not from here.
+ * - Idempotent: stopping twice returns the same 200, no error.
+ * - A run already ended by elimination or completion refuses with 409.
+ * The wallet is untouched: the balance kept is whatever settle left behind.
+ */
+const stopCompetition = async (req, res) => {
+  try {
+    const student = await Student.findById(req.student._id);
+
+    if (!student) {
+      return res.status(401).json({
+        success: false,
+        code: 'USER_NOT_FOUND',
+        message: 'Student account no longer exists.',
+      });
+    }
+
+    if (!student.registrationComplete) {
+      return res.status(403).json({
+        success: false,
+        code: 'REGISTRATION_INCOMPLETE',
+        message: 'Registration must be completed before stopping the competition.',
+      });
+    }
+
+    if (student.competitionStatus === 'stopped') {
+      return res.status(200).json({
+        success: true,
+        message: 'You have already stopped the competition.',
+        student: {
+          id: student._id.toString(),
+          competitionStatus: student.competitionStatus,
+          roundAvailability: student.roundAvailability,
+          walletBalance: student.walletBalance ?? 0,
+          currentLevel: student.currentLevel,
+          levelsCleared: student.levelsCleared ?? 0,
+        },
+      });
+    }
+
+    if (student.competitionStatus === 'eliminated' || student.competitionStatus === 'completed') {
+      return res.status(409).json({
+        success: false,
+        code: 'RUN_ALREADY_ENDED',
+        message: 'Your competition run has already ended.',
+      });
+    }
+
+    const openRound = await Round.findOne({
+      studentId: student._id,
+      status: { $in: ['ready', 'inProgress', 'timeExpired', 'submitted'] },
+    });
+    if (openRound) {
+      return res.status(409).json({
+        success: false,
+        code: 'OPEN_ROUND_EXISTS',
+        message:
+          'You have a round waiting or in progress. Stop between levels, after your organizer records the result.',
+      });
+    }
+
+    student.competitionStatus = 'stopped';
+    student.roundAvailability = 'stopped';
+    await student.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'You stopped the competition and kept your balance.',
+      student: {
+        id: student._id.toString(),
+        competitionStatus: student.competitionStatus,
+        roundAvailability: student.roundAvailability,
+        walletBalance: student.walletBalance ?? 0,
+        currentLevel: student.currentLevel,
+        levelsCleared: student.levelsCleared ?? 0,
+      },
+    });
+  } catch (error) {
+    console.error('Error stopping student competition:', error.message);
+    return res.status(500).json({
+      success: false,
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Failed to stop the competition.',
+    });
+  }
+};
+
 module.exports = {
   getStudentTransactions,
   getStudentRoundHistory,
   getCompetitionConfig,
+  stopCompetition,
 };
 

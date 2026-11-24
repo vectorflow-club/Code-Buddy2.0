@@ -11,7 +11,7 @@ export default function AuthPage({ mode }) {
   const { state, refresh } = useStudent()
   const navigate = useNavigate()
   const buttonRef = useRef(null)
-  const [form, setForm] = useState({ usn: '', year: '' })
+  const [form, setForm] = useState({ usn: '', year: '', location: '' })
   const [error, setError] = useState('')
   const [googleReady, setGoogleReady] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -57,8 +57,9 @@ export default function AuthPage({ mode }) {
       const usn = form.usn.trim().toUpperCase()
       if (!/^[A-Z0-9]{8,15}$/.test(usn)) throw new Error('Enter a valid USN (8–15 letters or numbers).')
       if (!['1st Year', '2nd Year', '3rd Year', '4th Year'].includes(form.year)) throw new Error('Choose your year of study.')
+      if (!['M Block Entrance', 'CCD', 'Mangaluru Canteen'].includes(form.location)) throw new Error('Choose the spot where you are playing.')
 
-      const response = await studentAuthenticationService.register({ usn, year: form.year })
+      const response = await studentAuthenticationService.register({ usn, year: form.year, location: form.location })
       if (response.student.registrationComplete !== true) {
         throw new Error('The backend did not confirm that registration is complete. Please try again.')
       }
@@ -91,6 +92,7 @@ export default function AuthPage({ mode }) {
           <label>University seat number (USN)<span className="input-wrap"><input required autoComplete="off" value={form.usn} onChange={event => setForm({ ...form, usn: event.target.value.toUpperCase() })} placeholder="e.g. 4VV23CS051" aria-describedby={error ? 'form-error' : undefined}/></span></label>
           <label>VVCE Gmail address<span className="input-wrap"><input value={state.pendingIdentity?.email || ''} readOnly aria-readonly="true" /></span><small>Verified account detail; cannot be changed here.</small></label>
           <label>Year of study<select required value={form.year} onChange={event => setForm({ ...form, year: event.target.value })}><option value="" disabled>Select your year</option>{['1st Year','2nd Year','3rd Year','4th Year'].map(year => <option key={year}>{year}</option>)}</select></label>
+          <label>Event spot<select required value={form.location} onChange={event => setForm({ ...form, location: event.target.value })}><option value="" disabled>Select your spot</option>{['M Block Entrance','CCD','Mangaluru Canteen'].map(spot => <option key={spot}>{spot}</option>)}</select><small>The spot where you are playing - only its organizers will see you.</small></label>
           {error && <p id="form-error" className="form-error" role="alert">{error}</p>}
           <Button type="submit" variant="dark" className="auth-submit" disabled={busy}>{busy ? 'Saving registration…' : 'Complete registration'}<ArrowRight size={17} /></Button>
         </form>}

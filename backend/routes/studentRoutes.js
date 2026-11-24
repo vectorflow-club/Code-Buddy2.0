@@ -4,6 +4,7 @@ const router = express.Router();
 const {
   getStudentTransactions,
   getStudentRoundHistory,
+  stopCompetition,
 } = require('../controllers/studentController');
 const { protectStudent } = require('../middleware/authMiddleware');
 
@@ -20,6 +21,13 @@ router.get('/transactions', protectStudent, getStudentTransactions);
  * @access  Protected (Student only)
  */
 router.get('/rounds/history', protectStudent, getStudentRoundHistory);
+
+/**
+ * @route   POST /api/student/stop
+ * @desc    Voluntary cash-out: stop between levels and keep the wallet balance
+ * @access  Protected (Student only)
+ */
+router.post('/stop', protectStudent, stopCompetition);
 
 module.exports = router;
 

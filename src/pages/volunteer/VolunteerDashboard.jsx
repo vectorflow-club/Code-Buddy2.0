@@ -6,19 +6,82 @@ import {
   Search,
   CircleUserRound,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./volunteer-dashboard.css";
 import { getVolunteerSession } from "../../services/volunteerAuthService";
-import { getVolunteerStudentRound } from "../../services/volunteerRoundService";
+import {
+  getVolunteerDashboard,
+  getVolunteerStudentRound,
+  startVolunteerStudentRound,
+  evaluateVolunteerStudentRound,
+  settleVolunteerStudentRound,
+  progressVolunteerStudentRound,
+} from "../../services/volunteerRoundService";
+import { formatCurrency } from "../../utils/formatters";
+
+// Friendly status for a roster row, from the raw competition/round state the
+// dashboard endpoint returns. Tone maps to the existing status-tag styles.
+function rosterStatus(entry) {
+  if (entry.competitionStatus === "stopped") return { label: "Stopped", tone: "neutral" };
+  if (entry.competitionStatus === "eliminated") return { label: "Eliminated", tone: "neutral" };
+  if (entry.competitionStatus === "completed") return { label: "Completed", tone: "completed" };
+  switch (entry.roundStatus) {
+    case "ready":
+      return { label: "Question ready", tone: "pending" };
+    case "inProgress":
+      return { label: "Solving now", tone: "pending" };
+    case "timeExpired":
+      return { label: "Time expired", tone: "pending" };
+    case "submitted":
+      return { label: "Needs evaluation", tone: "pending" };
+    case "evaluated":
+      return { label: "Evaluated", tone: "completed" };
+    default:
+      return entry.levelsCleared > 0
+        ? { label: "Between levels", tone: "neutral" }
+        : { label: "Registered", tone: "neutral" };
+  }
+}
 
 export default function VolunteerDashboard() {
-  const volunteerName = getVolunteerSession()?.volunteer?.name || "Organizer";
+  const volunteerSession = getVolunteerSession();
+  const volunteerName = volunteerSession?.volunteer?.name || "Organizer";
+  const organizerSpot = volunteerSession?.volunteer?.assignedLab || "";
   const navigate = useNavigate();
   const [usn, setUsn] = useState("");
   const [lookupPending, setLookupPending] = useState(false);
   const [lookupError, setLookupError] = useState("");
   const lookupInProgress = useRef(false);
+
+  const [dashboard, setDashboard] = useState(null);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [dashboardError, setDashboardError] = useState("");
+  const [page, setPage] = useState(1);
+  const [rowBusy, setRowBusy] = useState(null);
+  const [rowError, setRowError] = useState("");
+
+  const loadDashboard = useCallback(async (pageToLoad, silent = false) => {
+    if (!silent) setDashboardLoading(true);
+    setDashboardError("");
+    try {
+      const data = await getVolunteerDashboard({ page: pageToLoad, limit: 20 });
+      setDashboard(data);
+    } catch (error) {
+      setDashboardError(error?.message || "The dashboard could not be loaded. Please try again.");
+    } finally {
+      setDashboardLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDashboard(page);
+  }, [page, loadDashboard]);
+
+  const refreshDashboard = useCallback(
+    () => loadDashboard(page, true),
+    [loadDashboard, page]
+  );
 
   async function handleLookup(event) {
     event.preventDefault();
@@ -65,6 +128,70 @@ export default function VolunteerDashboard() {
     }
   }
 
+  async function handleStart(entry) {
+    if (rowBusy) return;
+    setRowBusy({ usn: entry.usn, action: "start" });
+    setRowError("");
+    try {
+      await startVolunteerStudentRound(entry.usn);
+      await refreshDashboard();
+    } catch (error) {
+      setRowError(`Could not start the round for ${entry.usn}: ${error?.message || "please try again."}`);
+    } finally {
+      setRowBusy(null);
+    }
+  }
+
+  // Row verdict: the same evaluate -> settle -> progress chain the Evaluation
+  // Workspace performs, in one tap. Progress finalizes the outcome: on PASS
+  // it moves the student to the next level; on FAIL it records the
+  // elimination (no level advance). Stops at the first failing step and
+  // names it, so the organizer knows where to resume in the Workspace.
+  async function handleVerdict(entry, result) {
+    if (rowBusy) return;
+    const label = result === "PASS" ? "Correct" : "Not correct";
+    setRowBusy({ usn: entry.usn, action: label });
+    setRowError("");
+    const steps = [
+      ["evaluation", () => evaluateVolunteerStudentRound(entry.usn, { result })],
+      ["settlement", () => settleVolunteerStudentRound(entry.usn)],
+      ["progression", () => progressVolunteerStudentRound(entry.usn)],
+    ];
+    try {
+      for (const [stepName, runStep] of steps) {
+        try {
+          await runStep();
+        } catch (stepError) {
+          throw new Error(`${stepName} failed: ${stepError?.message || "please try again."}`);
+        }
+      }
+      await refreshDashboard();
+    } catch (error) {
+      setRowError(`${label} for ${entry.usn} stopped: ${error.message}`);
+    } finally {
+      setRowBusy(null);
+    }
+  }
+
+  async function handleOpen(entry) {
+    if (rowBusy) return;
+    setRowBusy({ usn: entry.usn, action: "open" });
+    setRowError("");
+    try {
+      const response = await getVolunteerStudentRound(entry.usn);
+      navigate("/volunteer/evaluations", { state: { lookupResult: response } });
+    } catch (error) {
+      setRowError(`Could not open ${entry.usn}: ${error?.message || "please try again."}`);
+    } finally {
+      setRowBusy(null);
+    }
+  }
+
+  const stats = dashboard?.stats || null;
+  const participants = dashboard?.participants || [];
+  const pagination = dashboard?.pagination || null;
+  const spotLabel = dashboard?.location || organizerSpot || "your spot";
+
   return (
     <div className="vol-dashboard">
       <header className="vol-dashboard-header">
@@ -72,7 +199,7 @@ export default function VolunteerDashboard() {
           <p className="vol-eyebrow">ORGANIZER PANEL</p>
           <h1>Welcome back, {volunteerName}!</h1>
           <p className="vol-subtitle">
-            Here's an overview of your assigned participants and evaluations.
+            Here&apos;s an overview of your assigned participants and evaluations.
           </p>
         </div>
 
@@ -90,46 +217,46 @@ export default function VolunteerDashboard() {
         <div className="vol-stat-card">
           <div className="vol-stat-icon"><Users size={21} /></div>
           <p>Assigned Participants</p>
-          <h2>—</h2>
-          <span>Available when the assigned roster API is verified</span>
+          <h2>{stats ? stats.assignedParticipants : "-"}</h2>
+          <span>Registered at {spotLabel}</span>
         </div>
 
         <div className="vol-stat-card">
           <div className="vol-stat-icon"><Clock size={21} /></div>
           <p>Pending Evaluations</p>
-          <h2>—</h2>
-          <span>Awaiting a verified evaluation status contract</span>
+          <h2>{stats ? stats.pendingEvaluations : "-"}</h2>
+          <span>Rounds awaiting a verdict at {spotLabel}</span>
         </div>
 
         <div className="vol-stat-card">
           <div className="vol-stat-icon"><CheckCircle2 size={21} /></div>
           <p>Completed Evaluations</p>
-          <h2>—</h2>
-          <span>Awaiting a verified evaluation status contract</span>
+          <h2>{stats ? stats.completedEvaluations : "-"}</h2>
+          <span>Verdicts recorded at {spotLabel}</span>
         </div>
 
         <div className="vol-stat-card">
-  <div className="vol-stat-icon">
-    <ClipboardList size={21} />
-  </div>
+          <div className="vol-stat-icon">
+            <ClipboardList size={21} />
+          </div>
 
-  <p>Evaluation Progress</p>
+          <p>Evaluation Progress</p>
 
-  <h2>—</h2>
-  <span>Available when evaluation status data is verified</span>
-</div>
+          <h2>{stats ? `${stats.evaluationProgress}%` : "-"}</h2>
+          <span>Share of evaluations complete at {spotLabel}</span>
+        </div>
       </div>
 
       <section className="vol-participants-section">
         <div className="vol-section-heading">
           <div>
             <p className="vol-eyebrow">YOUR WORKSPACE</p>
-            <h2>Participant Lookup</h2>
-            <p>Enter a participant's USN to retrieve their current round.</p>
+            <h2>Participants</h2>
+            <p>Students registered at {spotLabel}. Enter a USN below to find a participant from any spot.</p>
           </div>
 
           <span className="vol-count">
-            USN lookup
+            {pagination ? `${pagination.totalItems} participants` : "USN lookup"}
           </span>
         </div>
 
@@ -166,6 +293,12 @@ export default function VolunteerDashboard() {
           </p>
         )}
 
+        {rowError && (
+          <p className="vol-row-error" role="alert">
+            {rowError}
+          </p>
+        )}
+
         <div className="vol-table-wrapper">
           <table className="vol-table">
             <thead>
@@ -174,19 +307,134 @@ export default function VolunteerDashboard() {
                 <th>USN</th>
                 <th>CURRENT LEVEL</th>
                 <th>STATUS</th>
+                <th>BALANCE</th>
                 <th>ACTION</th>
               </tr>
             </thead>
 
             <tbody>
-              <tr>
-                <td colSpan="5" className="vol-empty-state" role="status">
-                  Enter a USN above to retrieve one participant's round details.
-                </td>
-              </tr>
+              {dashboardLoading && !dashboard ? (
+                <tr>
+                  <td colSpan="6" className="vol-empty-state" role="status">
+                    Loading participants...
+                  </td>
+                </tr>
+              ) : dashboardError ? (
+                <tr>
+                  <td colSpan="6" className="vol-empty-state" role="alert">
+                    {dashboardError}{" "}
+                    <button
+                      type="button"
+                      className="vol-action-button"
+                      onClick={() => loadDashboard(page)}
+                    >
+                      Retry
+                    </button>
+                  </td>
+                </tr>
+              ) : participants.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="vol-empty-state" role="status">
+                    No participants have registered at {spotLabel} yet.
+                  </td>
+                </tr>
+              ) : (
+                participants.map((entry) => {
+                  const status = rosterStatus(entry);
+                  const isTerminal = ["stopped", "eliminated", "completed"].includes(
+                    entry.competitionStatus
+                  );
+                  const canStart = entry.roundStatus === "ready";
+                  const canEvaluate = ["inProgress", "timeExpired"].includes(entry.roundStatus);
+                  const hasRound = entry.roundStatus !== "none";
+                  const busyThisRow = rowBusy?.usn === entry.usn;
+                  return (
+                    <tr key={entry.id}>
+                      <td className="vol-participant-name">{entry.name}</td>
+                      <td>{entry.usn}</td>
+                      <td>Level {entry.currentLevel}</td>
+                      <td>
+                        <span className={`vol-status-tag vol-${status.tone}`}>{status.label}</span>
+                      </td>
+                      <td className="vol-balance">{formatCurrency(entry.walletBalance)}</td>
+                      <td>
+                        <span className="vol-row-actions">
+                          {canStart && (
+                            <button
+                              type="button"
+                              className="vol-action-button"
+                              disabled={Boolean(rowBusy)}
+                              onClick={() => handleStart(entry)}
+                            >
+                              {busyThisRow && rowBusy.action === "start" ? "Starting..." : "Start"}
+                            </button>
+                          )}
+                          {canEvaluate && (
+                            <>
+                              <button
+                                type="button"
+                                className="vol-action-button vol-action-correct"
+                                disabled={Boolean(rowBusy)}
+                                onClick={() => handleVerdict(entry, "PASS")}
+                              >
+                                {busyThisRow && rowBusy.action === "Correct" ? "Saving..." : "Correct"}
+                              </button>
+                              <button
+                                type="button"
+                                className="vol-action-button vol-action-wrong"
+                                disabled={Boolean(rowBusy)}
+                                onClick={() => handleVerdict(entry, "FAIL")}
+                              >
+                                {busyThisRow && rowBusy.action === "Not correct" ? "Saving..." : "Not correct"}
+                              </button>
+                            </>
+                          )}
+                          {hasRound && !isTerminal && (
+                            <button
+                              type="button"
+                              className="vol-action-button"
+                              disabled={Boolean(rowBusy)}
+                              onClick={() => handleOpen(entry)}
+                            >
+                              {busyThisRow && rowBusy.action === "open" ? "Opening..." : "Open"}
+                            </button>
+                          )}
+                          {!canStart && !canEvaluate && (!hasRound || isTerminal) && (
+                            <span className="vol-no-action">-</span>
+                          )}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
+
+        {pagination && pagination.totalPages > 1 && (
+          <div className="vol-pagination">
+            <button
+              type="button"
+              className="vol-filter"
+              disabled={!pagination.hasPrevPage || dashboardLoading}
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+            >
+              Previous
+            </button>
+            <span>
+              Page {pagination.page} of {pagination.totalPages}
+            </span>
+            <button
+              type="button"
+              className="vol-filter"
+              disabled={!pagination.hasNextPage || dashboardLoading}
+              onClick={() => setPage((current) => current + 1)}
+            >
+              Next
+            </button>
+          </div>
+        )}
       </section>
     </div>
   );

@@ -10,10 +10,11 @@ const outcomeCopy = {
   pending: { eyebrow: 'Evaluation pending', title: 'Your solution is with the organizer.', body: 'Evaluation is read-only here. Your organizer will update the question status after the walkthrough.' },
   eliminated: { eyebrow: 'Competition update', title: 'Your run ends here.', body: 'Failing the assigned question or reaching the timer deadline means immediate elimination. There are no retries.' },
   completed: { eyebrow: 'Competition complete', title: 'You made it to the end.', body: 'You have completed the final level. A run worth remembering.' },
+  stopped: { eyebrow: 'You stopped here', title: 'You stopped and kept your balance.', body: 'You chose to stop instead of risking the next level. Your run is over - collect your cash from the organizer.' },
   insufficient: { eyebrow: 'Wallet update', title: 'Not quite enough to enter.', body: 'Your available balance is below the configured entry risk for this level. You are not eliminated and no fee is charged.' },
 }
 
-const icons = { cleared: Check, pending: Clock3, eliminated: Flag, completed: Trophy, insufficient: Wallet }
+const icons = { cleared: Check, pending: Clock3, eliminated: Flag, completed: Trophy, stopped: Wallet, insufficient: Wallet }
 
 export default function OutcomePage() {
   const { result } = useParams()
@@ -25,6 +26,7 @@ export default function OutcomePage() {
   const lastEvaluation = state.roundHistory?.rounds?.slice().reverse().find(item => ['PASS', 'FAIL'].includes(item.evaluation?.status))
   const realOutcome = student.competitionStatus === 'completed' ? 'completed'
     : student.competitionStatus === 'eliminated' ? 'eliminated'
+      : student.competitionStatus === 'stopped' ? 'stopped'
       : result === 'insufficient' && realLevel && typeof currentBalance === 'number' && currentBalance < realLevel.entryFee ? 'insufficient'
         : result === 'pending' && (student.roundAvailability === 'evaluationPending' || student.roundAvailability === 'inProgress') ? 'pending'
           : result === 'cleared' && lastEvaluation?.evaluation?.status === 'PASS' ? 'cleared'
@@ -68,7 +70,7 @@ export default function OutcomePage() {
         <div className="aside-stat"><span>Current wallet balance</span><strong>{formatCurrency(currentBalance ?? student.walletBalance, configuration.currency, configuration.locale)}</strong></div>
         <div className="aside-stat"><span>Cumulative rewards earned</span><strong>{formatCurrency(student.totalEarned, configuration.currency, configuration.locale)}</strong></div>
         <div className="aside-stat"><span>Total risked</span><strong>{formatCurrency(student.totalRisked, configuration.currency, configuration.locale)}</strong></div>
-        <div className="aside-stat"><span>Competition status</span><strong>{outcome === 'completed' ? 'Completed' : outcome === 'eliminated' ? 'Eliminated' : student.competitionStatus}</strong></div>
+        <div className="aside-stat"><span>Competition status</span><strong>{outcome === 'completed' ? 'Completed' : outcome === 'eliminated' ? 'Eliminated' : outcome === 'stopped' ? 'Stopped' : student.competitionStatus}</strong></div>
         <div className="aside-signoff"><Award size={17} /><span>Official statuses and financial changes come from the backend.</span></div>
       </aside>
     </div>

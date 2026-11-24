@@ -92,7 +92,7 @@ async function run() {
     return res.body.token;
   };
 
-  const provisionAndRegisterStudent = async ({ tag, name, usn, year }) => {
+  const provisionAndRegisterStudent = async ({ tag, name, usn, year, location = 'CCD' }) => {
     const tokenKey = `google-id-token-${tag}`;
     const sub = `google-sub-${tag}`;
     const email = `${tag.toLowerCase()}@vvce.ac.in`;
@@ -120,7 +120,7 @@ async function run() {
         .http()
         .post('/api/auth/register')
         .set('Authorization', `Bearer ${jwtToken}`)
-        .send({ usn, year });
+        .send({ usn, year, location });
       checkEqual(
         regRes.status,
         200,
@@ -128,6 +128,7 @@ async function run() {
       );
       checkEqual(regRes.body.student.usn, usn.toUpperCase(), `Registered USN matches for ${tag}`);
       checkEqual(regRes.body.student.year, year, `Registered year matches for ${tag}`);
+      checkEqual(regRes.body.student.location, location, `Registered location matches for ${tag}`);
       checkEqual(regRes.body.student.registrationComplete, true, `registrationComplete true for ${tag}`);
       checkEqual(regRes.body.student.walletBalance, 0, `Initial walletBalance 0 for ${tag}`);
       checkEqual(regRes.body.student.competitionStatus, 'registered', `Initial status registered for ${tag}`);
@@ -339,7 +340,7 @@ async function run() {
         .http()
         .post('/api/auth/register')
         .set('Authorization', `Bearer ${dupUsnStudent.token}`)
-        .send({ usn: '4VV24CS001', year: '1st Year' });
+        .send({ usn: '4VV24CS001', year: '1st Year', location: 'CCD' });
       checkEqual(dupRegRes.status, 409, 'Duplicate USN returns 409');
       checkEqual(dupRegRes.body.code, 'DUPLICATE_USN', 'Duplicate USN code matches');
 
@@ -1395,6 +1396,363 @@ async function run() {
         });
       checkEqual(capProbe.status, 201, 'Capped bulk created nothing (probe username still free) -> 201');
       env.trackStaffId(capProbe.body.volunteer.id);
+    });
+
+    await runSuite('Suite G: Location-Based Organizer Dashboard, Spot Stats, Row Actions & Student Stop', async () => {
+      // Registration: location is required and must be one of the three spots.
+      const locProbe = await provisionAndRegisterStudent({
+        tag: 'locprobe',
+        name: 'Location Probe',
+        usn: null,
+        year: null,
+      });
+      const missingRes = await env
+        .http()
+        .post('/api/auth/register')
+        .set('Authorization', `Bearer ${locProbe.token}`)
+        .send({ usn: '4VV24CS901', year: '2nd Year' });
+      checkEqual(missingRes.status, 400, 'Register without location -> 400');
+      checkEqual(missingRes.body.code, 'MISSING_LOCATION', 'Code MISSING_LOCATION');
+
+      const badLocRes = await env
+        .http()
+        .post('/api/auth/register')
+        .set('Authorization', `Bearer ${locProbe.token}`)
+        .send({ usn: '4VV24CS901', year: '2nd Year', location: 'Lab 1' });
+      checkEqual(badLocRes.status, 400, 'Register with non-enum location -> 400');
+      checkEqual(badLocRes.body.code, 'INVALID_LOCATION', 'Code INVALID_LOCATION');
+      check(
+        badLocRes.body.message.includes('M Block Entrance') &&
+          badLocRes.body.message.includes('CCD') &&
+          badLocRes.body.message.includes('Mangaluru Canteen'),
+        'Invalid-location message names all three spots'
+      );
+
+      // Case-insensitive canonicalization, mirroring organizer assignedLab.
+      const canonRes = await env
+        .http()
+        .post('/api/auth/register')
+        .set('Authorization', `Bearer ${locProbe.token}`)
+        .send({ usn: '4VV24CS901', year: '2nd Year', location: 'ccd' });
+      checkEqual(canonRes.status, 200, 'Register with lowercase location -> 200');
+      checkEqual(canonRes.body.student.location, 'CCD', 'Lowercase location stored with canonical spelling');
+
+      // Spot volunteers: the Suite A volunteer (vol_int_1) is CCD.
+      // Mangaluru Canteen is a clean spot - no earlier suite registered there.
+      const mangVolRes = await env
+        .http()
+        .post('/api/admin/volunteers')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          name: 'Mangaluru Volunteer',
+          username: 'vol_mang_1',
+          password: 'MangPass!123',
+          assignedLab: 'Mangaluru Canteen',
+        });
+      checkEqual(mangVolRes.status, 201, 'Create Mangaluru organizer -> 201');
+      env.trackStaffId(mangVolRes.body.volunteer.id);
+      const mangLogin = await env.http().post('/api/volunteer/login').send({
+        username: 'vol_mang_1',
+        password: 'MangPass!123',
+      });
+      checkEqual(mangLogin.status, 200, 'Mangaluru organizer login -> 200');
+      const mangToken = mangLogin.body.token;
+
+      const mg1 = await provisionAndRegisterStudent({
+        tag: 'mgone',
+        name: 'Mang One',
+        usn: '4VV24CS801',
+        year: '2nd Year',
+        location: 'Mangaluru Canteen',
+      });
+      const mg2 = await provisionAndRegisterStudent({
+        tag: 'mgtwo',
+        name: 'Mang Two',
+        usn: '4VV24CS802',
+        year: '2nd Year',
+        location: 'Mangaluru Canteen',
+      });
+      const cc1 = await provisionAndRegisterStudent({
+        tag: 'ccone',
+        name: 'CCD One',
+        usn: '4VV24CS803',
+        year: '2nd Year',
+        location: 'CCD',
+      });
+      // Pin roster order deterministically: mg2 is the newest registration.
+      await env.models.Student.findByIdAndUpdate(mg2.studentId, {
+        $set: { createdAt: new Date(Date.now() + 5000) },
+      });
+
+      // A student with no location (registered before locations existed),
+      // created directly so the endpoint's required-location rule is bypassed.
+      const noLoc = await env.models.Student.create({
+        googleSubjectId: 'google-sub-noloc',
+        name: 'No Location',
+        email: 'noloc@vvce.ac.in',
+        usn: '4VV24CS804',
+        year: '2nd Year',
+        registrationComplete: true,
+      });
+      env.trackStudentId(noLoc._id);
+
+      // Dashboard auth: volunteer-only.
+      const dashStudent = await env
+        .http()
+        .get('/api/volunteer/dashboard')
+        .set('Authorization', `Bearer ${mg1.token}`);
+      checkEqual(dashStudent.status, 403, 'Dashboard with student token -> 403');
+      const dashAnon = await env.http().get('/api/volunteer/dashboard');
+      checkEqual(dashAnon.status, 401, 'Dashboard without token -> 401');
+
+      // Exact stats on the clean Mangaluru spot, before any play.
+      const mangDash0 = await env
+        .http()
+        .get('/api/volunteer/dashboard')
+        .set('Authorization', `Bearer ${mangToken}`);
+      checkEqual(mangDash0.status, 200, 'Mangaluru dashboard -> 200');
+      checkEqual(mangDash0.body.location, 'Mangaluru Canteen', 'Dashboard echoes the organizer spot');
+      checkEqual(mangDash0.body.stats.assignedParticipants, 2, 'Mangaluru assignedParticipants 2');
+      checkEqual(mangDash0.body.stats.pendingEvaluations, 0, 'Mangaluru pending 0 before play');
+      checkEqual(mangDash0.body.stats.completedEvaluations, 0, 'Mangaluru completed 0 before play');
+      checkEqual(mangDash0.body.stats.evaluationProgress, 0, 'Progress 0 with no evaluations');
+      const mgUsns0 = mangDash0.body.participants.map((p) => p.usn);
+      checkEqual(mgUsns0.length, 2, 'Mangaluru roster has exactly 2 students');
+      checkEqual(mgUsns0[0], '4VV24CS802', 'Roster newest first (mg2 first)');
+      checkEqual(mgUsns0[1], '4VV24CS801', 'Roster newest first (mg1 second)');
+      check(
+        mangDash0.body.participants.every((p) => p.location === 'Mangaluru Canteen'),
+        'Every roster row is the organizer spot'
+      );
+      check(
+        mangDash0.body.participants.every((p) => typeof p.walletBalance === 'number'),
+        'Every roster row carries a balance'
+      );
+      check(!mgUsns0.includes('4VV24CS803'), 'CCD student not in the Mangaluru roster');
+      check(!mgUsns0.includes('4VV24CS804'), 'Location-less student in no roster');
+
+      // Pagination: limit=1 splits the two Mangaluru students across pages.
+      const page1 = await env
+        .http()
+        .get('/api/volunteer/dashboard?page=1&limit=1')
+        .set('Authorization', `Bearer ${mangToken}`);
+      checkEqual(page1.status, 200, 'Dashboard page 1 -> 200');
+      checkEqual(page1.body.participants.length, 1, 'Page 1 holds 1 participant');
+      checkEqual(page1.body.participants[0].usn, '4VV24CS802', 'Page 1 holds the newest student');
+      checkEqual(page1.body.pagination.totalItems, 2, 'Pagination totalItems 2');
+      checkEqual(page1.body.pagination.totalPages, 2, 'Pagination totalPages 2');
+      checkEqual(page1.body.pagination.hasNextPage, true, 'Page 1 hasNextPage true');
+      const page2 = await env
+        .http()
+        .get('/api/volunteer/dashboard?page=2&limit=1')
+        .set('Authorization', `Bearer ${mangToken}`);
+      checkEqual(page2.body.participants[0].usn, '4VV24CS801', 'Page 2 holds the older student');
+      checkEqual(page2.body.pagination.hasNextPage, false, 'Page 2 hasNextPage false');
+
+      // CCD roster (Suite A volunteer): contains the CCD student, never the
+      // Mangaluru students or the location-less one.
+      const ccdDash = await env
+        .http()
+        .get('/api/volunteer/dashboard?limit=100')
+        .set('Authorization', `Bearer ${volunteerToken}`);
+      checkEqual(ccdDash.status, 200, 'CCD dashboard -> 200');
+      const ccdUsns = ccdDash.body.participants.map((p) => p.usn);
+      check(ccdUsns.includes('4VV24CS803'), 'CCD roster contains the CCD student');
+      check(!ccdUsns.includes('4VV24CS801'), 'Mangaluru student not in the CCD roster');
+      check(!ccdUsns.includes('4VV24CS804'), 'Location-less student not in the CCD roster');
+      check(
+        ccdDash.body.participants.every((p) => p.location === 'CCD'),
+        'Every CCD roster row is CCD'
+      );
+
+      // Stats math: mg1 passes L1, mg2 starts a round and leaves it unevaluated.
+      await playOneLevel({
+        studentToken: mg1.token,
+        usn: mg1.usn,
+        vToken: mangToken,
+        result: 'PASS',
+        expectLevelNumber: 1,
+      });
+      const mg2Alloc = await env
+        .http()
+        .post('/api/rounds/allocate')
+        .set('Authorization', `Bearer ${mg2.token}`);
+      checkEqual(mg2Alloc.status, 201, 'mg2 allocate -> 201');
+      const mg2Start = await env
+        .http()
+        .post(`/api/volunteer/students/${mg2.usn}/round/start`)
+        .set('Authorization', `Bearer ${mangToken}`);
+      checkEqual(mg2Start.status, 200, 'mg2 start -> 200');
+
+      const mangDash1 = await env
+        .http()
+        .get('/api/volunteer/dashboard')
+        .set('Authorization', `Bearer ${mangToken}`);
+      checkEqual(mangDash1.body.stats.assignedParticipants, 2, 'Participants still 2 after play');
+      checkEqual(mangDash1.body.stats.pendingEvaluations, 1, 'Pending 1 (mg2 in progress)');
+      checkEqual(mangDash1.body.stats.completedEvaluations, 1, 'Completed 1 (mg1 passed)');
+      checkEqual(mangDash1.body.stats.evaluationProgress, 50, 'Progress 50 with 1 of 2 decided');
+      const mg1Row = mangDash1.body.participants.find((p) => p.usn === '4VV24CS801');
+      checkEqual(mg1Row.walletBalance, 50, 'mg1 balance 50 after L1 pass');
+      checkEqual(mg1Row.roundStatus, 'none', 'mg1 has no round at L2 yet');
+      const mg2Row = mangDash1.body.participants.find((p) => p.usn === '4VV24CS802');
+      checkEqual(mg2Row.roundStatus, 'inProgress', 'mg2 round inProgress');
+      checkEqual(mg2Row.walletBalance, 0, 'mg2 balance 0 before evaluation');
+
+      // Open lookup preserved: the CCD organizer can open the Mangaluru
+      // student's round, and the response names the student's spot.
+      const crossLookup = await env
+        .http()
+        .get(`/api/volunteer/students/${mg2.usn}/round`)
+        .set('Authorization', `Bearer ${volunteerToken}`);
+      checkEqual(crossLookup.status, 200, 'Cross-spot USN lookup -> 200');
+      checkEqual(
+        crossLookup.body.student.location,
+        'Mangaluru Canteen',
+        'Lookup response carries the student location'
+      );
+
+      // Student stop: auth, guards, happy path, idempotency.
+      const stopVol = await env
+        .http()
+        .post('/api/student/stop')
+        .set('Authorization', `Bearer ${mangToken}`);
+      checkEqual(stopVol.status, 403, 'Stop with organizer token -> 403');
+      const stopAnon = await env.http().post('/api/student/stop');
+      checkEqual(stopAnon.status, 401, 'Stop without token -> 401');
+
+      const stopBlocked = await env
+        .http()
+        .post('/api/student/stop')
+        .set('Authorization', `Bearer ${mg2.token}`);
+      checkEqual(stopBlocked.status, 409, 'Stop with a round in progress -> 409');
+      checkEqual(stopBlocked.body.code, 'OPEN_ROUND_EXISTS', 'Code OPEN_ROUND_EXISTS');
+
+      const stopOk = await env
+        .http()
+        .post('/api/student/stop')
+        .set('Authorization', `Bearer ${mg1.token}`);
+      checkEqual(stopOk.status, 200, 'Stop between levels -> 200');
+      checkEqual(stopOk.body.student.competitionStatus, 'stopped', 'Stopped status set');
+      checkEqual(stopOk.body.student.walletBalance, 50, 'Balance kept after stopping');
+      const stopAgain = await env
+        .http()
+        .post('/api/student/stop')
+        .set('Authorization', `Bearer ${mg1.token}`);
+      checkEqual(stopAgain.status, 200, 'Second stop is idempotent -> 200');
+      checkEqual(stopAgain.body.student.competitionStatus, 'stopped', 'Second stop keeps stopped state');
+
+      const allocStopped = await env
+        .http()
+        .post('/api/rounds/allocate')
+        .set('Authorization', `Bearer ${mg1.token}`);
+      checkEqual(allocStopped.status, 409, 'Allocate after stopping -> 409');
+      checkEqual(allocStopped.body.code, 'STUDENT_STOPPED', 'Code STUDENT_STOPPED');
+      const meStopped = await env
+        .http()
+        .get('/api/auth/me')
+        .set('Authorization', `Bearer ${mg1.token}`);
+      checkEqual(meStopped.body.student.roundAvailability, 'stopped', 'Live availability is stopped');
+      const mangDash2 = await env
+        .http()
+        .get('/api/volunteer/dashboard')
+        .set('Authorization', `Bearer ${mangToken}`);
+      const mg1StoppedRow = mangDash2.body.participants.find((p) => p.usn === '4VV24CS801');
+      checkEqual(mg1StoppedRow.competitionStatus, 'stopped', 'Roster shows the stopped student as stopped');
+
+      // Correct chain: the row shortcut's evaluate -> settle -> progress.
+      const chainEval = await env
+        .http()
+        .post(`/api/volunteer/students/${mg2.usn}/round/evaluate`)
+        .set('Authorization', `Bearer ${mangToken}`)
+        .send({ result: 'PASS' });
+      checkEqual(chainEval.status, 200, 'Chain evaluate PASS -> 200');
+      const chainSettle = await env
+        .http()
+        .post(`/api/volunteer/students/${mg2.usn}/round/settle`)
+        .set('Authorization', `Bearer ${mangToken}`);
+      checkEqual(chainSettle.status, 200, 'Chain settle -> 200');
+      const chainProg = await env
+        .http()
+        .post(`/api/volunteer/students/${mg2.usn}/round/progress`)
+        .set('Authorization', `Bearer ${mangToken}`);
+      checkEqual(chainProg.status, 200, 'Chain progress -> 200');
+      const mg2After = await env.models.Student.findById(mg2.studentId).lean();
+      checkEqual(mg2After.currentLevel, 2, 'Chain advanced mg2 to L2');
+      checkEqual(mg2After.walletBalance, 50, 'Chain paid mg2 the L1 payout');
+      const progAgainAdvanced = await env
+        .http()
+        .post(`/api/volunteer/students/${mg2.usn}/round/progress`)
+        .set('Authorization', `Bearer ${mangToken}`);
+      checkEqual(progAgainAdvanced.status, 409, 'Second progress after advance -> 409');
+      checkEqual(
+        progAgainAdvanced.body.code,
+        'ROUND_ALREADY_PROGRESSED',
+        'Code ROUND_ALREADY_PROGRESSED (advanced)'
+      );
+
+      // Not-correct chain on cc1: evaluate FAIL -> settle -> progress, with
+      // each endpoint guard the chain relies on. Progress on FAIL finalizes
+      // the elimination; the level does not advance.
+      const cc1Alloc = await env
+        .http()
+        .post('/api/rounds/allocate')
+        .set('Authorization', `Bearer ${cc1.token}`);
+      checkEqual(cc1Alloc.status, 201, 'cc1 allocate -> 201');
+      const cc1Start = await env
+        .http()
+        .post(`/api/volunteer/students/${cc1.usn}/round/start`)
+        .set('Authorization', `Bearer ${volunteerToken}`);
+      checkEqual(cc1Start.status, 200, 'cc1 start -> 200');
+      const failEval = await env
+        .http()
+        .post(`/api/volunteer/students/${cc1.usn}/round/evaluate`)
+        .set('Authorization', `Bearer ${volunteerToken}`)
+        .send({ result: 'FAIL' });
+      checkEqual(failEval.status, 200, 'Chain evaluate FAIL -> 200');
+      const failEvalAgain = await env
+        .http()
+        .post(`/api/volunteer/students/${cc1.usn}/round/evaluate`)
+        .set('Authorization', `Bearer ${volunteerToken}`)
+        .send({ result: 'FAIL' });
+      checkEqual(failEvalAgain.status, 409, 'Second evaluate -> 409');
+      checkEqual(failEvalAgain.body.code, 'ROUND_ALREADY_EVALUATED', 'Code ROUND_ALREADY_EVALUATED');
+      const failSettle = await env
+        .http()
+        .post(`/api/volunteer/students/${cc1.usn}/round/settle`)
+        .set('Authorization', `Bearer ${volunteerToken}`);
+      checkEqual(failSettle.status, 200, 'Chain settle after FAIL -> 200');
+      const failSettleAgain = await env
+        .http()
+        .post(`/api/volunteer/students/${cc1.usn}/round/settle`)
+        .set('Authorization', `Bearer ${volunteerToken}`);
+      checkEqual(failSettleAgain.status, 409, 'Second settle -> 409');
+      checkEqual(failSettleAgain.body.code, 'ROUND_ALREADY_SETTLED', 'Code ROUND_ALREADY_SETTLED');
+      const failProg = await env
+        .http()
+        .post(`/api/volunteer/students/${cc1.usn}/round/progress`)
+        .set('Authorization', `Bearer ${volunteerToken}`);
+      checkEqual(failProg.status, 200, 'Chain progress after FAIL -> 200');
+      const failProgAgain = await env
+        .http()
+        .post(`/api/volunteer/students/${cc1.usn}/round/progress`)
+        .set('Authorization', `Bearer ${volunteerToken}`);
+      checkEqual(failProgAgain.status, 409, 'Second progress after FAIL -> 409');
+      checkEqual(
+        failProgAgain.body.code,
+        'ROUND_ALREADY_PROGRESSED',
+        'Code ROUND_ALREADY_PROGRESSED (failed)'
+      );
+      const cc1After = await env.models.Student.findById(cc1.studentId).lean();
+      checkEqual(cc1After.competitionStatus, 'eliminated', 'FAIL chain eliminated cc1');
+      checkEqual(cc1After.currentLevel, 1, 'FAIL chain did not advance the level');
+      checkEqual(cc1After.walletBalance, 0, 'L1 FAIL keeps a 0 balance');
+      const allocEliminated = await env
+        .http()
+        .post('/api/rounds/allocate')
+        .set('Authorization', `Bearer ${cc1.token}`);
+      checkEqual(allocEliminated.status, 409, 'Allocate after FAIL chain -> 409');
+      checkEqual(allocEliminated.body.code, 'STUDENT_ELIMINATED', 'Code STUDENT_ELIMINATED');
     });
   } finally {
     await env.stop();

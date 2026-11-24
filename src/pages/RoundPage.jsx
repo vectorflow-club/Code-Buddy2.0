@@ -17,11 +17,19 @@ function QuestionCard({ question, status }) {
   const statement = question.statement ?? question.prompt ?? ''
   const constraints = Array.isArray(question.constraints) ? question.constraints : question.constraints ? [question.constraints] : []
   const examples = questionExamples(question)
+  // The grey box shows the question number and level - the identifiers the
+  // organizer matches against their own page. The raw database id is never
+  // shown to students. The level comes from the question snapshot; the
+  // "Question H4" span that used to sit in the title is removed so the
+  // number appears exactly once.
+  const questionLabel = question.bankNumber ? `Question ${question.bankNumber}` : null
+  const levelLabel = question.levelNumber ? `Level ${question.levelNumber}` : null
+  const boxLabel = [levelLabel, questionLabel].filter(Boolean).join(' - ') || 'Assigned question'
 
   return <article className="question-card" aria-labelledby={`question-title-${question.id}`}>
     <header className="question-header">
-      <div className="question-number" title="Assigned question ID">{question.id}</div>
-      <div className="question-title"><InlineTag tone={question.difficulty?.toLowerCase()}>{question.difficulty}</InlineTag><h3 id={`question-title-${question.id}`}>{question.title}</h3>{question.bankNumber ? <span className="question-bank-number">Question {question.bankNumber}</span> : null}</div>
+      <div className="question-number" title="Assigned question">{boxLabel}</div>
+      <div className="question-title"><InlineTag tone={question.difficulty?.toLowerCase()}>{question.difficulty}</InlineTag><h3 id={`question-title-${question.id}`}>{question.title}</h3></div>
       <span className={`evaluation-status${passed ? ' evaluation-pass' : failed ? ' evaluation-fail' : ''}`} aria-label={`Evaluation status: ${status}`}><span />{status}</span>
     </header>
     <div className="question-body">
