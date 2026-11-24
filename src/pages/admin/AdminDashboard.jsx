@@ -48,7 +48,7 @@ export default function AdminDashboard() {
       <SectionHeading
         kicker="LIVE STATISTICS"
         title="Competition at a glance."
-        detail="Statistics from the competition backend."
+        detail="Live competition statistics."
       />
 
       {error && (

@@ -28,7 +28,7 @@ export class ApiError extends Error {
 
 function buildRequestUrl(baseUrl, path, method) {
   if (!baseUrl) {
-    throw new ApiError('The API base URL is not configured.', API_ERROR_CODES.CONFIGURATION, { method })
+    throw new ApiError('The site address is not set up.', API_ERROR_CODES.CONFIGURATION, { method })
   }
   const normalizedPath = typeof path === 'string' ? path.trim() : ''
   const relativePath = normalizedPath.replace(/^\/+/, '')
@@ -48,7 +48,7 @@ function buildRequestUrl(baseUrl, path, method) {
 function responseMessage(body, status) {
   if (typeof body?.message === 'string' && body.message.trim()) return body.message
   if (typeof body?.error === 'string' && body.error.trim()) return body.error
-  return `The server returned HTTP ${status}.`
+  return `The site replied with error ${status}.`
 }
 
 export function createApiClient({ baseUrl = backendConfig.apiBaseUrl, getAccessToken = () => null, fetchImpl = (...args) => globalThis.fetch(...args) } = {}) {
@@ -92,7 +92,7 @@ export function createApiClient({ baseUrl = backendConfig.apiBaseUrl, getAccessT
     } catch (cause) {
       const aborted = options.signal?.aborted || cause?.name === 'AbortError'
       throw new ApiError(
-        aborted ? 'The request was cancelled.' : 'The server could not be reached.',
+        aborted ? 'The request was cancelled.' : 'The site could not be reached.',
         aborted ? API_ERROR_CODES.ABORTED : API_ERROR_CODES.NETWORK,
         { method, url, cause },
       )
@@ -102,7 +102,7 @@ export function createApiClient({ baseUrl = backendConfig.apiBaseUrl, getAccessT
     try {
       rawBody = await response.text()
     } catch (cause) {
-      throw new ApiError('The server response could not be read.', API_ERROR_CODES.RESPONSE, { method, url, status: response.status, cause })
+      throw new ApiError('The site reply could not be read.', API_ERROR_CODES.RESPONSE, { method, url, status: response.status, cause })
     }
 
     let responseBody = null
@@ -134,7 +134,7 @@ export function createApiClient({ baseUrl = backendConfig.apiBaseUrl, getAccessT
     }
 
     if (invalidJson) {
-      throw new ApiError('The server returned a response that is not valid JSON.', API_ERROR_CODES.INVALID_JSON, {
+      throw new ApiError('The site sent a reply that could not be understood.', API_ERROR_CODES.INVALID_JSON, {
         method,
         url,
         status: response.status,

@@ -4,8 +4,8 @@ const adminRequest = createAdminRequest({
   makeError: (message) => new Error(message),
   sessionMessage: "Your admin session is missing. Please sign in again.",
   configMessage:
-    "Admin API is not configured. Set VITE_API_BASE_URL and restart the frontend.",
-  networkMessage: "Could not reach the server. Check that it is running and try again.",
+    "The admin side is not set up. Please check the site settings and try again.",
+  networkMessage: "Could not reach the site. Check your connection and try again.",
   unauthorizedMessage: "Your admin session is no longer authorized. Please sign in again.",
   failureMessage: (status) => `The level request failed (HTTP ${status}).`,
 });

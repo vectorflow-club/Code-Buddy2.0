@@ -63,7 +63,7 @@ const verifyGoogleAuth = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'MISSING_GOOGLE_TOKEN',
-        message: 'Google ID token is required.',
+        message: 'Google sign-in information is missing. Please try again.',
       });
     }
 
@@ -75,7 +75,7 @@ const verifyGoogleAuth = async (req, res) => {
       return res.status(500).json({
         success: false,
         code: 'CONFIGURATION_ERROR',
-        message: 'Google authentication service is temporarily misconfigured.',
+        message: 'Google sign-in is temporarily unavailable. Please try again later.',
       });
     }
 
@@ -102,7 +102,7 @@ const verifyGoogleAuth = async (req, res) => {
       return res.status(401).json({
         success: false,
         code: 'INVALID_GOOGLE_TOKEN',
-        message: 'Invalid Google token payload.',
+        message: 'Google sign-in information could not be read. Please try again.',
       });
     }
 
@@ -119,7 +119,7 @@ const verifyGoogleAuth = async (req, res) => {
       return res.status(401).json({
         success: false,
         code: 'INVALID_ISSUER',
-        message: 'Google token issuer is invalid.',
+        message: 'Google sign-in could not be verified. Please try again.',
       });
     }
 
@@ -195,7 +195,7 @@ const verifyGoogleAuth = async (req, res) => {
       return res.status(500).json({
         success: false,
         code: 'DATABASE_ERROR',
-        message: 'A database error occurred while processing student authentication.',
+        message: 'Something went wrong while signing you in. Please try again.',
       });
     }
 
@@ -207,7 +207,7 @@ const verifyGoogleAuth = async (req, res) => {
       return res.status(500).json({
         success: false,
         code: 'TOKEN_GENERATION_FAILED',
-        message: 'Failed to generate authentication session token.',
+        message: 'Something went wrong while signing you in. Please try again.',
       });
     }
 
@@ -369,7 +369,7 @@ const completeRegistration = async (req, res) => {
       return res.status(500).json({
         success: false,
         code: 'DATABASE_ERROR',
-        message: 'A database error occurred while completing registration.',
+        message: 'Something went wrong while completing your registration. Please try again.',
       });
     }
 

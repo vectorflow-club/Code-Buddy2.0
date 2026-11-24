@@ -23,11 +23,11 @@ const volunteerApiClient = createApiClient({
 function mapVolunteerApiError(error) {
   if (error instanceof ApiError) {
     if (error.code === API_ERROR_CODES.CONFIGURATION) {
-      throw new Error("Volunteer API is not configured. Set VITE_API_BASE_URL and restart the frontend.");
+      throw new Error("The organizer side is not set up. Please check the site settings and try again.");
     }
     if (error.code === API_ERROR_CODES.NETWORK) {
       throw new VolunteerApiError({
-        message: "Could not reach the server. Check that it is running and try again.",
+        message: "Could not reach the site. Check your connection and try again.",
         kind: "network",
       });
     }
@@ -40,10 +40,10 @@ function mapVolunteerApiError(error) {
       typeof responseBody?.message === "string" && responseBody.message
         ? responseBody.message
         : status === 401 || status === 403
-          ? "Your volunteer session is no longer authorized."
+          ? "Your organizer session ended. Please sign in again."
           : !ok
             ? `The round request failed (HTTP ${status}).`
-            : "The server returned an invalid response.";
+            : "The reply was not understood. Please try again.";
     const kind = !isObjectPayload
       ? ok ? "invalid_response" : "http"
       : !ok
@@ -56,7 +56,7 @@ function mapVolunteerApiError(error) {
 
 async function volunteerRequest(usn, action = "", body) {
   const session = getVolunteerSession();
-  if (!session?.token) throw new Error("Your volunteer session is missing. Please sign in again.");
+  if (!session?.token) throw new Error("Your organizer session is missing. Please sign in again.");
   const suffix = action ? `/${action}` : "";
   const path = `/api/volunteer/students/${encodeURIComponent(usn)}/round${suffix}`;
 
@@ -77,7 +77,7 @@ async function volunteerRequest(usn, action = "", body) {
       message:
         typeof payload?.message === "string" && payload.message
           ? payload.message
-          : "The server returned an invalid response.",
+          : "The reply was not understood. Please try again.",
       kind:
         payload && typeof payload === "object" && hasBackendError ? "api" : "invalid_response",
       status: 200,
@@ -93,7 +93,7 @@ export function getVolunteerStudentRound(usn) {
 
 export async function getVolunteerDashboard({ page = 1, limit = 20 } = {}) {
   const session = getVolunteerSession();
-  if (!session?.token) throw new Error("Your volunteer session is missing. Please sign in again.");
+  if (!session?.token) throw new Error("Your organizer session is missing. Please sign in again.");
 
   let payload;
   try {
@@ -109,7 +109,7 @@ export async function getVolunteerDashboard({ page = 1, limit = 20 } = {}) {
       message:
         typeof payload?.message === "string" && payload.message
           ? payload.message
-          : "The server returned an invalid response.",
+          : "The reply was not understood. Please try again.",
       kind: "invalid_response",
       status: 200,
       code: payload?.code,

@@ -6,12 +6,12 @@ import { formatCurrency } from '../utils/formatters'
 import { Button, InlineTag } from '../components/ui'
 
 const outcomeCopy = {
-  cleared: { eyebrow: 'Level cleared', title: 'A new level unlocked.', body: 'Your assigned question passed. Your next level becomes available when the competition system opens it.' },
+  cleared: { eyebrow: 'Level cleared', title: 'A new level unlocked.', body: 'Your assigned question passed. You can enter your next level from your dashboard.' },
   pending: { eyebrow: 'Evaluation pending', title: 'Your solution is with the organizer.', body: 'Evaluation is read-only here. Your organizer will update the question status after the walkthrough.' },
   eliminated: { eyebrow: 'Competition update', title: 'Your run ends here.', body: 'Failing the assigned question or reaching the timer deadline means immediate elimination. There are no retries.' },
   completed: { eyebrow: 'Competition complete', title: 'You made it to the end.', body: 'You have completed the final level. A run worth remembering.' },
   stopped: { eyebrow: 'You stopped here', title: 'You stopped and kept your balance.', body: 'You chose to stop instead of risking the next level. Your run is over - collect your cash from the organizer.' },
-  insufficient: { eyebrow: 'Wallet update', title: 'Not quite enough to enter.', body: 'Your available balance is below the configured entry risk for this level. You are not eliminated and no fee is charged.' },
+  insufficient: { eyebrow: 'Wallet update', title: 'Not quite enough to enter.', body: 'Your available balance is below the entry risk for this level. You are not eliminated and no fee is charged.' },
 }
 
 const icons = { cleared: Check, pending: Clock3, eliminated: Flag, completed: Trophy, stopped: Wallet, insufficient: Wallet }
@@ -57,10 +57,10 @@ export default function OutcomePage() {
         <p className="eyebrow">{copy.eyebrow.toUpperCase()}</p>
         <h1>{copy.title}</h1>
         <p>{copy.body}</p>
-        {outcome === 'insufficient' && <p className="preserved-balance">Current wallet balance · <strong>{formatCurrency(currentBalance ?? student.walletBalance, configuration.currency, configuration.locale)}</strong><span>Entry risk required: {formatCurrency(entryFee, configuration.currency, configuration.locale)}</span><span>You are not eliminated and the frontend does not charge a fee.</span></p>}
-        {outcome === 'cleared' && level && <p className="preserved-balance">Configured pass payout · <strong>{formatCurrency(level.passReward, configuration.currency, configuration.locale)}</strong><span>Wallet accounting is controlled by the backend.</span></p>}
+        {outcome === 'insufficient' && <p className="preserved-balance">Current wallet balance · <strong>{formatCurrency(currentBalance ?? student.walletBalance, configuration.currency, configuration.locale)}</strong><span>Entry risk required: {formatCurrency(entryFee, configuration.currency, configuration.locale)}</span><span>You are not eliminated and no fee is charged.</span></p>}
+        {outcome === 'cleared' && level && <p className="preserved-balance">Pass payout · <strong>{formatCurrency(level.passReward, configuration.currency, configuration.locale)}</strong></p>}
         <Button to="/dashboard" variant="lime">Back to dashboard <ArrowRight size={17} /></Button>
-        <p className="outcome-demo-note">Official competition status · reported by the backend.</p>
+        <p className="outcome-demo-note">Official competition status.</p>
       </section>
       <aside className="outcome-aside">
         <p className="eyebrow">Your competition snapshot</p>
@@ -71,9 +71,9 @@ export default function OutcomePage() {
         <div className="aside-stat"><span>Cumulative rewards earned</span><strong>{formatCurrency(student.totalEarned, configuration.currency, configuration.locale)}</strong></div>
         <div className="aside-stat"><span>Total risked</span><strong>{formatCurrency(student.totalRisked, configuration.currency, configuration.locale)}</strong></div>
         <div className="aside-stat"><span>Competition status</span><strong>{outcome === 'completed' ? 'Completed' : outcome === 'eliminated' ? 'Eliminated' : outcome === 'stopped' ? 'Stopped' : student.competitionStatus}</strong></div>
-        <div className="aside-signoff"><Award size={17} /><span>Official statuses and financial changes come from the backend.</span></div>
+        <div className="aside-signoff"><Award size={17} /><span>Your organizer records your official result and payout.</span></div>
       </aside>
     </div>
-    <div className="outcome-footer"><span><Clock3 size={14} /> Result state synchronized from authenticated backend data.</span><button onClick={() => navigate('/dashboard')}>Return to dashboard</button></div>
+    <div className="outcome-footer"><span><Clock3 size={14} /> Your result is saved.</span><button onClick={() => navigate('/dashboard')}>Return to dashboard</button></div>
   </div>
 }

@@ -395,7 +395,7 @@ export default function LevelManagement() {
               </div>
 
               <div className="level-form-note">
-                Question counts are derived from active questions. Entry amount, payout and timer settings are saved using the backend level configuration.
+                Question counts come from active questions. Entry amount, payout and timer settings are saved with each level.
               </div>
 
               <div className="level-modal-actions">

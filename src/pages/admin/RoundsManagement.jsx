@@ -53,7 +53,7 @@ export default function RoundsManagement() {
 
   const recoverRound = async (round) => {
     if (recoveryInFlight.current || round?.status !== "abandoned" || !round.id) return;
-    const confirmed = window.confirm("Recover this abandoned round? The backend will verify that it is eligible.");
+    const confirmed = window.confirm("Recover this abandoned round? It will be checked for eligibility first.");
     if (!confirmed) return;
 
     recoveryInFlight.current = true;

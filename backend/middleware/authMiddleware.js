@@ -121,7 +121,7 @@ const ROLE_CONFIG = {
     model: Student,
     reqKey: 'student',
     label: 'Student',
-    notFoundMessage: 'Student account belonging to this token no longer exists.',
+    notFoundMessage: 'This student account no longer exists. Please sign in again.',
     roleMismatchMessage: 'Access denied. Account is not a registered student.',
     normalizeRole: false,
     checkActive: false,
@@ -131,7 +131,7 @@ const ROLE_CONFIG = {
     model: Admin,
     reqKey: 'admin',
     label: 'Admin',
-    notFoundMessage: 'Admin account belonging to this token no longer exists.',
+    notFoundMessage: 'This admin account no longer exists. Please sign in again.',
     roleMismatchMessage: 'Access denied. Account does not have administrator privileges.',
     normalizeRole: true,
     checkActive: true,
@@ -141,7 +141,7 @@ const ROLE_CONFIG = {
     model: Volunteer,
     reqKey: 'volunteer',
     label: 'Organizer',
-    notFoundMessage: 'Organizer account belonging to this token no longer exists.',
+    notFoundMessage: 'This organizer account no longer exists. Please sign in again.',
     roleMismatchMessage: 'Access denied. Account does not have organizer privileges.',
     normalizeRole: true,
     checkActive: true,
@@ -253,7 +253,7 @@ const createRoleGuard = (role) => {
       return res.status(500).json({
         success: false,
         code: 'INTERNAL_AUTH_ERROR',
-        message: 'Internal authentication error.',
+        message: 'Your sign-in could not be checked. Please sign in again.',
       });
     }
   };
@@ -353,7 +353,7 @@ const protectRoles = (...allowedRoles) => {
       return res.status(500).json({
         success: false,
         code: 'INTERNAL_AUTH_ERROR',
-        message: 'Internal authentication error.',
+        message: 'Your sign-in could not be checked. Please sign in again.',
       });
     }
   };

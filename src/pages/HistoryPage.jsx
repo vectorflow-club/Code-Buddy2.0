@@ -32,7 +32,7 @@ export default function HistoryPage() {
   }, [page, retry])
 
   return <div className="page history-page">
-    <SectionHeading kicker="Your competition journey" title="Round history." detail="Assigned questions and evaluation summaries reported by the competition backend." />
+    <SectionHeading kicker="Your competition journey" title="Round history." detail="Your assigned questions and results." />
     {error && <div className="error-state" role="alert"><p>{error.message || 'Round history is unavailable.'}</p><button className="button button-dark" type="button" onClick={() => setRetry(value => value + 1)}>Try again</button></div>}
     {!data && !error && <LoadingState label="Loading your round history…" />}
     {data && !error && (data.rounds?.length ? <>
@@ -45,12 +45,12 @@ export default function HistoryPage() {
             <h2>{question.title || `Question ${question.id || round.questionId}`}</h2>
             <p className="history-question-meta">{question.id || round.questionId} · {question.difficulty || 'Difficulty unavailable'} · {formatDate(round.createdAt, 'Date unavailable')}</p>
             {round.evaluation?.remarks && <p className="history-remarks"><strong>Organizer note</strong>{round.evaluation.remarks}</p>}
-            <div className="history-item-footer"><span><Clock3 size={14}/>{round.durationSeconds ? `${Math.floor(round.durationSeconds / 60)} minute round` : 'Duration unavailable'}</span><span><Flag size={14}/>{round.evaluation?.isProgressed ? 'Progression recorded' : round.evaluation?.isSettled ? 'Settlement recorded' : 'Backend status only'}</span></div>
+            <div className="history-item-footer"><span><Clock3 size={14}/>{round.durationSeconds ? `${Math.floor(round.durationSeconds / 60)} minute round` : 'Duration unavailable'}</span><span><Flag size={14}/>{round.evaluation?.isProgressed ? 'Progression recorded' : round.evaluation?.isSettled ? 'Settlement recorded' : 'Waiting for the organizer'}</span></div>
           </article>
         })}
       </div>
       {data.pagination?.totalPages > 1 && <nav className="ledger-pagination" aria-label="Round history pages"><button type="button" onClick={() => setPage(value => Math.max(1, value - 1))} disabled={!data.pagination.hasPrevPage}>Previous</button><span>Page {page} of {data.pagination.totalPages}</span><button type="button" onClick={() => setPage(value => value + 1)} disabled={!data.pagination.hasNextPage}>Next</button></nav>}
-      <p className="record-source">Round and evaluation records · Backend data</p>
-    </> : <EmptyState title="No past rounds yet." detail="Completed and active round records will appear here after the backend records them." />)}
+      <p className="record-source">Round and evaluation records</p>
+    </> : <EmptyState title="No past rounds yet." detail="Your completed and active rounds will appear here." />)}
   </div>
 }

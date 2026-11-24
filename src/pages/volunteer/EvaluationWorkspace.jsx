@@ -53,7 +53,7 @@ function getErrorMessage(error) {
     return `Network error. Check the connection and retry. ${error.message || ""}`.trim();
   }
   if (typeof error?.status === "number" && error.status >= 500) {
-    return `The server could not complete the request. ${error.message || "Please retry."}`;
+    return `The request could not be completed. ${error.message || "Please retry."}`;
   }
   return error?.message || "The round action could not be completed. Please retry.";
 }
@@ -129,7 +129,7 @@ export default function EvaluationWorkspace() {
       const response = await operation(student.usn);
       if (!isValidLookupResult(response)) {
         const invalidResponse = new Error(
-          "The server returned an incomplete round response.",
+          "The round details came back incomplete. Please try again.",
         );
         invalidResponse.kind = "invalid_response";
         throw invalidResponse;
@@ -457,7 +457,7 @@ export default function EvaluationWorkspace() {
             ) : (
               <p>
                 {canEvaluate
-                  ? "Record the backend evaluation result for this round."
+                  ? "Record the result for this round."
                   : "Evaluation is available only while the round is in progress or time expired."}
               </p>
             )}
@@ -563,7 +563,7 @@ export default function EvaluationWorkspace() {
       <div className="evaluation-footer-note">
         <Code2 size={17} />
         <span>
-          Round status, timer state, evaluation, settlement, and progression are taken from backend responses.
+          Round status, timer, result, wallet, and level update as the organizer records them.
         </span>
       </div>
     </div>

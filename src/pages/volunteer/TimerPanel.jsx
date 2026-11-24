@@ -111,7 +111,7 @@ export default function TimerPanel({
           {isFinished
             ? "TIME COMPLETED"
             : isAwaitingBackendExpiration
-              ? "AWAITING BACKEND STATUS"
+              ? "AWAITING TIMER UPDATE"
               : canDisplayCountdown
                 ? "TIME REMAINING"
                 : roundStatus === "ready"
@@ -137,7 +137,7 @@ export default function TimerPanel({
       {isAwaitingBackendExpiration && (
         <div className="timer-message">
           <AlertCircle size={16} />
-          The display countdown reached zero; waiting for backend round status.
+          The countdown reached zero; waiting for the timer to update.
         </div>
       )}
 
@@ -157,7 +157,7 @@ export default function TimerPanel({
           className="timer-reset-button"
           disabled
           aria-disabled="true"
-          title="Reset is not a supported backend operation"
+          title="Reset is not available"
         >
           <RotateCcw size={16} />
           Reset

@@ -10,25 +10,25 @@ const adminAuth = createStaffAuthService({
   loginPath: "/api/admin/login",
   mePath: "/api/admin/me",
   notConfiguredMessage:
-    "Admin API is not configured. Set VITE_API_BASE_URL and restart the frontend.",
+    "The admin side is not set up. Please check the site settings and try again.",
   loginNetworkMessage:
-    "Could not reach the admin server. Check that it is running and try again.",
-  validateNetworkMessage: "Could not reach the admin server.",
+    "Could not reach the admin side. Check your connection and try again.",
+  validateNetworkMessage: "Could not reach the admin side.",
   loginStrategy: "code",
   knownLoginErrors: {
     MISSING_CREDENTIALS: "Please enter your username and password.",
     INVALID_CREDENTIALS: "Invalid username or password.",
     ACCOUNT_DEACTIVATED:
-      "This admin account is deactivated. Contact the competition administrator.",
+      "This admin account is deactivated. Contact the event team.",
   },
-  loginFailedMessage: "The admin server could not complete the login. Please try again.",
-  loginInvalidMessage: "The admin server returned an invalid login response.",
+  loginFailedMessage: "The login could not be completed. Please try again.",
+  loginInvalidMessage: "The login reply was not understood. Please try again.",
   validateProfileOnLogin: true,
   sessionExpiredMessage:
     "Your admin session is invalid or has expired. Please sign in again.",
-  sessionRetryMessage: "The admin session could not be validated. Please retry.",
+  sessionRetryMessage: "The admin session could not be checked. Please try again.",
   sessionInvalidMessage:
-    "The admin session response was invalid. Please sign in again.",
+    "The admin session reply was not understood. Please sign in again.",
 });
 
 export const getAdminSession = adminAuth.getSession;

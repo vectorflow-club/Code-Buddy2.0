@@ -11,28 +11,28 @@ const volunteerAuth = createStaffAuthService({
   loginPath: "/api/volunteer/login",
   mePath: "/api/volunteer/me",
   notConfiguredMessage:
-    "Volunteer API is not configured. Set VITE_API_BASE_URL and restart the frontend.",
+    "The organizer side is not set up. Please check the site settings and try again.",
   loginNetworkMessage:
-    "Could not reach the volunteer server. Check that it is running and try again.",
-  validateNetworkMessage: "Could not reach the volunteer server.",
+    "Could not reach the organizer side. Check your connection and try again.",
+  validateNetworkMessage: "Could not reach the organizer side.",
   loginStrategy: "status",
   statusLoginErrors: {
     400: { message: "Please enter your username and password.", code: "MISSING_CREDENTIALS" },
     401: { message: "Invalid username or password.", code: "INVALID_CREDENTIALS" },
     403: {
       message:
-        "This volunteer account is deactivated. Contact the competition administrator.",
+        "This organizer account is deactivated. Contact the event team.",
       code: "VOLUNTEER_DEACTIVATED",
     },
   },
   serverLoginMessage:
-    "The volunteer server could not complete the login. Please try again.",
+    "The login could not be completed. Please try again.",
   validateProfileOnLogin: false,
   sessionExpiredMessage:
-    "Your volunteer session is no longer valid. Please sign in again.",
-  sessionRetryMessage: "The volunteer session could not be validated. Please retry.",
+    "Your organizer session is no longer valid. Please sign in again.",
+  sessionRetryMessage: "Your organizer session could not be checked. Please try again.",
   sessionInvalidMessage:
-    "The volunteer session response was invalid. Please sign in again.",
+    "Your organizer session reply was not understood. Please sign in again.",
 });
 
 export const getVolunteerSession = volunteerAuth.getSession;

@@ -59,8 +59,8 @@ export const studentAuthenticationService = {
     try { return storage()?.getItem(MODE_KEY) === 'real' || window.localStorage?.getItem(MODE_KEY) === 'real' } catch { return Boolean(accessToken) }
   },
   async signInWithGoogle(idToken) {
-    if (!backendConfig.apiBaseUrl) throw new ApiError('Backend API URL is not configured. Set VITE_API_BASE_URL.', API_ERROR_CODES.CONFIGURATION)
-    if (!backendConfig.googleClientId) throw new ApiError('Google sign-in is not configured. Set VITE_GOOGLE_CLIENT_ID.', API_ERROR_CODES.CONFIGURATION)
+    if (!backendConfig.apiBaseUrl) throw new ApiError('The site is not set up yet. Please try again later.', API_ERROR_CODES.CONFIGURATION)
+    if (!backendConfig.googleClientId) throw new ApiError('Google sign-in is not set up yet. Please try again later.', API_ERROR_CODES.CONFIGURATION)
     if (typeof idToken !== 'string' || !idToken.trim()) throw new ApiError('Google did not provide an ID token. Please try again.', API_ERROR_CODES.REQUEST)
     try {
       const response = requireStudentResponse(await apiClient.post('/api/auth/google', { idToken }), true)

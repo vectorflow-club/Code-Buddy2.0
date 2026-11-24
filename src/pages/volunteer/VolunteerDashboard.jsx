@@ -130,7 +130,7 @@ export default function VolunteerDashboard() {
       } else if (codeMessages[error?.code]) {
         setLookupError(codeMessages[error.code]);
       } else if (error?.status >= 500 || error?.code === "INTERNAL_SERVER_ERROR") {
-        setLookupError(`Server error. Please retry the lookup. ${message}`);
+        setLookupError(`Something went wrong. Please try the lookup again. ${message}`);
       } else if (error?.kind === "http" || error?.kind === "api") {
         setLookupError(message);
       } else {

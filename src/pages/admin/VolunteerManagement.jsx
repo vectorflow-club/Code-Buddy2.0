@@ -440,7 +440,7 @@ export default function VolunteerManagement() {
             {bulkError && <p className="volunteer-api-message" role="alert">{bulkError}</p>}
             <form onSubmit={handleBulkSave}>
               <div className="volunteer-form-field"><label htmlFor="volunteer-bulk-text">Organizers</label><textarea id="volunteer-bulk-text" value={bulkText} onChange={(event) => setBulkText(event.target.value)} placeholder={"Ananya Rao, ananya, password123, CCD\nLikith Kumar, likith, password123, M Block Entrance"} rows={8} /></div>
-              <p className="volunteer-bulk-hint">One organizer per line: Full Name, username, password, location. Locations must be M Block Entrance, CCD or Mangaluru Canteen. Passwords need 8 or more characters. Up to {MAX_BULK_ROWS} lines at a time.</p>
+              <p className="volunteer-bulk-hint">One organizer per line: Full Name, username, password, location. Locations must be M Block Entrance, CCD or Mangaluru Canteen. Up to {MAX_BULK_ROWS} lines at a time.</p>
               {bulkResults && (
                 <ul className="volunteer-bulk-results" role="status">
                   {bulkResults.map((result) => (

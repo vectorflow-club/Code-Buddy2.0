@@ -280,7 +280,7 @@ export default function ParticipantManagement() {
                 <tr key={participant.id}>
                   <td>
                     <strong>{participant.name}</strong>
-                    <small>Email is not provided by the participant list API</small>
+                    <small>Email is not available in this list</small>
                   </td>
 
                   <td>{participant.usn || "—"}</td>
@@ -364,7 +364,7 @@ export default function ParticipantManagement() {
 
               <div>
                 <span>Email</span>
-                <strong>Email is not provided by the API</strong>
+                <strong>Email is not available here</strong>
               </div>
 
               <div>

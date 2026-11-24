@@ -56,7 +56,7 @@ const volunteerLogin = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Organizer authenticated successfully.',
+      message: 'Organizer signed in successfully.',
       token,
       volunteer: formatVolunteerResponse(volunteer),
     });

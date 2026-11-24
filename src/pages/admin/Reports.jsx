@@ -126,7 +126,7 @@ export default function Reports() {
         </div>
       )}
       {loading && <div className="reports-demo-note" role="status">{dashboard || participants.length > 0 ? "Refreshing report data; previously loaded values remain visible until refreshed." : "Loading competition reports…"}</div>}
-      {!loading && requestErrors.length === 0 && <div className="reports-demo-note">Live report data from the competition backend.</div>}
+      {!loading && requestErrors.length === 0 && <div className="reports-demo-note">Live report data.</div>}
 
       <section className="reports-stats">
         {stats.map((stat) => {
@@ -171,7 +171,7 @@ export default function Reports() {
 
         <section className="reports-panel">
           <div className="reports-section-heading">
-            <div><h2>Prize Distribution</h2><p>Current balances reported by the backend</p></div>
+            <div><h2>Prize Distribution</h2><p>Current balances</p></div>
             <Wallet size={20} />
           </div>
           {!dashboard && loading ? (
@@ -245,7 +245,7 @@ export default function Reports() {
         <div className="reports-table-wrap">
           <table className="reports-table">
             <thead><tr><th>Organizer</th><th>Assigned</th><th>Evaluated</th><th>Pending</th><th>Progress</th></tr></thead>
-            <tbody><tr><td colSpan="5">Per-organizer assigned, evaluated and pending totals are unavailable until Likith provides a backend API.</td></tr></tbody>
+            <tbody><tr><td colSpan="5">Per-organizer totals are not available yet.</td></tr></tbody>
           </table>
         </div>
       </section>
