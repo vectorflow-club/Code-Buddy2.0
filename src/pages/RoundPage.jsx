@@ -47,37 +47,77 @@ export default function RoundPage() {
   const { state, refresh } = useStudent()
   const navigate = useNavigate()
   const [round, setRound] = useState(null)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [historyError, setHistoryError] = useState('')
+  const [pollError, setPollError] = useState('')
+  const [reloadKey, setReloadKey] = useState(0)
+  const [pollKey, setPollKey] = useState(0)
+  // The active round and the history load independently: a history failure
+  // must never block the round view. The question renders as soon as the
+  // active round resolves; history only feeds the evaluation status.
   useEffect(() => {
     let mounted = true
-    Promise.all([backendCompetitionService.getActiveRound(), backendCompetitionService.getRoundHistory()])
-      .then(([active, history]) => { if (mounted) setRound({ active, history }) })
-      .catch(loadError => { if (mounted) setError(loadError.message || 'Round details are unavailable. Please return to your dashboard.') })
+    backendCompetitionService.getActiveRound()
+      .then(active => { if (mounted) { setRound(previous => ({ ...(previous || {}), active })); setLoading(false) } })
+      .catch(loadError => { if (mounted) { setError(loadError.message || 'Round details are unavailable. Please return to your dashboard.'); setLoading(false) } })
+    backendCompetitionService.getRoundHistory()
+      .then(history => { if (mounted) { setRound(previous => ({ ...(previous || {}), history })); setHistoryError('') } })
+      .catch(() => { if (mounted) setHistoryError('Round history could not be loaded.') })
     return () => { mounted = false }
-  }, [])
+  }, [reloadKey])
+  // Fail-soft poll: a failed refresh never replaces the page. The question
+  // stays visible, a small notice says the connection dropped, and polling
+  // continues. History refreshes independently of the active round.
   useEffect(() => {
     const current = round?.active?.round
     if (!current) return undefined
     let mounted = true
-    const interval = window.setInterval(async () => {
+    const sync = async () => {
       try {
-        const [active, history] = await Promise.all([backendCompetitionService.getActiveRound(), backendCompetitionService.getRoundHistory()])
+        const active = await backendCompetitionService.getActiveRound()
         if (!mounted) return
         if (!active) {
           await refresh()
           navigate('/dashboard', { replace: true })
           return
         }
-        setRound(previous => ({ ...previous, active, history }))
-      } catch (pollError) {
-        if (mounted) setError(pollError.message || 'Round status could not be refreshed.')
+        setRound(previous => ({ ...previous, active }))
+        setPollError('')
+      } catch (pollFailure) {
+        if (mounted) setPollError(pollFailure.message || 'Round status could not be refreshed.')
       }
-    }, 10000)
+      try {
+        const history = await backendCompetitionService.getRoundHistory()
+        if (!mounted) return
+        setRound(previous => ({ ...previous, history }))
+        setHistoryError('')
+      } catch {
+        if (mounted) setHistoryError('Round history could not be loaded.')
+      }
+    }
+    sync()
+    const interval = window.setInterval(sync, 10000)
     return () => { mounted = false; window.clearInterval(interval) }
-  }, [round?.active?.round?.id, refresh, navigate])
+  }, [round?.active?.round?.id, refresh, navigate, pollKey])
 
-  if (error) return <div className="page"><div role="alert" className="error-state">{error}</div></div>
-  if (!round) return <LoadingState label="Loading your assigned round…" />
+  function retryLoad() {
+    setError('')
+    setHistoryError('')
+    setPollError('')
+    setRound(null)
+    setLoading(true)
+    setReloadKey(key => key + 1)
+  }
+
+  function retryPoll() {
+    setPollError('')
+    setHistoryError('')
+    setPollKey(key => key + 1)
+  }
+
+  if (error) return <div className="page"><div role="alert" className="error-state">{error}</div><div className="round-retry"><Button variant="dark" onClick={retryLoad}>Try again</Button><Link to="/dashboard" className="back-link">Back to dashboard</Link></div></div>
+  if (loading) return <LoadingState label="Loading your assigned round…" />
   const activeRound = round.active?.round
   if (!activeRound) return <div className="page"><EmptyState title="No question has been assigned yet." detail="Question allocation is performed by the backend and remains attached to your account after refresh. Return to your dashboard to request the current eligible assignment." action={<Button to="/dashboard" variant="dark">Back to dashboard</Button>} /></div>
 
@@ -95,6 +135,7 @@ export default function RoundPage() {
 
   return <div className="page round-page">
     <Link to="/dashboard" className="back-link">← Back to dashboard</Link>
+    {(pollError || historyError) && <div className="round-sync-notice" role="alert"><span>{pollError ? 'Connection lost - retrying...' : historyError}</span><button type="button" onClick={retryPoll}>Retry now</button></div>}
     <div className="round-top"><div><p className="eyebrow">{configuration?.name || 'Code Buddy'} · {level?.name || `Level ${roundLevelNumber}`}</p><h1>Your round.<br /><span>One assigned question.</span></h1><p className="hero-subtitle">Solve externally and demonstrate your solution to an organizer.</p></div><CountdownDisplay seconds={timerSeconds} status={timerStatus} running={activeRound?.status === 'inProgress'} /></div>
     <section className="round-guidance"><span><Clock3 size={16} />One shared timer</span><p>{activeRound.status === 'inProgress' ? `The official deadline is ${activeRound.deadline ? new Date(activeRound.deadline).toLocaleTimeString() : 'reported by the backend'}. This countdown is a local display based on the backend response; refresh the page to resync.` : activeRound.status === 'timeExpired' ? 'The backend reports that time has expired. Organizer evaluation and official progression are still controlled by the competition team.' : activeRound.status === 'submitted' ? 'Your round is submitted and awaiting organizer evaluation. The result and progression will appear when reported by the backend.' : activeRound.status === 'evaluated' ? 'The backend reports that this round has been evaluated. Your evaluation status is shown below.' : 'Your assignment is ready. An organizer starts the official timer. No student timer controls are available.'}</p></section>
     <div className="question-list-heading"><div><h2>Your assigned question</h2><p>Evaluation is provided by your organizer and is read-only here.</p></div><div className="round-progress" aria-label={`${passedCount} of 1 questions passed`}><span>QUESTION PROGRESS</span><strong>{passedCount}/1</strong><div className="progress-track"><span style={{ width: `${passedCount * 100}%` }} /></div></div></div>
