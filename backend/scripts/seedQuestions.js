@@ -76,10 +76,12 @@ const validateQuestion = (q) => {
  */
 const seedQuestions = async (options = {}) => {
   const dryRun = options.dryRun === true;
-  const mongoUri = process.env.MONGO_URI;
+  // Load-test runs point at a separate test database via LOAD_TEST_MONGO_URI;
+  // normal runs use MONGO_URI exactly as before.
+  const mongoUri = process.env.LOAD_TEST_MONGO_URI || process.env.MONGO_URI;
 
   if (!mongoUri) {
-    console.error('[seedQuestions] Error: MONGO_URI environment variable is required.');
+    console.error('[seedQuestions] Error: MONGO_URI (or LOAD_TEST_MONGO_URI) environment variable is required.');
     process.exit(1);
   }
 

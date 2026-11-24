@@ -20,6 +20,7 @@ const MIN_PROD_JWT_SECRET_LENGTH = 32;
 
 const DEFAULT_API_WINDOW_MS = 15 * 60 * 1000;
 const DEFAULT_API_MAX = 2000;
+const LOAD_TEST_API_MAX = 1000000;
 const DEFAULT_LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const DEFAULT_LOGIN_MAX = 10;
 const DEFAULT_LOGIN_IP_MAX = 60;
@@ -32,6 +33,15 @@ const API_ALLOWED_HEADERS = ['Content-Type', 'Authorization'];
 
 const isProductionEnv = () =>
   String(process.env.NODE_ENV || '').trim().toLowerCase() === 'production';
+
+/**
+ * Load-test mode: when LOAD_TEST_MODE is exactly 'true', the general per-IP
+ * API limiter is raised to LOAD_TEST_API_MAX so a k6 run from one machine
+ * (one IP) measures the app instead of the limiter. Login brute-force
+ * limiters are NOT relaxed. Any other value (including unset) keeps the
+ * normal limits byte-identical. Never enable on the production deployment.
+ */
+const isLoadTestMode = () => String(process.env.LOAD_TEST_MODE || '').trim() === 'true';
 
 /**
  * Parse a positive integer env setting safely.
@@ -472,11 +482,19 @@ const getRateLimiters = () => {
     'API_RATE_LIMIT_WINDOW_MS'
   ).value || DEFAULT_API_WINDOW_MS;
 
-  const apiMax = parsePositiveInt(
-    process.env.API_RATE_LIMIT_MAX,
-    DEFAULT_API_MAX,
-    'API_RATE_LIMIT_MAX'
-  ).value || DEFAULT_API_MAX;
+  const apiMax = isLoadTestMode()
+    ? LOAD_TEST_API_MAX
+    : parsePositiveInt(
+        process.env.API_RATE_LIMIT_MAX,
+        DEFAULT_API_MAX,
+        'API_RATE_LIMIT_MAX'
+      ).value || DEFAULT_API_MAX;
+
+  if (isLoadTestMode()) {
+    console.warn(
+      `[security] LOAD_TEST_MODE is ON: general API rate limit raised to ${LOAD_TEST_API_MAX} requests per 15 minutes. Login limiters unchanged. Never enable on the production deployment.`
+    );
+  }
 
   const loginWindowMs = parsePositiveInt(
     process.env.LOGIN_RATE_LIMIT_WINDOW_MS,

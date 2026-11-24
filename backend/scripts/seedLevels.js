@@ -91,10 +91,12 @@ const INITIAL_LEVELS = [
  * Safe to execute multiple times (strictly idempotent, never overwrites or resets existing levels).
  */
 const seedLevels = async () => {
-  const mongoUri = process.env.MONGO_URI;
+  // Load-test runs point at a separate test database via LOAD_TEST_MONGO_URI;
+  // normal runs use MONGO_URI exactly as before.
+  const mongoUri = process.env.LOAD_TEST_MONGO_URI || process.env.MONGO_URI;
 
   if (!mongoUri) {
-    console.error('[seedLevels] Error: MONGO_URI environment variable is required.');
+    console.error('[seedLevels] Error: MONGO_URI (or LOAD_TEST_MONGO_URI) environment variable is required.');
     process.exit(1);
   }
 

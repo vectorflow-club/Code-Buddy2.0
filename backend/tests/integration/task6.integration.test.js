@@ -1147,6 +1147,37 @@ async function run() {
 
       const healthExempt = await tightReq.get('/api/health').set('X-Forwarded-For', '203.0.113.20');
       checkEqual(healthExempt.status, 200, 'GET /api/health remains exempt -> 200');
+
+      // LOAD_TEST_MODE: the general limiter is relaxed even when
+      // API_RATE_LIMIT_MAX is tight, but login brute-force limiters stay live.
+      const { app: loadTestApp } = env.reloadAppWithEnv({
+        LOAD_TEST_MODE: 'true',
+        API_RATE_LIMIT_MAX: '5',
+        LOGIN_RATE_LIMIT_MAX: '2',
+        LOGIN_IP_RATE_LIMIT_MAX: '2',
+      });
+      const loadTestReq = request(loadTestApp);
+
+      for (let i = 1; i <= 6; i += 1) {
+        const r = await loadTestReq
+          .get('/api/admin/me')
+          .set('Authorization', `Bearer ${adminToken}`)
+          .set('X-Forwarded-For', '203.0.113.30');
+        checkEqual(r.status, 200, `LOAD_TEST_MODE general API call ${i}/6 succeeds despite API_RATE_LIMIT_MAX=5 -> 200`);
+      }
+
+      for (let i = 1; i <= 2; i += 1) {
+        const r = await loadTestReq
+          .post('/api/admin/login')
+          .set('X-Forwarded-For', '203.0.113.31')
+          .send({ username: 'wrong', password: 'wrong' });
+        checkEqual(r.status, 401, `LOAD_TEST_MODE login attempt ${i} within limit -> 401`);
+      }
+      const loadTestRl3 = await loadTestReq
+        .post('/api/admin/login')
+        .set('X-Forwarded-For', '203.0.113.31')
+        .send({ username: 'wrong', password: 'wrong' });
+      checkEqual(loadTestRl3.status, 429, 'LOAD_TEST_MODE login attempt 3 still exceeds LOGIN_RATE_LIMIT_MAX -> 429');
     });
 
     await runSuite('Suite F: Organizer Delete Guard, Bulk Add, Location Enum & Plain-Text Passwords', async () => {
