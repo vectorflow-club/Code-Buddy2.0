@@ -7,6 +7,7 @@ const {
   formatRoundVolunteerResponse,
   formatLevelResponse,
   formatVolunteerResponse,
+  formatEvaluationResponse,
 } = require('./formatters');
 const { buildErrorResponse, createHttpError } = require('./errors');
 const { isValidObjectId, isStrictObjectId } = require('./ids');
@@ -22,6 +23,7 @@ module.exports = {
   formatRoundVolunteerResponse,
   formatLevelResponse,
   formatVolunteerResponse,
+  formatEvaluationResponse,
   buildErrorResponse,
   createHttpError,
   isValidObjectId,

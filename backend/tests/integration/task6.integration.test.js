@@ -1754,6 +1754,143 @@ async function run() {
       checkEqual(allocEliminated.status, 409, 'Allocate after FAIL chain -> 409');
       checkEqual(allocEliminated.body.code, 'STUDENT_ELIMINATED', 'Code STUDENT_ELIMINATED');
     });
+
+    await runSuite('Suite H: Volunteer Lookup Includes Evaluation (Workspace Dead-End Fix)', async () => {
+      // B1: a freshly opened evaluated round must carry its Evaluation, so
+      // the workspace can offer Settle/Progress instead of a dead panel.
+      const b1pass = await provisionAndRegisterStudent({
+        tag: 'b1pass',
+        name: 'B1 Pass',
+        usn: '4VV24CS805',
+        year: '2nd Year',
+        location: 'CCD',
+      });
+      const b1Alloc = await env
+        .http()
+        .post('/api/rounds/allocate')
+        .set('Authorization', `Bearer ${b1pass.token}`);
+      checkEqual(b1Alloc.status, 201, 'b1pass allocate -> 201');
+      const b1Start = await env
+        .http()
+        .post(`/api/volunteer/students/${b1pass.usn}/round/start`)
+        .set('Authorization', `Bearer ${volunteerToken}`);
+      checkEqual(b1Start.status, 200, 'b1pass start -> 200');
+
+      // (b) No verdict yet: the lookup carries no evaluation key at all.
+      const lookupFresh = await env
+        .http()
+        .get(`/api/volunteer/students/${b1pass.usn}/round`)
+        .set('Authorization', `Bearer ${volunteerToken}`);
+      checkEqual(lookupFresh.status, 200, 'Lookup before verdict -> 200');
+      check(!('evaluation' in lookupFresh.body), 'Lookup before verdict has no evaluation key');
+      checkEqual(lookupFresh.body.round.status, 'inProgress', 'Round inProgress before verdict');
+
+      // (a) After the verdict, a FRESH lookup includes the evaluation.
+      const b1Eval = await env
+        .http()
+        .post(`/api/volunteer/students/${b1pass.usn}/round/evaluate`)
+        .set('Authorization', `Bearer ${volunteerToken}`)
+        .send({ result: 'PASS', remarks: 'B1 workspace check', programmingLanguage: 'python' });
+      checkEqual(b1Eval.status, 200, 'b1pass evaluate PASS -> 200');
+      const lookupEvaluated = await env
+        .http()
+        .get(`/api/volunteer/students/${b1pass.usn}/round`)
+        .set('Authorization', `Bearer ${volunteerToken}`);
+      checkEqual(lookupEvaluated.status, 200, 'Lookup after verdict -> 200');
+      checkEqual(lookupEvaluated.body.evaluation.status, 'PASS', 'Lookup evaluation status PASS');
+      checkEqual(lookupEvaluated.body.evaluation.isSettled, false, 'Lookup evaluation not settled yet');
+      checkEqual(lookupEvaluated.body.evaluation.isProgressed, false, 'Lookup evaluation not progressed yet');
+      checkEqual(
+        lookupEvaluated.body.evaluation.roundId,
+        lookupEvaluated.body.round.id,
+        'Lookup evaluation roundId matches the round'
+      );
+      checkEqual(
+        lookupEvaluated.body.evaluation.volunteerNotes,
+        'B1 workspace check',
+        'Lookup evaluation carries the remarks'
+      );
+      checkEqual(
+        lookupEvaluated.body.evaluation.programmingLanguage,
+        'python',
+        'Lookup evaluation carries the language'
+      );
+      assertNoSensitiveLeak(lookupEvaluated.body, 'lookup with evaluation', {
+        allowStudentEmail: true,
+      });
+
+      // (c) The settled flag follows the round state after settling.
+      const b1Settle = await env
+        .http()
+        .post(`/api/volunteer/students/${b1pass.usn}/round/settle`)
+        .set('Authorization', `Bearer ${volunteerToken}`);
+      checkEqual(b1Settle.status, 200, 'b1pass settle -> 200');
+      const lookupSettled = await env
+        .http()
+        .get(`/api/volunteer/students/${b1pass.usn}/round`)
+        .set('Authorization', `Bearer ${volunteerToken}`);
+      checkEqual(lookupSettled.status, 200, 'Lookup after settle -> 200');
+      checkEqual(lookupSettled.body.evaluation.status, 'PASS', 'Lookup evaluation still PASS after settle');
+      checkEqual(lookupSettled.body.evaluation.isSettled, true, 'Lookup evaluation settled after settle');
+      checkEqual(
+        lookupSettled.body.evaluation.isProgressed,
+        false,
+        'Lookup evaluation still unprogressed after settle'
+      );
+
+      // (c) The progressed flag: a FAIL chain ends eliminated at the same
+      // level, so the lookup still finds the round and its evaluation.
+      const b1fail = await provisionAndRegisterStudent({
+        tag: 'b1fail',
+        name: 'B1 Fail',
+        usn: '4VV24CS806',
+        year: '2nd Year',
+        location: 'CCD',
+      });
+      const b1fAlloc = await env
+        .http()
+        .post('/api/rounds/allocate')
+        .set('Authorization', `Bearer ${b1fail.token}`);
+      checkEqual(b1fAlloc.status, 201, 'b1fail allocate -> 201');
+      const b1fStart = await env
+        .http()
+        .post(`/api/volunteer/students/${b1fail.usn}/round/start`)
+        .set('Authorization', `Bearer ${volunteerToken}`);
+      checkEqual(b1fStart.status, 200, 'b1fail start -> 200');
+      const b1fEval = await env
+        .http()
+        .post(`/api/volunteer/students/${b1fail.usn}/round/evaluate`)
+        .set('Authorization', `Bearer ${volunteerToken}`)
+        .send({ result: 'FAIL' });
+      checkEqual(b1fEval.status, 200, 'b1fail evaluate FAIL -> 200');
+      const b1fSettle = await env
+        .http()
+        .post(`/api/volunteer/students/${b1fail.usn}/round/settle`)
+        .set('Authorization', `Bearer ${volunteerToken}`);
+      checkEqual(b1fSettle.status, 200, 'b1fail settle -> 200');
+      const b1fProg = await env
+        .http()
+        .post(`/api/volunteer/students/${b1fail.usn}/round/progress`)
+        .set('Authorization', `Bearer ${volunteerToken}`);
+      checkEqual(b1fProg.status, 200, 'b1fail progress -> 200');
+      const lookupProgressed = await env
+        .http()
+        .get(`/api/volunteer/students/${b1fail.usn}/round`)
+        .set('Authorization', `Bearer ${volunteerToken}`);
+      checkEqual(lookupProgressed.status, 200, 'Lookup after progress -> 200');
+      checkEqual(lookupProgressed.body.evaluation.status, 'FAIL', 'Lookup evaluation status FAIL');
+      checkEqual(lookupProgressed.body.evaluation.isSettled, true, 'Lookup evaluation settled after progress');
+      checkEqual(
+        lookupProgressed.body.evaluation.isProgressed,
+        true,
+        'Lookup evaluation progressed after progress'
+      );
+      checkEqual(
+        lookupProgressed.body.student.competitionStatus,
+        'eliminated',
+        'Lookup student eliminated after FAIL progress'
+      );
+    });
   } finally {
     await env.stop();
   }

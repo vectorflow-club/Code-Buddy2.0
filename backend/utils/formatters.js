@@ -167,6 +167,33 @@ const formatVolunteerResponse = (volunteer, options = {}) => ({
   ...(options.includePassword ? { password: volunteer.passwordHash || '' } : {}),
 });
 
+/**
+ * Format Evaluation document cleanly for API response.
+ * Shared by the volunteer lifecycle, settlement, and lookup responses, so the
+ * Evaluation Workspace sees the same evaluation shape however it arrived.
+ */
+const formatEvaluationResponse = (evaluation) => ({
+  id: (evaluation._id || '').toString(),
+  roundId: (evaluation.roundId || '').toString(),
+  studentId: (evaluation.studentId || '').toString(),
+  questionId: (evaluation.questionId || '').toString(),
+  levelNumber: evaluation.levelNumber,
+  status: evaluation.status,
+  volunteerNotes: evaluation.volunteerNotes || '',
+  programmingLanguage: evaluation.programmingLanguage || '',
+  evaluatedBy: evaluation.evaluatedBy ? evaluation.evaluatedBy.toString() : null,
+  evaluatedAt: evaluation.evaluatedAt || null,
+  isSettled: Boolean(evaluation.isSettled),
+  settledAt: evaluation.settledAt || null,
+  settledBy: evaluation.settledBy ? evaluation.settledBy.toString() : null,
+  settlementTransactionId: evaluation.settlementTransactionId
+    ? evaluation.settlementTransactionId.toString()
+    : null,
+  isProgressed: Boolean(evaluation.isProgressed),
+  progressedAt: evaluation.progressedAt || null,
+  progressedBy: evaluation.progressedBy ? evaluation.progressedBy.toString() : null,
+});
+
 module.exports = {
   formatStudentTransactionResponse,
   parseValidDeadlineMs,
@@ -175,4 +202,5 @@ module.exports = {
   formatRoundVolunteerResponse,
   formatLevelResponse,
   formatVolunteerResponse,
+  formatEvaluationResponse,
 };

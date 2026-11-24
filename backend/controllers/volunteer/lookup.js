@@ -1,5 +1,5 @@
-const { Student, Round } = require('../../models');
-const { formatRoundVolunteerResponse } = require('../../utils');
+const { Student, Round, Evaluation } = require('../../models');
+const { formatRoundVolunteerResponse, formatEvaluationResponse } = require('../../utils');
 const { syncRoundDeadlineState, deriveStudentRoundAvailability } = require('../roundController');
 const { TOTAL_LEVELS, USN_REGEX } = require('../../constants');
 
@@ -130,6 +130,12 @@ const getStudentActiveRoundByUsn = async (req, res) => {
 
     const syncedRound = timerSync.round;
 
+    // A round that already has a verdict carries its Evaluation, so a freshly
+    // opened Evaluation Workspace can offer Settle/Progress instead of
+    // showing a dead panel (the workspace gates both on hasEvaluation).
+    // Rounds without a verdict keep today's shape: no evaluation key.
+    const evaluation = await Evaluation.findOne({ roundId: syncedRound._id }).lean();
+
     return res.status(200).json({
       success: true,
       message: timerSync.isExpired
@@ -140,6 +146,7 @@ const getStudentActiveRoundByUsn = async (req, res) => {
         remainingSeconds: timerSync.remainingSeconds,
         isExpired: timerSync.isExpired,
       }),
+      ...(evaluation ? { evaluation: formatEvaluationResponse(evaluation) } : {}),
     });
   } catch (error) {
     console.error('Error looking up student round by USN:', error.message);

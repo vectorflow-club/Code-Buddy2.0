@@ -1,5 +1,9 @@
 const { Round, Level, Evaluation } = require('../../models');
-const { formatRoundVolunteerResponse, computeTimerFields } = require('../../utils');
+const {
+  formatRoundVolunteerResponse,
+  formatEvaluationResponse,
+  computeTimerFields,
+} = require('../../utils');
 const { syncRoundDeadlineState } = require('../roundController');
 const { resolveRegisteredStudent, formatStudentVolunteerResponse } = require('./lookup');
 
@@ -470,31 +474,6 @@ const parseEvaluationPayload = (body) => {
     programmingLanguage: normalizedLanguage,
   };
 };
-
-/**
- * Format Evaluation document cleanly for API response.
- */
-const formatEvaluationResponse = (evaluation) => ({
-  id: (evaluation._id || '').toString(),
-  roundId: (evaluation.roundId || '').toString(),
-  studentId: (evaluation.studentId || '').toString(),
-  questionId: (evaluation.questionId || '').toString(),
-  levelNumber: evaluation.levelNumber,
-  status: evaluation.status,
-  volunteerNotes: evaluation.volunteerNotes || '',
-  programmingLanguage: evaluation.programmingLanguage || '',
-  evaluatedBy: evaluation.evaluatedBy ? evaluation.evaluatedBy.toString() : null,
-  evaluatedAt: evaluation.evaluatedAt || null,
-  isSettled: Boolean(evaluation.isSettled),
-  settledAt: evaluation.settledAt || null,
-  settledBy: evaluation.settledBy ? evaluation.settledBy.toString() : null,
-  settlementTransactionId: evaluation.settlementTransactionId
-    ? evaluation.settlementTransactionId.toString()
-    : null,
-  isProgressed: Boolean(evaluation.isProgressed),
-  progressedAt: evaluation.progressedAt || null,
-  progressedBy: evaluation.progressedBy ? evaluation.progressedBy.toString() : null,
-});
 
 /**
  * Manually evaluate a student's current-level round as PASS or FAIL
