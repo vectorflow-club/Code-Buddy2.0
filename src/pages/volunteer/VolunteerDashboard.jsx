@@ -187,6 +187,24 @@ export default function VolunteerDashboard() {
     }
   }
 
+  // Finish an evaluated round from the row: the verdict was already given
+  // (in the Workspace, or by a verdict chain whose progression step failed),
+  // so only the progression step is left. On PASS it moves the student to
+  // the next level; on FAIL it records the elimination.
+  async function handleFinishLevel(entry) {
+    if (rowBusy) return;
+    setRowBusy({ usn: entry.usn, action: "Finish level" });
+    setRowError("");
+    try {
+      await progressVolunteerStudentRound(entry.usn);
+      await refreshDashboard();
+    } catch (error) {
+      setRowError(`Could not finish the level for ${entry.usn}: ${error?.message || "please try again."}`);
+    } finally {
+      setRowBusy(null);
+    }
+  }
+
   async function handleOpen(entry) {
     if (rowBusy) return;
     setRowBusy({ usn: entry.usn, action: "open" });
@@ -369,6 +387,7 @@ export default function VolunteerDashboard() {
                   );
                   const canStart = entry.roundStatus === "ready";
                   const canEvaluate = ["inProgress", "timeExpired"].includes(entry.roundStatus);
+                  const canFinish = entry.roundStatus === "evaluated" && !isTerminal;
                   const hasRound = entry.roundStatus !== "none";
                   const busyThisRow = rowBusy?.usn === entry.usn;
                   return (
@@ -411,6 +430,16 @@ export default function VolunteerDashboard() {
                                 {busyThisRow && rowBusy.action === "Not correct" ? "Saving..." : "Not correct"}
                               </button>
                             </>
+                          )}
+                          {canFinish && (
+                            <button
+                              type="button"
+                              className="vol-action-button"
+                              disabled={Boolean(rowBusy)}
+                              onClick={() => handleFinishLevel(entry)}
+                            >
+                              {busyThisRow && rowBusy.action === "Finish level" ? "Finishing..." : "Finish level"}
+                            </button>
                           )}
                           {hasRound && !isTerminal && (
                             <button
