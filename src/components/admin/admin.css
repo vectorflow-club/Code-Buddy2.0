@@ -86,9 +86,13 @@
 }
 
 .admin-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 250px;
   min-width: 250px;
-  min-height: 100vh;
+  height: 100vh;
+  overflow-y: auto;
   background: var(--ink);
   color: var(--paper);
   padding: 24px 18px;
@@ -156,6 +160,7 @@
 .admin-main {
   flex: 1;
   min-width: 0;
+  margin-left: 250px;
 }
 
 .admin-topbar {
@@ -200,10 +205,24 @@
     padding: 15px 8px;
   }
 
+  .admin-main {
+    margin-left: 75px;
+  }
+
   .admin-brand > span,
   .admin-nav-link span,
   .admin-nav-heading,
   .admin-sidebar-footer {
+    display: none;
+  }
+
+  /* The Brand text ("code buddy") is white-space: nowrap, so it would spill
+     out of the 75px rail without this; the symbol stays, centered. */
+  .admin-brand {
+    align-items: center;
+  }
+
+  .admin-brand .brand > span:not(.brand-symbol) {
     display: none;
   }
 
