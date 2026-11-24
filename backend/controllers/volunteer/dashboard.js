@@ -92,7 +92,7 @@ const getVolunteerDashboard = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Organizer dashboard retrieved successfully.',
+      message: 'Organizer dashboard loaded.',
       location: assignedLab,
       stats: {
         assignedParticipants: totalParticipants,
@@ -108,7 +108,7 @@ const getVolunteerDashboard = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to retrieve organizer dashboard.',
+      message: 'Could not load the organizer dashboard.',
     });
   }
 };

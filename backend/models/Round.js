@@ -101,7 +101,7 @@ const roundSchema = new mongoose.Schema(
       type: String,
       enum: {
         values: ['ready', 'inProgress', 'timeExpired', 'submitted', 'evaluated', 'abandoned'],
-        message: '{VALUE} is not a valid round status',
+        message: '{VALUE} is not a valid round state',
       },
       default: 'ready',
       index: true,

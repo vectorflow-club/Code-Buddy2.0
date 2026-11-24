@@ -71,7 +71,7 @@ export default function TimerPanel({
     event.preventDefault();
     setExtensionError("");
     if (!canExtend || isBusy || !isValidExtension) {
-      setExtensionError("Enter a positive whole number of seconds.");
+      setExtensionError("Enter whole seconds, more than 0.");
       return;
     }
 
@@ -109,14 +109,14 @@ export default function TimerPanel({
 
         <span className="timer-status">
           {isFinished
-            ? "TIME COMPLETED"
+            ? "TIME IS UP"
             : isAwaitingBackendExpiration
               ? "AWAITING TIMER UPDATE"
               : canDisplayCountdown
                 ? "TIME REMAINING"
                 : roundStatus === "ready"
                   ? "READY TO START"
-                  : "TIMER UNAVAILABLE"}
+                  : "NO TIMER"}
         </span>
       </div>
 
@@ -176,8 +176,8 @@ export default function TimerPanel({
               type="number"
               min="1"
               step="1"
-              placeholder="Extension seconds"
-              aria-label="Timer extension in seconds"
+              placeholder="Extra seconds"
+              aria-label="Extra time in seconds"
               value={extensionSeconds}
               onChange={(event) => {
                 setExtensionSeconds(event.target.value);
@@ -217,7 +217,7 @@ export default function TimerPanel({
 
       <div className="timer-duration-note">
         <span>{levelNumber ? `Level ${levelNumber}` : "Round"}</span>
-        <span>Deadline: {formatDate(deadline, "Unavailable")}</span>
+        <span>Ends at: {formatDate(deadline, "Not set")}</span>
       </div>
     </section>
   );

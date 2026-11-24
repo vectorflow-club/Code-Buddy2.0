@@ -20,7 +20,7 @@ const syncRoundDeadlineState = async (round, now = new Date()) => {
       error: {
         status: 404,
         code: 'ROUND_NOT_ALLOCATED',
-        message: 'Round record not found.',
+        message: 'No round found.',
       },
     };
   }
@@ -106,7 +106,7 @@ const syncRoundDeadlineState = async (round, now = new Date()) => {
         error: {
           status: 404,
           code: 'ROUND_NOT_ALLOCATED',
-          message: 'Round record no longer exists.',
+          message: 'That round is gone.',
         },
       };
     }
@@ -132,7 +132,7 @@ const syncRoundDeadlineState = async (round, now = new Date()) => {
     error: {
       status: 500,
       code: 'INVALID_ROUND_STATUS',
-      message: `Round has unexpected status '${round.status}'.`,
+      message: `Round is in a strange state: '${round.status}'.`,
     },
   };
 };
@@ -377,7 +377,7 @@ const getLevelInfo = async (req, res) => {
       return res.status(403).json({
         success: false,
         code: 'REGISTRATION_INCOMPLETE',
-        message: 'Registration must be completed before viewing competition level details.',
+        message: 'Finish signing up before seeing level details.',
       });
     }
 
@@ -386,7 +386,7 @@ const getLevelInfo = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_STUDENT_LEVEL',
-        message: 'Student current level is invalid.',
+        message: 'Your current level is not right.',
       });
     }
 
@@ -395,7 +395,7 @@ const getLevelInfo = async (req, res) => {
       return res.status(404).json({
         success: false,
         code: 'LEVEL_NOT_FOUND',
-        message: `Active level configuration for Level ${currentLevel} was not found.`,
+        message: `Level ${currentLevel} settings were not found.`,
       });
     }
 
@@ -417,7 +417,7 @@ const getLevelInfo = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to retrieve level information.',
+      message: 'Could not load the level details.',
     });
   }
 };
@@ -431,7 +431,7 @@ const getLevelInfo = async (req, res) => {
  */
 const buildExistingRoundResponse = (student, freshStudent, debitTx, round) => ({
   success: true,
-  message: 'Existing round retrieved successfully.',
+  message: 'Found your round.',
   isExisting: true,
   walletBalance: freshStudent ? (freshStudent.walletBalance ?? 0) : (student.walletBalance ?? 0),
   entryFee: 0,
@@ -446,7 +446,7 @@ const buildExistingRoundResponse = (student, freshStudent, debitTx, round) => ({
 const buildInsufficientBalanceResponse = (currentLevel, entryFee, currentBalance) => ({
   success: false,
   code: 'INSUFFICIENT_BALANCE',
-  message: `Insufficient wallet balance to enter Level ${currentLevel}. Required: ${entryFee}, available: ${currentBalance}.`,
+  message: `Not enough money to enter Level ${currentLevel}. You need ${entryFee}, you have ${currentBalance}.`,
   walletBalance: currentBalance,
   requiredAmount: entryFee,
 });
@@ -475,7 +475,7 @@ const allocateQuestion = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'UNSUPPORTED_FIELDS',
-        message: `Question allocation requests do not accept request body fields: ${bodyKeys.join(', ')}.`,
+        message: `You cannot send extra details when asking for a question: ${bodyKeys.join(', ')}.`,
       });
     }
 
@@ -485,7 +485,7 @@ const allocateQuestion = async (req, res) => {
       return res.status(403).json({
         success: false,
         code: 'REGISTRATION_INCOMPLETE',
-        message: 'Registration must be completed before entering competition rounds.',
+        message: 'Finish signing up before entering rounds.',
       });
     }
 
@@ -493,7 +493,7 @@ const allocateQuestion = async (req, res) => {
       return res.status(409).json({
         success: false,
         code: 'STUDENT_ELIMINATED',
-        message: 'You have been eliminated from the competition and cannot allocate another round.',
+        message: 'You are out of the competition and cannot get another round.',
       });
     }
 
@@ -501,7 +501,7 @@ const allocateQuestion = async (req, res) => {
       return res.status(409).json({
         success: false,
         code: 'COMPETITION_COMPLETED',
-        message: 'You have already completed all competition levels.',
+        message: 'You already finished all levels.',
       });
     }
 
@@ -509,7 +509,7 @@ const allocateQuestion = async (req, res) => {
       return res.status(409).json({
         success: false,
         code: 'STUDENT_STOPPED',
-        message: 'You stopped the competition and kept your balance. You cannot allocate another round.',
+        message: 'You stopped and kept your money. You cannot get another round.',
       });
     }
 
@@ -518,7 +518,7 @@ const allocateQuestion = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_STUDENT_LEVEL',
-        message: 'Student current level is invalid.',
+        message: 'Your current level is not right.',
       });
     }
 
@@ -532,7 +532,7 @@ const allocateQuestion = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_STUDENT_YEAR',
-        message: 'Student academic year must be 1st Year, 2nd Year, 3rd Year, or 4th Year.',
+        message: 'Your year must be 1st Year, 2nd Year, 3rd Year, or 4th Year.',
       });
     }
 
@@ -541,7 +541,7 @@ const allocateQuestion = async (req, res) => {
       return res.status(404).json({
         success: false,
         code: 'LEVEL_NOT_FOUND',
-        message: `Active level configuration for Level ${currentLevel} was not found.`,
+        message: `Level ${currentLevel} settings were not found.`,
       });
     }
 
@@ -584,7 +584,7 @@ const allocateQuestion = async (req, res) => {
       return res.status(404).json({
         success: false,
         code: 'NO_ELIGIBLE_QUESTIONS',
-        message: `No active ${difficulty} questions are available for Level ${currentLevel}.`,
+        message: `No ${difficulty} questions are ready for Level ${currentLevel}.`,
       });
     }
 
@@ -846,7 +846,7 @@ const allocateQuestion = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Question allocated successfully.',
+      message: 'Question given.',
       isExisting: false,
       walletBalance: finalStudent ? (finalStudent.walletBalance ?? 0) : 0,
       entryFee,
@@ -858,7 +858,7 @@ const allocateQuestion = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to allocate question.',
+      message: 'Could not give you a question.',
     });
   }
 };
@@ -868,15 +868,15 @@ const allocateQuestion = async (req, res) => {
  */
 const getActiveRoundStatusMessage = (status, isExpired) => {
   if (isExpired || status === 'timeExpired') {
-    return 'Round timer has expired.';
+    return 'Time is up for this round.';
   }
   const statusMessages = {
-    ready: 'Round is allocated and waiting to be started by a volunteer.',
-    inProgress: 'Round is currently in progress.',
-    submitted: 'Round has been submitted and is awaiting evaluation.',
-    evaluated: 'Round has already been evaluated.',
+    ready: 'Your question is ready. Your organizer will start the timer.',
+    inProgress: 'Your round is going on.',
+    submitted: 'You sent your answer. Your organizer will check it.',
+    evaluated: 'Your organizer already gave your result.',
   };
-  return statusMessages[status] || 'Round details retrieved successfully.';
+  return statusMessages[status] || 'Round details loaded.';
 };
 
 /**
@@ -901,7 +901,7 @@ const getActiveRoundStatus = async (req, res) => {
       return res.status(403).json({
         success: false,
         code: 'REGISTRATION_INCOMPLETE',
-        message: 'Registration must be completed before viewing your active round status.',
+        message: 'Finish signing up before seeing your round.',
       });
     }
 
@@ -910,7 +910,7 @@ const getActiveRoundStatus = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_STUDENT_LEVEL',
-        message: 'Student current level is invalid.',
+        message: 'Your current level is not right.',
       });
     }
 
@@ -924,7 +924,7 @@ const getActiveRoundStatus = async (req, res) => {
       return res.status(404).json({
         success: false,
         code: 'ROUND_NOT_ALLOCATED',
-        message: `No round has been allocated for Level ${currentLevel} yet.`,
+        message: `No round has been given for Level ${currentLevel} yet.`,
         currentLevel,
         roundAvailability: deriveStudentRoundAvailability(student, null),
       });
@@ -957,7 +957,7 @@ const getActiveRoundStatus = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to retrieve active round status.',
+      message: 'Could not load your round.',
     });
   }
 };

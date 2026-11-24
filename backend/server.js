@@ -88,7 +88,7 @@ mongoose.connection.on('disconnected', () => {
 
 app.get('/', (req, res) => {
   res.json({
-    message: 'Code Buddy Backend API is running.',
+    message: 'Code Buddy is running.',
     healthEndpoint: '/api/health',
   });
 });

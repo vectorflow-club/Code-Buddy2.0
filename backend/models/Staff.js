@@ -26,7 +26,7 @@ const staffSchema = new mongoose.Schema(
       type: String,
       enum: {
         values: ['ADMIN', 'VOLUNTEER'],
-        message: '{VALUE} is not a valid staff role',
+        message: '{VALUE} is not a valid role',
       },
       set: (val) => (typeof val === 'string' ? val.toUpperCase() : val),
       required: [true, 'Role is required'],

@@ -25,11 +25,11 @@ const navItems = [
   { to: "/admin/dashboard", label: "Overview", icon: LayoutDashboard },
   { to: "/admin/questions", label: "Question Bank", icon: BookOpen },
   { to: "/admin/levels", label: "Levels", icon: Layers },
-  { to: "/admin/participants", label: "Participants", icon: Users },
+  { to: "/admin/participants", label: "Students", icon: Users },
   { to: "/admin/volunteers", label: "Organizers", icon: UserCog },
   { to: "/admin/reports", label: "Reports", icon: ChartNoAxesCombined },
   { to: "/admin/rounds", label: "Rounds", icon: ClipboardList },
-  { to: "/admin/transactions", label: "Transactions", icon: Receipt },
+  { to: "/admin/transactions", label: "Money", icon: Receipt },
 ];
 
 // Module-level so the session hook's validate callback stays stable.
@@ -44,7 +44,7 @@ export default function AdminLayout() {
     loginPath: "/admin/login",
     profileKey: "admin",
     expiredCodes: ADMIN_EXPIRED_CODES,
-    validateErrorMessage: "Could not validate the admin session.",
+    validateErrorMessage: "We could not check the admin sign-in.",
   });
 
   if (checking) return <div role="status" style={{ padding: 24 }}>Checking admin session…</div>;
@@ -86,7 +86,7 @@ export default function AdminLayout() {
 
         <div className="admin-sidebar-footer">
           <span>CODE BUDDY</span>
-          <small>Competition Management</small>
+          <small>Manage the competition</small>
         </div>
       </aside>
 

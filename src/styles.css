@@ -461,6 +461,8 @@ h1, h2, h3, h4, p { margin-top: 0; }
 .history-status { padding: 5px 8px; background: #e9eee8; color: #45534b; font-family: var(--mono); font-size: 10px; text-transform: uppercase; }
 .history-status-pass { background: #e9f3d3; color: #28451b; }
 .history-status-fail { background: #f8e4df; color: #7b2e22; }
+.history-status-passed { background: #e9f3d3; color: #28451b; }
+.history-status-failed { background: #f8e4df; color: #7b2e22; }
 .history-item h2 { margin: 18px 0 6px; color: #101a18; font-size: 20px; }
 .history-question-meta, .history-remarks { color: var(--subtle); font-size: 13px; overflow-wrap: anywhere; }
 .history-remarks { display: grid; gap: 5px; margin: 16px 0; padding: 12px 14px; border-left: 2px solid #c9f45a; background: #f7f8f3; }

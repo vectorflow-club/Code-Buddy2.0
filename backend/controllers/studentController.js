@@ -43,7 +43,7 @@ const getStudentTransactions = async (req, res) => {
       return res.status(403).json({
         success: false,
         code: 'REGISTRATION_INCOMPLETE',
-        message: 'Registration must be completed before viewing transaction history.',
+        message: 'Finish signing up before seeing your money history.',
       });
     }
 
@@ -69,7 +69,7 @@ const getStudentTransactions = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Transaction history retrieved successfully.',
+      message: 'Money history loaded.',
       walletBalance: student.walletBalance ?? 0,
       totalEarned: student.totalEarned ?? 0,
       totalRisked: student.totalRisked ?? 0,
@@ -83,7 +83,7 @@ const getStudentTransactions = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to retrieve transaction history.',
+      message: 'Could not load your money history.',
     });
   }
 };
@@ -101,7 +101,7 @@ const getStudentRoundHistory = async (req, res) => {
       return res.status(403).json({
         success: false,
         code: 'REGISTRATION_INCOMPLETE',
-        message: 'Registration must be completed before viewing round history.',
+        message: 'Finish signing up before seeing your past rounds.',
       });
     }
 
@@ -150,7 +150,7 @@ const getStudentRoundHistory = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Round history retrieved successfully.',
+      message: 'Past rounds loaded.',
       currentLevel: student.currentLevel,
       competitionStatus: student.competitionStatus,
       count: formattedRounds.length,
@@ -162,7 +162,7 @@ const getStudentRoundHistory = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to retrieve round history.',
+      message: 'Could not load your past rounds.',
     });
   }
 };
@@ -182,13 +182,13 @@ const getCompetitionConfig = async (req, res) => {
       return res.status(404).json({
         success: false,
         code: 'LEVEL_CONFIGURATION_NOT_FOUND',
-        message: 'Active competition level configuration was not found.',
+        message: 'Level settings were not found.',
       });
     }
 
     return res.status(200).json({
       success: true,
-      message: 'Competition configuration retrieved successfully.',
+      message: 'Competition settings loaded.',
       totalLevels: levels.length,
       levels: levels.map(formatLevelResponse),
     });
@@ -197,7 +197,7 @@ const getCompetitionConfig = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to retrieve competition configuration.',
+      message: 'Could not load the competition settings.',
     });
   }
 };
@@ -227,7 +227,7 @@ const stopCompetition = async (req, res) => {
       return res.status(401).json({
         success: false,
         code: 'USER_NOT_FOUND',
-        message: 'Student account no longer exists.',
+        message: 'That student account is gone.',
       });
     }
 
@@ -235,14 +235,14 @@ const stopCompetition = async (req, res) => {
       return res.status(403).json({
         success: false,
         code: 'REGISTRATION_INCOMPLETE',
-        message: 'Registration must be completed before stopping the competition.',
+        message: 'Finish signing up before stopping.',
       });
     }
 
     if (student.competitionStatus === 'stopped') {
       return res.status(200).json({
         success: true,
-        message: 'You have already stopped the competition.',
+        message: 'You already stopped.',
         student: {
           id: student._id.toString(),
           competitionStatus: student.competitionStatus,
@@ -258,7 +258,7 @@ const stopCompetition = async (req, res) => {
       return res.status(409).json({
         success: false,
         code: 'RUN_ALREADY_ENDED',
-        message: 'Your competition run has already ended.',
+        message: 'Your run has already ended.',
       });
     }
 
@@ -281,7 +281,7 @@ const stopCompetition = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'You stopped the competition and kept your balance.',
+      message: 'You stopped and kept your money.',
       student: {
         id: student._id.toString(),
         competitionStatus: student.competitionStatus,
@@ -296,7 +296,7 @@ const stopCompetition = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to stop the competition.',
+      message: 'Could not stop. Please try again.',
     });
   }
 };

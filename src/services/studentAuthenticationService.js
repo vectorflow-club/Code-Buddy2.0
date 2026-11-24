@@ -35,13 +35,13 @@ function clearMode() {
 }
 function requireStudentResponse(response, withToken = false) {
   if (!response || response.success !== true || !response.student || typeof response.student !== 'object') {
-    throw new ApiError('The authentication service returned an unexpected response.', API_ERROR_CODES.RESPONSE)
+    throw new ApiError('The sign-in reply was strange. Please try again.', API_ERROR_CODES.RESPONSE)
   }
   if (withToken ? typeof response.registrationComplete !== 'boolean' : typeof response.student.registrationComplete !== 'boolean') {
-    throw new ApiError('The authentication service did not include the registration status.', API_ERROR_CODES.RESPONSE)
+    throw new ApiError('The sign-in reply did not say if your sign-up is done.', API_ERROR_CODES.RESPONSE)
   }
   if (withToken && (typeof response.token !== 'string' || !response.token.trim())) {
-    throw new ApiError('The authentication service did not return a session token.', API_ERROR_CODES.RESPONSE)
+    throw new ApiError('The sign-in reply did not include your session.', API_ERROR_CODES.RESPONSE)
   }
   return response
 }
@@ -61,7 +61,7 @@ export const studentAuthenticationService = {
   async signInWithGoogle(idToken) {
     if (!backendConfig.apiBaseUrl) throw new ApiError('The site is not set up yet. Please try again later.', API_ERROR_CODES.CONFIGURATION)
     if (!backendConfig.googleClientId) throw new ApiError('Google sign-in is not set up yet. Please try again later.', API_ERROR_CODES.CONFIGURATION)
-    if (typeof idToken !== 'string' || !idToken.trim()) throw new ApiError('Google did not provide an ID token. Please try again.', API_ERROR_CODES.REQUEST)
+    if (typeof idToken !== 'string' || !idToken.trim()) throw new ApiError('Google did not send your sign-in details. Please try again.', API_ERROR_CODES.REQUEST)
     try {
       const response = requireStudentResponse(await apiClient.post('/api/auth/google', { idToken }), true)
       saveSession(response.token)

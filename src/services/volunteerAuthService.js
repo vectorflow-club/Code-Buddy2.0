@@ -21,7 +21,7 @@ const volunteerAuth = createStaffAuthService({
     401: { message: "Invalid username or password.", code: "INVALID_CREDENTIALS" },
     403: {
       message:
-        "This organizer account is deactivated. Contact the event team.",
+        "This organizer account is switched off. Contact the event team.",
       code: "VOLUNTEER_DEACTIVATED",
     },
   },
@@ -29,7 +29,7 @@ const volunteerAuth = createStaffAuthService({
     "The login could not be completed. Please try again.",
   validateProfileOnLogin: false,
   sessionExpiredMessage:
-    "Your organizer session is no longer valid. Please sign in again.",
+    "Your organizer sign-in ran out. Please sign in again.",
   sessionRetryMessage: "Your organizer session could not be checked. Please try again.",
   sessionInvalidMessage:
     "Your organizer session reply was not understood. Please sign in again.",

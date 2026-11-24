@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import "./levels.css";
 import { useFetchState } from "../../hooks/useFetchState";
-import { formatCurrency } from "../../utils/formatters";
+import { formatCurrency, levelStatusLabel } from "../../utils/formatters";
 import { getAdminDashboardStats } from "../../services/adminDataService";
 import { getAdminQuestionList } from "../../services/adminQuestionService";
 import { getAdminLevels, setAdminLevelActive, updateAdminLevel } from "../../services/adminLevelService";
@@ -47,7 +47,7 @@ export default function LevelManagement() {
   }, []);
   const { data: levels, loading, error, setError, reload: loadLevels } = useFetchState(fetchLevels, {
     initialData: [],
-    errorMessage: "Could not load level configuration.",
+    errorMessage: "Could not load the levels.",
   });
   const [editingLevel, setEditingLevel] = useState(null);
   const [savedMessage, setSavedMessage] = useState("");
@@ -75,11 +75,11 @@ export default function LevelManagement() {
     try {
       await updateAdminLevel(editingLevel.id, updates);
       setEditingLevel(null);
-      setSavedMessage("Level configuration updated.");
+      setSavedMessage("Level saved.");
       await loadLevels();
       window.setTimeout(() => setSavedMessage(""), 3000);
     } catch (saveError) {
-      setError(saveError.message || "Could not update level configuration.");
+      setError(saveError.message || "Could not save the level.");
     } finally {
       setSaving(false);
     }
@@ -91,7 +91,7 @@ export default function LevelManagement() {
       await setAdminLevelActive(level.id, level.status !== "ACTIVE");
       await loadLevels();
     } catch (toggleError) {
-      setError(toggleError.message || "Could not update level status.");
+      setError(toggleError.message || "Could not switch the level off or on.");
     }
   };
 
@@ -99,9 +99,9 @@ export default function LevelManagement() {
     <div className="levels-page">
       <div className="levels-header">
         <div>
-          <span className="levels-eyebrow">ADMIN / CONFIGURATION</span>
-          <h1>Level Management</h1>
-          <p>Configure competition levels, settings and progression.</p>
+          <span className="levels-eyebrow">ADMIN / SETTINGS</span>
+          <h1>Levels</h1>
+          <p>Set the money, time, and prizes for each level.</p>
         </div>
 
         <div className="levels-count">
@@ -118,7 +118,7 @@ export default function LevelManagement() {
       )}
 
       {error && <div className="levels-demo-note" role="alert"><AlertCircle size={17} />{error} <button type="button" onClick={loadLevels}>Retry</button></div>}
-      {loading && <div className="levels-demo-note" role="status">Loading level configuration…</div>}
+      {loading && <div className="levels-demo-note" role="status">Loading levels…</div>}
 
       <section className="levels-overview">
         <OverviewCard
@@ -128,17 +128,17 @@ export default function LevelManagement() {
         />
         <OverviewCard
           icon={<Users />}
-          label="Initial Participants"
+          label="Students who started"
           value={loading ? "—" : totalReached}
         />
         <OverviewCard
           icon={<Trophy />}
-          label="Reached Final Level"
+          label="Reached Level 6"
           value={loading ? "—" : levels.find((level) => level.id === 6)?.reached ?? 0}
         />
         <OverviewCard
           icon={<CheckCircle2 />}
-          label="Completed Competition"
+          label="Finished all levels"
           value={loading ? "—" : totalCleared}
         />
       </section>
@@ -147,7 +147,7 @@ export default function LevelManagement() {
         <div className="levels-section-heading">
           <div>
             <h2>Competition Levels</h2>
-            <p>Manage the configuration of each level.</p>
+            <p>Change each level's settings.</p>
           </div>
         </div>
 
@@ -165,39 +165,39 @@ export default function LevelManagement() {
                   </div>
 
                   <span className={`level-status ${level.status.toLowerCase()}`}>
-                    {level.status}
+                    {levelStatusLabel(level.status)}
                   </span>
                 </div>
 
                 <h3>{level.name}</h3>
                 <p className="level-card-subtitle">
-                  Competition stage {level.id} of 6
+                  Stage {level.id} of 6
                 </p>
 
                 <div className="level-card-details">
                   <div>
-                    <span><WalletIcon /> Entry fee</span>
+                    <span><WalletIcon /> Risk amount</span>
                     <strong>
-                      {level.entryFee === "" ? "Not configured" : formatCurrency(level.entryFee)}
+                      {level.entryFee === "" ? "Not set" : formatCurrency(level.entryFee)}
                     </strong>
                   </div>
 
                   <div>
-                    <span><Trophy size={14} /> Pass reward</span>
+                    <span><Trophy size={14} /> Prize for passing</span>
                     <strong>
-                      {level.passReward === "" ? "Not configured" : formatCurrency(level.passReward)}
+                      {level.passReward === "" ? "Not set" : formatCurrency(level.passReward)}
                     </strong>
                   </div>
 
                   <div>
-                    <span><Clock3 size={14} /> Duration</span>
+                    <span><Clock3 size={14} /> Time</span>
                     <strong>{level.duration} minutes</strong>
                   </div>
                 </div>
 
                 <div className="level-card-progress">
                   <div className="level-progress-heading">
-                    <span>Progression</span>
+                    <span>How far students got</span>
                     <strong>{percentage}% cleared</strong>
                   </div>
 
@@ -217,15 +217,15 @@ export default function LevelManagement() {
                     onClick={() => setEditingLevel({ ...level })}
                   >
                     <Pencil size={15} />
-                    Edit configuration
+                    Edit level
                   </button>
 
                   <button
                     className="level-toggle-btn"
                     onClick={() => toggleStatus(level)}
-                    title={level.status === "ACTIVE" ? "Deactivate level" : "Activate level"}
+                    title={level.status === "ACTIVE" ? "Switch off level" : "Switch on level"}
                   >
-                    {level.status === "ACTIVE" ? "Deactivate" : "Activate"}
+                    {level.status === "ACTIVE" ? "Switch off" : "Switch on"}
                   </button>
                 </div>
               </article>
@@ -237,8 +237,8 @@ export default function LevelManagement() {
       <section className="levels-section allocation-panel">
         <div className="levels-section-heading">
           <div>
-            <h2>Question Allocation Rules</h2>
-            <p>Question difficulty is determined by the participant's academic year.</p>
+            <h2>Which questions students get</h2>
+            <p>Easy or hard depends on the student's year.</p>
           </div>
           <BookOpen size={21} />
         </div>
@@ -270,7 +270,7 @@ export default function LevelManagement() {
         </div>
 
         <div className="allocation-note">
-          Each participant receives one assigned question per level. Refreshing the page must not assign a new question.
+          Each student gets one question per level. Refreshing the page must not give a new question.
         </div>
       </section>
 
@@ -278,7 +278,7 @@ export default function LevelManagement() {
         <div className="levels-section-heading">
           <div>
             <h2>Competition Rules</h2>
-            <p>Overview of the competition progression model.</p>
+            <p>How the competition works.</p>
           </div>
           <Settings2 size={21} />
         </div>
@@ -286,28 +286,28 @@ export default function LevelManagement() {
         <div className="rules-list">
           <div>
             <CheckCircle2 size={17} />
-            Six progressive competition levels.
+            Six levels, one after the other.
           </div>
           <div>
             <CheckCircle2 size={17} />
-            Participants are evaluated as PASS or FAIL.
+            Each answer is marked right or wrong.
           </div>
           <div>
             <CheckCircle2 size={17} />
-            Wallet balance determines eligibility for the next level.
+            Your money decides if you can enter the next level.
           </div>
           <div>
             <CheckCircle2 size={17} />
-            Participants who cannot afford the next level retain their remaining balance.
+            Students who cannot afford the next level keep the money they have.
           </div>
           <div>
             <CheckCircle2 size={17} />
-            Clearing Level 6 marks the participant as COMPLETED.
+            Clearing Level 6 means you finished.
           </div>
         </div>
 
         <p className="rules-disclaimer">
-          Entry fees, rewards and final timer rules are pending confirmation from the event team.
+          Risk amounts, prizes, and timer rules still need the event team to confirm.
         </p>
       </section>
 
@@ -323,7 +323,7 @@ export default function LevelManagement() {
           <div className="level-modal">
             <div className="level-modal-header">
               <div>
-                <span className="levels-eyebrow">LEVEL CONFIGURATION</span>
+                <span className="levels-eyebrow">LEVEL SETTINGS</span>
                 <h2>Edit {editingLevel.name}</h2>
               </div>
 
@@ -339,29 +339,29 @@ export default function LevelManagement() {
             <form onSubmit={saveLevel}>
               <div className="level-form-grid">
                 <label>
-                  Entry fee (₹)
+                  Risk amount (₹)
                   <input
                     type="number"
                     min="0"
                     value={editingLevel.entryFee}
-                    placeholder="Enter amount"
+                    placeholder="Type the amount"
                     onChange={(e) => updateField("entryFee", e.target.value)}
                   />
                 </label>
 
                 <label>
-                  Pass reward (₹)
+                  Prize for passing (₹)
                   <input
                     type="number"
                     min="0"
                     value={editingLevel.passReward}
-                    placeholder="Enter amount"
+                    placeholder="Type the amount"
                     onChange={(e) => updateField("passReward", e.target.value)}
                   />
                 </label>
 
                 <label>
-                  Timer duration (minutes)
+                  Time (minutes)
                   <input
                     type="number"
                     min="1"
@@ -374,7 +374,7 @@ export default function LevelManagement() {
                 </label>
 
                 <label>
-                  EASY questions available
+                  Easy questions ready
                   <input
                     type="number"
                     min="0"
@@ -384,7 +384,7 @@ export default function LevelManagement() {
                 </label>
 
                 <label>
-                  HARD questions available
+                  Hard questions ready
                   <input
                     type="number"
                     min="0"
@@ -395,7 +395,7 @@ export default function LevelManagement() {
               </div>
 
               <div className="level-form-note">
-                Question counts come from active questions. Entry amount, payout and timer settings are saved with each level.
+                Question counts come from switched-on questions. Risk, prize, and time are saved with each level.
               </div>
 
               <div className="level-modal-actions">

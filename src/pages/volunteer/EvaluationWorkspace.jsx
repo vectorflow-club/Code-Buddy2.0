@@ -17,6 +17,12 @@ import {
   startVolunteerStudentRound,
 } from "../../services/volunteerRoundService";
 import { getVolunteerSession } from "../../services/volunteerAuthService";
+import {
+  competitionStatusLabel,
+  evaluationStatusLabel,
+  roundAvailabilityLabel,
+  roundStatusLabel,
+} from "../../utils/formatters";
 import TimerPanel from "./TimerPanel";
 import "./evaluation.css";
 
@@ -44,18 +50,18 @@ function isValidLookupResult(value) {
 }
 
 function displayValue(value) {
-  if (value === null || value === undefined || value === "") return "Not provided";
+  if (value === null || value === undefined || value === "") return "Not given";
   return typeof value === "string" ? value : JSON.stringify(value);
 }
 
 function getErrorMessage(error) {
   if (error?.kind === "network") {
-    return `Network error. Check the connection and retry. ${error.message || ""}`.trim();
+    return `No connection. Check your internet and try again. ${error.message || ""}`.trim();
   }
   if (typeof error?.status === "number" && error.status >= 500) {
-    return `The request could not be completed. ${error.message || "Please retry."}`;
+    return `That did not work. ${error.message || "Please try again."}`;
   }
-  return error?.message || "The round action could not be completed. Please retry.";
+  return error?.message || "That round action did not work. Please try again.";
 }
 
 export default function EvaluationWorkspace() {
@@ -138,7 +144,7 @@ export default function EvaluationWorkspace() {
       setActionMessage(
         typeof response.message === "string" && response.message.trim()
           ? response.message
-          : "The round state was updated.",
+          : "The round was updated.",
       );
       return response;
     } catch (error) {
@@ -150,10 +156,10 @@ export default function EvaluationWorkspace() {
           if (isValidLookupResult(refreshed)) {
             setWorkspaceResult(refreshed);
           } else {
-            message += " The participant state could not be refreshed.";
+            message += " The student details could not be refreshed.";
           }
         } catch (refreshError) {
-          message += ` Participant state refresh failed: ${getErrorMessage(refreshError)}`;
+          message += ` Could not refresh the student details: ${getErrorMessage(refreshError)}`;
         }
       }
 
@@ -207,18 +213,18 @@ export default function EvaluationWorkspace() {
     <div className="evaluation-page">
       <div className="evaluation-header">
         <div>
-          <span className="evaluation-eyebrow">VOLUNTEER / EVALUATION</span>
-          <h1>Evaluation Workspace</h1>
-          <p>Manage participant rounds and record evaluation outcomes.</p>
+          <span className="evaluation-eyebrow">ORGANIZER / RESULTS</span>
+          <h1>Results Workspace</h1>
+          <p>Run student rounds and give results.</p>
         </div>
       </div>
 
       <div className="evaluation-demo-note" role="status">
         {hasLookupResult
-          ? "Participant and round details were loaded from the Dashboard USN lookup."
+          ? "Student and round details came from the Dashboard USN search."
           : lookupResult
-            ? "The participant lookup response is incomplete. Return to the Dashboard and retry the USN lookup."
-            : "Look up a participant by USN from the Organizer Dashboard to view their round."}
+            ? "The student search came back incomplete. Go back to the Dashboard and search the USN again."
+            : "Find a student by USN on the Organizer Dashboard to see their round."}
       </div>
 
       {actionError && (
@@ -236,7 +242,7 @@ export default function EvaluationWorkspace() {
         <div className="evaluation-stat-card">
           <Users size={20} />
           <div>
-            <span>Assigned Participants</span>
+            <span>Students here</span>
             <strong>N/A</strong>
           </div>
         </div>
@@ -244,7 +250,7 @@ export default function EvaluationWorkspace() {
         <div className="evaluation-stat-card">
           <Clock3 size={20} />
           <div>
-            <span>Pending Evaluation</span>
+            <span>Results to give</span>
             <strong>N/A</strong>
           </div>
         </div>
@@ -252,7 +258,7 @@ export default function EvaluationWorkspace() {
         <div className="evaluation-stat-card">
           <ClipboardCheck size={20} />
           <div>
-            <span>Evaluated</span>
+            <span>Results given</span>
             <strong>N/A</strong>
           </div>
         </div>
@@ -262,8 +268,8 @@ export default function EvaluationWorkspace() {
         <section className="evaluation-panel participant-selector">
           <div className="evaluation-panel-heading">
             <div>
-              <h2>Selected Participant</h2>
-              <p>Participant details from the Dashboard lookup.</p>
+              <h2>Selected student</h2>
+              <p>Student details from the Dashboard search.</p>
             </div>
           </div>
 
@@ -278,7 +284,7 @@ export default function EvaluationWorkspace() {
                   <span>{student.usn}</span>
                 </div>
                 <span className="evaluation-status pending">
-                  {progression ? "Progression applied" : `Level ${round.levelNumber}`}
+                  {progression ? "Moved to next level" : `Level ${round.levelNumber}`}
                 </span>
               </div>
             </div>
@@ -287,18 +293,18 @@ export default function EvaluationWorkspace() {
               <div className="evaluation-empty-icon">
                 <Users size={27} />
               </div>
-              <h2>Participant lookup required</h2>
+              <h2>Find a student first</h2>
               <p>
                 {lookupResult
-                  ? "The returned participant or round details could not be validated."
-                  : "No participant was passed from the Dashboard."}
+                  ? "The student or round details could not be checked."
+                  : "No student came from the Dashboard."}
               </p>
               <button
                 type="button"
                 className="evaluation-primary-btn"
                 onClick={() => navigate("/volunteer/dashboard")}
               >
-                Return to Organizer Dashboard
+                Back to Organizer Dashboard
               </button>
             </div>
           )}
@@ -310,30 +316,30 @@ export default function EvaluationWorkspace() {
               <div className="evaluation-empty-icon">
                 <Users size={27} />
               </div>
-              <h2>No participant selected</h2>
-              <p>Return to the Organizer Dashboard and look up a participant by USN.</p>
+              <h2>No student picked</h2>
+              <p>Go to the Organizer Dashboard and find a student by USN.</p>
               <button
                 type="button"
                 className="evaluation-primary-btn"
                 onClick={() => navigate("/volunteer/dashboard")}
               >
-                Return to Organizer Dashboard
+                Back to Organizer Dashboard
               </button>
             </div>
           )}
 
           <div className="evaluation-selected-header">
             <div>
-              <span className="evaluation-eyebrow">PARTICIPANT AND ROUND</span>
-              <h2>{hasLookupResult ? participantDisplayName : "Details unavailable"}</h2>
+              <span className="evaluation-eyebrow">STUDENT AND ROUND</span>
+              <h2>{hasLookupResult ? participantDisplayName : "No details yet"}</h2>
               <p>
                 {hasLookupResult
-                  ? `${student.usn} · Round status: ${displayValue(round.status)} · Student level: ${displayValue(student.currentLevel)} - Spot: ${displayValue(student.location)}`
+                  ? `${student.usn} · Round status: ${roundStatusLabel(round.status)} · Student level: ${displayValue(student.currentLevel)} - Spot: ${displayValue(student.location)}`
                   : "Round details will appear after a valid Dashboard lookup."}
               </p>
               {isDifferentSpot && (
                 <p className="evaluation-spot-note" role="status">
-                  This student registered at {student.location}, not your spot ({organizerSpot}).
+                  This student signed up at {student.location}, not your spot ({organizerSpot}).
                   You can still run their round from here.
                 </p>
               )}
@@ -345,38 +351,38 @@ export default function EvaluationWorkspace() {
               <div className="evaluation-question-heading">
                 <div>
                   <span className="evaluation-eyebrow">
-                    {progression ? "EVALUATED ROUND" : "ROUND DETAILS"}
+                    {progression ? "RESULT GIVEN" : "ROUND DETAILS"}
                   </span>
                   <h2>Level {round.levelNumber}</h2>
                 </div>
               </div>
               <p>
-                Year: {displayValue(student.year)} · Competition status: {displayValue(student.competitionStatus)} · Round availability: {displayValue(student.roundAvailability)}
+                Year: {displayValue(student.year)} · Status: {competitionStatusLabel(student.competitionStatus)} · {roundAvailabilityLabel(student.roundAvailability)}
               </p>
               {progression && (
                 <p role="status">
-                  {workspaceResult.message} Evaluated level {displayValue(progression.evaluatedLevel)}; result {displayValue(progression.evaluationResult)}.
+                  {workspaceResult.message} Level {displayValue(progression.evaluatedLevel)} finished; result {evaluationStatusLabel(progression.evaluationResult)}.
                   {progression.advancedToLevel !== null &&
                   progression.advancedToLevel !== undefined
-                    ? ` Advanced to Level ${progression.advancedToLevel}.`
+                    ? ` Moved to Level ${progression.advancedToLevel}.`
                     : progression.isCompleted
-                      ? " Competition completed."
+                      ? " Finished the competition."
                       : progression.isEliminated
-                        ? " Participant eliminated."
-                        : " No next level was allocated by this response."}
+                        ? " Student is out."
+                        : " No next level was given."}
                 </p>
               )}
               {settlement && (
                 <div className="evaluation-example">
-                  <strong>Wallet settlement</strong>
-                  <p>Evaluation result: {displayValue(settlement.evaluationResult)}</p>
+                  <strong>Money update</strong>
+                  <p>Result: {evaluationStatusLabel(settlement.evaluationResult)}</p>
                   <p>
-                    Previous balance: {displayValue(settlement.previousWalletBalance)} · Target balance: {displayValue(settlement.targetBalance)} · Change: {displayValue(settlement.deltaAmount)}
+                    Money before: {displayValue(settlement.previousWalletBalance)} · Money now: {displayValue(settlement.targetBalance)} · Change: {displayValue(settlement.deltaAmount)}
                   </p>
                   <p>
-                    Safe zone: {displayValue(settlement.isSafeZone)}
+                    Safe zone: {settlement.isSafeZone ? "Yes" : "No"}
                     {typeof settlement.didSettleNow === "boolean"
-                      ? ` · Settled during progression: ${settlement.didSettleNow}`
+                      ? ` · Money updated while moving on: ${settlement.didSettleNow ? "Yes" : "No"}`
                       : ""}
                   </p>
                 </div>
@@ -387,14 +393,14 @@ export default function EvaluationWorkspace() {
           <div className="evaluation-question">
             <div className="evaluation-question-heading">
               <div>
-                <span className="evaluation-eyebrow">ASSIGNED QUESTION</span>
-                <h2>{hasLookupResult ? question.title : "Question details unavailable"}</h2>
+                <span className="evaluation-eyebrow">THEIR QUESTION</span>
+                <h2>{hasLookupResult ? question.title : "No question details yet"}</h2>
               </div>
             </div>
             <p>
               {hasLookupResult
                 ? question.statement
-                : "The public question snapshot will appear after a valid Dashboard lookup. No sample question data is shown here."}
+                : "The question will appear after you find a student on the Dashboard."}
             </p>
             {hasLookupResult && (
               <>
@@ -406,7 +412,7 @@ export default function EvaluationWorkspace() {
                 ) : null}
                 <p>Difficulty: {displayValue(question.difficulty)}</p>
                 <div className="evaluation-example">
-                  <strong>Constraints</strong>
+                  <strong>Limits</strong>
                   {question.constraints.length ? (
                     <ul>
                       {question.constraints.map((constraint, index) => (
@@ -414,7 +420,7 @@ export default function EvaluationWorkspace() {
                       ))}
                     </ul>
                   ) : (
-                    <p>No constraints provided.</p>
+                    <p>No limits given.</p>
                   )}
                 </div>
                 {question.examples.map((example, index) => (
@@ -445,10 +451,10 @@ export default function EvaluationWorkspace() {
           )}
 
           <div className="evaluation-decision">
-            <h3>{hasEvaluation ? "Evaluation Result" : "Record Evaluation"}</h3>
+            <h3>{hasEvaluation ? "Result" : "Give the result"}</h3>
             {hasEvaluation ? (
               <p>
-                Result: <strong>{evaluation.status}</strong>
+                Result: <strong>{evaluationStatusLabel(evaluation.status)}</strong>
                 {evaluation.volunteerNotes ? ` · ${evaluation.volunteerNotes}` : ""}
                 {evaluation.programmingLanguage
                   ? ` · ${evaluation.programmingLanguage}`
@@ -458,13 +464,13 @@ export default function EvaluationWorkspace() {
               <p>
                 {canEvaluate
                   ? "Record the result for this round."
-                  : "Evaluation is available only while the round is in progress or time expired."}
+                  : "You can give a result only while the round is running or time is up."}
               </p>
             )}
 
             <div className="evaluation-example">
               <strong>
-                <label htmlFor="evaluation-remarks">Remarks (optional)</label>
+                <label htmlFor="evaluation-remarks">Note (optional)</label>
               </strong>
               <div className="vol-search">
                 <input
@@ -472,8 +478,8 @@ export default function EvaluationWorkspace() {
                   name="remarks"
                   type="text"
                   maxLength={1000}
-                  placeholder="Add evaluation remarks"
-                  aria-label="Evaluation remarks, optional, up to 1000 characters"
+                  placeholder="Add a note"
+                  aria-label="Note, optional, up to 1000 characters"
                   value={remarks}
                   onChange={(event) => setRemarks(event.target.value)}
                   disabled={!canEvaluate || isBusy}
@@ -511,7 +517,7 @@ export default function EvaluationWorkspace() {
                   onClick={() => handleEvaluate("PASS")}
                 >
                   <CheckCircle2 size={17} />
-                  {activeAction === "evaluate" ? "Submitting…" : "Mark as PASS"}
+                  {activeAction === "evaluate" ? "Saving…" : "Mark correct"}
                 </button>
 
                 <button
@@ -521,7 +527,7 @@ export default function EvaluationWorkspace() {
                   onClick={() => handleEvaluate("FAIL")}
                 >
                   <XCircle size={17} />
-                  {activeAction === "evaluate" ? "Submitting…" : "Mark as FAIL"}
+                  {activeAction === "evaluate" ? "Saving…" : "Mark not correct"}
                 </button>
               </div>
             )}
@@ -536,10 +542,10 @@ export default function EvaluationWorkspace() {
                 >
                   <CheckCircle2 size={17} />
                   {activeAction === "settle"
-                    ? "Settling…"
+                    ? "Updating money…"
                     : isSettled
-                      ? "Wallet settled"
-                      : "Settle wallet"}
+                      ? "Money updated"
+                      : "Update money"}
                 </button>
                 <button
                   type="button"
@@ -549,10 +555,10 @@ export default function EvaluationWorkspace() {
                 >
                   <Code2 size={17} />
                   {activeAction === "progress"
-                    ? "Applying progression…"
+                    ? "Moving on…"
                     : isProgressed
-                      ? "Progression applied"
-                      : "Progress (settles if needed)"}
+                      ? "Moved on"
+                      : "Finish level"}
                 </button>
               </div>
             )}
@@ -563,7 +569,7 @@ export default function EvaluationWorkspace() {
       <div className="evaluation-footer-note">
         <Code2 size={17} />
         <span>
-          Round status, timer, result, wallet, and level update as the organizer records them.
+          Round, timer, result, money, and level change as you record them.
         </span>
       </div>
     </div>

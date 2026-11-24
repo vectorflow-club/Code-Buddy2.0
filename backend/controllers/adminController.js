@@ -41,14 +41,14 @@ const resolveOrganizerLocation = (value) => {
 const validateVolunteerRow = (row) => {
   const name = typeof row?.name === 'string' ? row.name.trim() : '';
   if (name.length < 2) {
-    return { ok: false, code: 'INVALID_NAME', message: 'Organizer name must be at least 2 characters long.' };
+    return { ok: false, code: 'INVALID_NAME', message: 'Organizer name needs at least 2 letters.' };
   }
   const username = typeof row?.username === 'string' ? row.username.trim().toLowerCase() : '';
   if (username.length < 3) {
-    return { ok: false, code: 'INVALID_USERNAME', message: 'Username must be at least 3 characters long.' };
+    return { ok: false, code: 'INVALID_USERNAME', message: 'Username needs at least 3 letters.' };
   }
   if (!USERNAME_REGEX.test(username)) {
-    return { ok: false, code: 'INVALID_USERNAME_FORMAT', message: 'Username can only contain alphanumeric characters, underscores, dots, and hyphens.' };
+    return { ok: false, code: 'INVALID_USERNAME_FORMAT', message: 'Username can only have letters, numbers, _, . and -.' };
   }
   if (!row || typeof row.password !== 'string' || row.password.length === 0) {
     return { ok: false, code: 'WEAK_PASSWORD', message: 'Password is required.' };
@@ -99,7 +99,7 @@ const adminLogin = async (req, res) => {
       return res.status(403).json({
         success: false,
         code: 'ACCOUNT_DEACTIVATED',
-        message: 'Admin account has been deactivated.',
+        message: 'Admin account is switched off.',
       });
     }
 
@@ -116,7 +116,7 @@ const adminLogin = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Admin signed in successfully.',
+      message: 'Admin signed in.',
       token,
       admin: formatAdminResponse(admin),
     });
@@ -125,7 +125,7 @@ const adminLogin = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'An internal error occurred during admin login.',
+      message: 'Something went wrong while signing in. Please try again.',
     });
   }
 };
@@ -146,7 +146,7 @@ const getAdminMe = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_ERROR',
-      message: 'Failed to retrieve admin profile.',
+      message: 'Could not load the admin profile.',
     });
   }
 };
@@ -166,7 +166,7 @@ const createVolunteer = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'UNSUPPORTED_FIELDS',
-        message: `Request contains unsupported fields: ${extraFields.join(', ')}.`,
+        message: `This request has fields we do not use: ${extraFields.join(', ')}.`,
       });
     }
 
@@ -186,7 +186,7 @@ const createVolunteer = async (req, res) => {
       return res.status(409).json({
         success: false,
         code: 'DUPLICATE_USERNAME',
-        message: 'A staff account with this username already exists.',
+        message: 'An account with this username already exists.',
       });
     }
 
@@ -207,7 +207,7 @@ const createVolunteer = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Organizer account created successfully.',
+      message: 'Organizer account added.',
       volunteer: formatVolunteerResponse(volunteer),
     });
   } catch (error) {
@@ -216,13 +216,13 @@ const createVolunteer = async (req, res) => {
       return res.status(409).json({
         success: false,
         code: 'DUPLICATE_USERNAME',
-        message: 'A staff account with this username already exists.',
+        message: 'An account with this username already exists.',
       });
     }
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to create organizer account.',
+      message: 'Could not add the organizer account.',
     });
   }
 };
@@ -245,7 +245,7 @@ const createVolunteersBulk = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_BULK_PAYLOAD',
-        message: 'Provide a non-empty organizers array.',
+        message: 'Give at least one organizer.',
       });
     }
     if (rows.length > MAX_BULK_VOLUNTEERS) {
@@ -283,7 +283,7 @@ const createVolunteersBulk = async (req, res) => {
           index,
           username,
           status: 'skipped',
-          reason: 'A staff account with this username already exists.',
+          reason: 'An account with this username already exists.',
         });
         continue;
       }
@@ -308,7 +308,7 @@ const createVolunteersBulk = async (req, res) => {
             index,
             username,
             status: 'skipped',
-            reason: 'A staff account with this username already exists.',
+            reason: 'An account with this username already exists.',
           });
         } else {
           throw saveError;
@@ -327,7 +327,7 @@ const createVolunteersBulk = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to add organizers in bulk.',
+      message: 'Could not add the organizers.',
     });
   }
 };
@@ -367,7 +367,7 @@ const listVolunteers = async (req, res) => {
         return res.status(400).json({
           success: false,
           code: 'INVALID_SEARCH_QUERY',
-          message: 'Search query must be a string.',
+          message: 'Search words must be text.',
         });
       }
       const trimmedSearch = query.search.trim();
@@ -375,7 +375,7 @@ const listVolunteers = async (req, res) => {
         return res.status(400).json({
           success: false,
           code: 'INVALID_SEARCH_QUERY',
-          message: 'Search query must not exceed 100 characters.',
+          message: 'Search words must be 100 letters or less.',
         });
       }
       if (trimmedSearch !== '') {
@@ -436,7 +436,7 @@ const listVolunteers = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to retrieve organizers list.',
+      message: 'Could not load the organizer list.',
     });
   }
 };
@@ -454,7 +454,7 @@ const getVolunteerById = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_ID',
-        message: 'Invalid organizer ID format.',
+        message: 'That organizer ID does not look right.',
       });
     }
 
@@ -464,7 +464,7 @@ const getVolunteerById = async (req, res) => {
       return res.status(404).json({
         success: false,
         code: 'VOLUNTEER_NOT_FOUND',
-        message: 'Organizer account not found.',
+        message: 'No organizer account with that ID.',
       });
     }
 
@@ -477,7 +477,7 @@ const getVolunteerById = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to retrieve organizer details.',
+      message: 'Could not load the organizer details.',
     });
   }
 };
@@ -495,7 +495,7 @@ const deactivateVolunteer = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_ID',
-        message: 'Invalid organizer ID format.',
+        message: 'That organizer ID does not look right.',
       });
     }
 
@@ -505,7 +505,7 @@ const deactivateVolunteer = async (req, res) => {
       return res.status(404).json({
         success: false,
         code: 'VOLUNTEER_NOT_FOUND',
-        message: 'Organizer account not found.',
+        message: 'No organizer account with that ID.',
       });
     }
 
@@ -514,7 +514,7 @@ const deactivateVolunteer = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Organizer account deactivated successfully.',
+      message: 'Organizer account switched off.',
       volunteer: formatVolunteerResponse(volunteer),
     });
   } catch (error) {
@@ -522,7 +522,7 @@ const deactivateVolunteer = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to deactivate organizer account.',
+      message: 'Could not switch off the organizer account.',
     });
   }
 };
@@ -540,7 +540,7 @@ const reactivateVolunteer = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_ID',
-        message: 'Invalid organizer ID format.',
+        message: 'That organizer ID does not look right.',
       });
     }
 
@@ -550,7 +550,7 @@ const reactivateVolunteer = async (req, res) => {
       return res.status(404).json({
         success: false,
         code: 'VOLUNTEER_NOT_FOUND',
-        message: 'Organizer account not found.',
+        message: 'No organizer account with that ID.',
       });
     }
 
@@ -559,7 +559,7 @@ const reactivateVolunteer = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Organizer account reactivated successfully.',
+      message: 'Organizer account switched on.',
       volunteer: formatVolunteerResponse(volunteer),
     });
   } catch (error) {
@@ -567,7 +567,7 @@ const reactivateVolunteer = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to reactivate organizer account.',
+      message: 'Could not switch on the organizer account.',
     });
   }
 };
@@ -590,7 +590,7 @@ const deleteVolunteer = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_ID',
-        message: 'Invalid organizer ID format.',
+        message: 'That organizer ID does not look right.',
       });
     }
 
@@ -600,7 +600,7 @@ const deleteVolunteer = async (req, res) => {
       return res.status(404).json({
         success: false,
         code: 'VOLUNTEER_NOT_FOUND',
-        message: 'Organizer account not found.',
+        message: 'No organizer account with that ID.',
       });
     }
 
@@ -619,7 +619,7 @@ const deleteVolunteer = async (req, res) => {
       return res.status(409).json({
         success: false,
         code: 'VOLUNTEER_HAS_LINKED_RECORDS',
-        message: `Cannot delete this organizer: ${linkedCount} competition record(s) still reference this account. Deactivate the account instead.`,
+        message: `Cannot delete this organizer: ${linkedCount} competition record(s) still use this account. Switch the account off instead.`,
       });
     }
 
@@ -627,14 +627,14 @@ const deleteVolunteer = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Organizer account deleted permanently.',
+      message: 'Organizer account deleted for good.',
     });
   } catch (error) {
     console.error('Delete volunteer error:', error.message);
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to delete organizer account.',
+      message: 'Could not delete the organizer account.',
     });
   }
 };
@@ -651,7 +651,7 @@ const resolveVolunteerMutationTarget = async (req, allowedFields) => {
       error: {
         status: 400,
         code: 'INVALID_ID',
-        message: 'Invalid organizer ID format.',
+        message: 'That organizer ID does not look right.',
       },
     };
   }
@@ -662,7 +662,7 @@ const resolveVolunteerMutationTarget = async (req, allowedFields) => {
       error: {
         status: 400,
         code: 'INVALID_PAYLOAD',
-        message: 'Request body must be a JSON object.',
+        message: 'The request must be a list of details.',
       },
     };
   }
@@ -674,7 +674,7 @@ const resolveVolunteerMutationTarget = async (req, allowedFields) => {
       error: {
         status: 400,
         code: 'UNSUPPORTED_FIELDS',
-        message: `Request contains unsupported fields: ${extraFields.join(', ')}.`,
+        message: `This request has fields we do not use: ${extraFields.join(', ')}.`,
       },
     };
   }
@@ -685,7 +685,7 @@ const resolveVolunteerMutationTarget = async (req, allowedFields) => {
       error: {
         status: 404,
         code: 'VOLUNTEER_NOT_FOUND',
-        message: 'Organizer account not found.',
+        message: 'No organizer account with that ID.',
       },
     };
   }
@@ -723,7 +723,7 @@ const updateVolunteer = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_NAME',
-        message: 'Organizer name must be at least 2 characters long.',
+        message: 'Organizer name needs at least 2 letters.',
       });
     }
 
@@ -749,7 +749,7 @@ const updateVolunteer = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Organizer details updated successfully.',
+      message: 'Organizer details saved.',
       volunteer: formatVolunteerResponse(volunteer),
     });
   } catch (error) {
@@ -757,7 +757,7 @@ const updateVolunteer = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to update organizer details.',
+      message: 'Could not save the organizer details.',
     });
   }
 };
@@ -801,7 +801,7 @@ const resetVolunteerPassword = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'WEAK_PASSWORD',
-        message: 'Password cannot be blank.',
+        message: 'Password cannot be empty.',
       });
     }
 
@@ -811,7 +811,7 @@ const resetVolunteerPassword = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Organizer password reset successfully.',
+      message: 'Organizer password changed.',
       volunteer: formatVolunteerResponse(volunteer),
     });
   } catch (error) {
@@ -819,7 +819,7 @@ const resetVolunteerPassword = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to reset organizer password.',
+      message: 'Could not change the organizer password.',
     });
   }
 };

@@ -26,7 +26,7 @@ const studentSchema = new mongoose.Schema(
         validator: function (value) {
           return /^[^\s@]+@vvce\.ac\.in$/i.test(value);
         },
-        message: (props) => `${props.value} is not a valid VVCE college email address (@vvce.ac.in)`,
+        message: (props) => `${props.value} is not a VVCE college email (@vvce.ac.in)`,
       },
     },
     emailVerified: {
@@ -37,7 +37,7 @@ const studentSchema = new mongoose.Schema(
       type: String,
       enum: {
         values: ['STUDENT'],
-        message: '{VALUE} is not a valid student role',
+        message: '{VALUE} is not a valid role',
       },
       default: 'STUDENT',
       required: [true, 'Role is required'],
@@ -60,14 +60,14 @@ const studentSchema = new mongoose.Schema(
           if (!value) return true; // Handled by conditional required validator above
           return USN_REGEX.test(value);
         },
-        message: (props) => `${props.value} is not a valid USN format (alphanumeric, 8-15 characters)`,
+        message: (props) => `${props.value} is not a USN (8-15 letters or numbers)`,
       },
     },
     year: {
       type: String,
       enum: {
         values: ACADEMIC_YEARS,
-        message: '{VALUE} is not a valid academic year',
+        message: '{VALUE} is not a valid year of study',
       },
       trim: true,
       default: null,
@@ -91,7 +91,7 @@ const studentSchema = new mongoose.Schema(
       type: String,
       enum: {
         values: ORGANIZER_LOCATIONS,
-        message: '{VALUE} is not a valid event location',
+        message: '{VALUE} is not a valid spot',
       },
       trim: true,
       default: null,
@@ -122,7 +122,7 @@ const studentSchema = new mongoose.Schema(
         // between levels and keep the balance. It is terminal like
         // 'eliminated'/'completed' but is neither a fail nor a full clear.
         values: ['registered', 'inProgress', 'cleared', 'eliminated', 'completed', 'stopped'],
-        message: '{VALUE} is not a valid competition status',
+        message: '{VALUE} is not a valid status',
       },
       default: 'registered',
       index: true,
@@ -141,7 +141,7 @@ const studentSchema = new mongoose.Schema(
           'stopped',
           'insufficientBalance',
         ],
-        message: '{VALUE} is not a valid round availability state',
+        message: '{VALUE} is not a valid round state',
       },
       default: 'ready',
     },

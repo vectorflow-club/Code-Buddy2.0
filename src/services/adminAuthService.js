@@ -19,13 +19,13 @@ const adminAuth = createStaffAuthService({
     MISSING_CREDENTIALS: "Please enter your username and password.",
     INVALID_CREDENTIALS: "Invalid username or password.",
     ACCOUNT_DEACTIVATED:
-      "This admin account is deactivated. Contact the event team.",
+      "This admin account is switched off. Contact the event team.",
   },
   loginFailedMessage: "The login could not be completed. Please try again.",
   loginInvalidMessage: "The login reply was not understood. Please try again.",
   validateProfileOnLogin: true,
   sessionExpiredMessage:
-    "Your admin session is invalid or has expired. Please sign in again.",
+    "Your admin sign-in ran out. Please sign in again.",
   sessionRetryMessage: "The admin session could not be checked. Please try again.",
   sessionInvalidMessage:
     "The admin session reply was not understood. Please sign in again.",

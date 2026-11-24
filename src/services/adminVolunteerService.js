@@ -12,17 +12,17 @@ export class AdminVolunteerApiError extends Error {
 
 const adminRequest = createAdminRequest({
   makeError: (message, meta) => new AdminVolunteerApiError(message, meta),
-  sessionMessage: "Your admin session is missing. Please sign in again.",
+  sessionMessage: "Your admin sign-in is missing. Please sign in again.",
   configMessage:
     "The admin side is not set up. Please check the site settings and try again.",
   networkMessage: "Could not reach the site. Check your connection and try again.",
-  unauthorizedMessage: "Your admin session is no longer authorized. Please sign in again.",
-  failureMessage: (status) => `The organizer request failed (HTTP ${status}). Please try again.`,
+  unauthorizedMessage: "Your admin sign-in ran out. Please sign in again.",
+  failureMessage: (status) => `The organizer change did not work (error ${status}). Please try again.`,
 });
 
 function validateVolunteer(payload, context = "organizer response") {
   if (!payload?.volunteer || typeof payload.volunteer !== "object" || Array.isArray(payload.volunteer)) {
-    throw new AdminVolunteerApiError(`The ${context} is missing valid organizer data.`, {
+    throw new AdminVolunteerApiError(`The ${context} came back incomplete.`, {
       kind: "response",
     });
   }
@@ -32,7 +32,7 @@ function validateVolunteer(payload, context = "organizer response") {
 export async function getAdminVolunteers() {
   const result = await adminRequest("/api/admin/volunteers");
   if (!Array.isArray(result.volunteers)) {
-    throw new AdminVolunteerApiError("The organizer list response is missing a valid organizers array.", {
+    throw new AdminVolunteerApiError("The organizer list reply came back incomplete.", {
       kind: "response",
     });
   }
@@ -91,7 +91,7 @@ export async function bulkCreateAdminVolunteers(volunteers) {
     body: { volunteers },
   });
   if (!Array.isArray(payload.results) || typeof payload.summary !== "object" || payload.summary === null) {
-    throw new AdminVolunteerApiError("The bulk add response is missing per-row results.", {
+    throw new AdminVolunteerApiError("The bulk add reply came back incomplete.", {
       kind: "response",
     });
   }

@@ -16,7 +16,7 @@ const parseLeaderboardFilters = (query = {}) => {
         error: {
           status: 400,
           code: 'INVALID_COMPETITION_STATUS',
-          message: `Query parameter 'competitionStatus' must be one of: ${ALLOWED_COMPETITION_STATUSES.join(', ')}.`,
+          message: `'competitionStatus' must be one of: ${ALLOWED_COMPETITION_STATUSES.join(', ')}.`,
         },
       };
     }
@@ -26,7 +26,7 @@ const parseLeaderboardFilters = (query = {}) => {
         error: {
           status: 400,
           code: 'INVALID_COMPETITION_STATUS',
-          message: `Invalid competitionStatus filter '${normalizedStatus}'. Allowed values: ${ALLOWED_COMPETITION_STATUSES.join(', ')}.`,
+          message: `'${normalizedStatus}' is not a valid status. Use one of: ${ALLOWED_COMPETITION_STATUSES.join(', ')}.`,
         },
       };
     }
@@ -39,7 +39,7 @@ const parseLeaderboardFilters = (query = {}) => {
         error: {
           status: 400,
           code: 'INVALID_YEAR_FILTER',
-          message: `Query parameter 'year' must be one of: ${ACADEMIC_YEARS.join(', ')}.`,
+          message: `'year' must be one of: ${ACADEMIC_YEARS.join(', ')}.`,
         },
       };
     }
@@ -49,7 +49,7 @@ const parseLeaderboardFilters = (query = {}) => {
         error: {
           status: 400,
           code: 'INVALID_YEAR_FILTER',
-          message: `Invalid year filter '${normalizedYear}'. Allowed values: ${ACADEMIC_YEARS.join(', ')}.`,
+          message: `'${normalizedYear}' is not a valid year. Use one of: ${ACADEMIC_YEARS.join(', ')}.`,
         },
       };
     }
@@ -545,7 +545,7 @@ const getLeaderboard = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Leaderboard retrieved successfully.',
+      message: 'Leaderboard loaded.',
       summary,
       records,
       myRank,
@@ -558,7 +558,7 @@ const getLeaderboard = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to retrieve leaderboard.',
+      message: 'Could not load the leaderboard.',
     });
   }
 };
@@ -577,7 +577,7 @@ const getCompetitionRecords = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Competition records retrieved successfully.',
+      message: 'Records loaded.',
       summary,
       highestRoundReached,
       highestCumulativeEarnings,
@@ -587,7 +587,7 @@ const getCompetitionRecords = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to retrieve competition records.',
+      message: 'Could not load the records.',
     });
   }
 };
@@ -608,7 +608,7 @@ const getMyLeaderboardRank = async (req, res) => {
     if (!student.registrationComplete) {
       return res.status(200).json({
         success: true,
-        message: 'Participant rank retrieved successfully.',
+        message: 'Your place loaded.',
         totalParticipants,
         participant: null,
       });
@@ -619,7 +619,7 @@ const getMyLeaderboardRank = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Participant rank retrieved successfully.',
+      message: 'Your place loaded.',
       totalParticipants,
       participant: myEntry ? formatPublicLeaderboardEntry(myEntry, studentIdStr) : null,
     });
@@ -628,7 +628,7 @@ const getMyLeaderboardRank = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to retrieve participant rank.',
+      message: 'Could not load your place.',
     });
   }
 };

@@ -47,7 +47,7 @@ const startStudentRoundByUsn = async (req, res) => {
       return res.status(404).json({
         success: false,
         code: 'ROUND_NOT_ALLOCATED',
-        message: `Student ${normalizedUsn} does not have an allocated round for Level ${currentLevel}.`,
+        message: `Student ${normalizedUsn} has no round for Level ${currentLevel} yet.`,
       });
     }
 
@@ -61,7 +61,7 @@ const startStudentRoundByUsn = async (req, res) => {
       return res.status(404).json({
         success: false,
         code: 'LEVEL_NOT_FOUND',
-        message: `Active level configuration for Level ${currentLevel} was not found.`,
+        message: `Level ${currentLevel} settings were not found.`,
       });
     }
 
@@ -73,7 +73,7 @@ const startStudentRoundByUsn = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_ROUND_DURATION',
-        message: 'Authoritative level duration must be at least 10 seconds.',
+        message: 'Level time must be at least 10 seconds.',
       });
     }
 
@@ -106,7 +106,7 @@ const startStudentRoundByUsn = async (req, res) => {
         return res.status(404).json({
           success: false,
           code: 'ROUND_NOT_ALLOCATED',
-          message: `Round for Level ${currentLevel} no longer exists.`,
+          message: `Round for Level ${currentLevel} is gone.`,
         });
       }
       return res.status(409).json(buildRoundStartConflict(latestRound.status, currentLevel));
@@ -114,7 +114,7 @@ const startStudentRoundByUsn = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Round started successfully.',
+      message: 'Round started.',
       student: formatStudentVolunteerResponse(student, startedRound),
       round: {
         ...formatRoundVolunteerResponse(startedRound),
@@ -132,7 +132,7 @@ const startStudentRoundByUsn = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to start student round.',
+      message: 'Could not start the round.',
     });
   }
 };
@@ -154,7 +154,7 @@ const parseExtensionPayload = (body) => {
       error: {
         status: 400,
         code: 'INVALID_EXTENSION_SECONDS',
-        message: 'extensionSeconds is required and must be a positive integer.',
+        message: 'Extra seconds are needed, as a whole number above 0.',
       },
     };
   }
@@ -167,7 +167,7 @@ const parseExtensionPayload = (body) => {
       error: {
         status: 400,
         code: 'INVALID_EXTENSION_SECONDS',
-        message: 'extensionSeconds must be a positive integer greater than 0.',
+        message: 'Extra seconds must be a whole number above 0.',
       },
     };
   }
@@ -177,7 +177,7 @@ const parseExtensionPayload = (body) => {
       error: {
         status: 400,
         code: 'INVALID_EXTENSION_REASON',
-        message: 'Extension reason must be a string.',
+        message: 'Reason must be text.',
       },
     };
   }
@@ -196,13 +196,13 @@ const buildExtensionIneligibleResponse = (status, currentLevel) => {
     return {
       status: 409,
       code: 'ROUND_TIMER_EXPIRED',
-      message: `Cannot extend round for Level ${currentLevel} because the timer has already expired.`,
+      message: `Cannot add time to Level ${currentLevel}: time is already up.`,
     };
   }
   return {
     status: 409,
     code: 'INVALID_ROUND_STATUS',
-    message: `Cannot extend round with status '${status}'. Only 'inProgress' rounds can be extended.`,
+    message: `Cannot add time to a round that is '${status}'. Only rounds in progress can get more time.`,
   };
 };
 
@@ -245,7 +245,7 @@ const extendStudentRoundByUsn = async (req, res) => {
       return res.status(404).json({
         success: false,
         code: 'ROUND_NOT_ALLOCATED',
-        message: `Student ${normalizedUsn} does not have an allocated round for Level ${currentLevel}.`,
+        message: `Student ${normalizedUsn} has no round for Level ${currentLevel} yet.`,
       });
     }
 
@@ -292,7 +292,7 @@ const extendStudentRoundByUsn = async (req, res) => {
         return res.status(400).json({
           success: false,
           code: 'INVALID_EXTENSION_SECONDS',
-          message: 'Requested extension produces an invalid deadline timestamp.',
+          message: 'That extra time gives a wrong end time.',
         });
       }
 
@@ -334,7 +334,7 @@ const extendStudentRoundByUsn = async (req, res) => {
         return res.status(404).json({
           success: false,
           code: 'ROUND_NOT_ALLOCATED',
-          message: `Round for Level ${currentLevel} no longer exists.`,
+          message: `Round for Level ${currentLevel} is gone.`,
         });
       }
       candidateRound = refreshedRound;
@@ -344,7 +344,7 @@ const extendStudentRoundByUsn = async (req, res) => {
       return res.status(409).json({
         success: false,
         code: 'EXTENSION_CONFLICT',
-        message: 'Could not apply timer extension due to concurrent modifications. Please retry.',
+        message: 'Someone else changed the round at the same time. Please try again.',
       });
     }
 
@@ -352,7 +352,7 @@ const extendStudentRoundByUsn = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: `Round deadline extended by ${parsedExtensionSeconds} seconds.`,
+      message: `Round end time moved ${parsedExtensionSeconds} seconds later.`,
       extensionSeconds: parsedExtensionSeconds,
       student: formatStudentVolunteerResponse(student, extendedRound),
       round: {
@@ -379,7 +379,7 @@ const extendStudentRoundByUsn = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to extend round timer.',
+      message: 'Could not add more time.',
     });
   }
 };
@@ -398,7 +398,7 @@ const parseEvaluationPayload = (body) => {
       error: {
         status: 400,
         code: 'UNSUPPORTED_FIELDS',
-        message: `Request contains unsupported fields: ${extraFields.join(', ')}.`,
+        message: `This request has fields we do not use: ${extraFields.join(', ')}.`,
       },
     };
   }
@@ -431,7 +431,7 @@ const parseEvaluationPayload = (body) => {
       error: {
         status: 400,
         code: 'INVALID_REMARKS',
-        message: 'Remarks must be a string.',
+        message: 'Note must be text.',
       },
     };
   }
@@ -442,7 +442,7 @@ const parseEvaluationPayload = (body) => {
       error: {
         status: 400,
         code: 'INVALID_REMARKS',
-        message: 'Remarks cannot exceed 1000 characters.',
+        message: 'Note must be 1000 letters or less.',
       },
     };
   }
@@ -452,7 +452,7 @@ const parseEvaluationPayload = (body) => {
       error: {
         status: 400,
         code: 'INVALID_PROGRAMMING_LANGUAGE',
-        message: 'Programming language must be a string.',
+        message: 'Programming language must be text.',
       },
     };
   }
@@ -463,7 +463,7 @@ const parseEvaluationPayload = (body) => {
       error: {
         status: 400,
         code: 'INVALID_PROGRAMMING_LANGUAGE',
-        message: 'Programming language cannot exceed 50 characters.',
+        message: 'Programming language must be 50 letters or less.',
       },
     };
   }
@@ -517,7 +517,7 @@ const evaluateStudentRoundByUsn = async (req, res) => {
       return res.status(404).json({
         success: false,
         code: 'ROUND_NOT_ALLOCATED',
-        message: `Student ${normalizedUsn} does not have an allocated round for Level ${currentLevel}.`,
+        message: `Student ${normalizedUsn} has no round for Level ${currentLevel} yet.`,
       });
     }
 
@@ -525,7 +525,7 @@ const evaluateStudentRoundByUsn = async (req, res) => {
       return res.status(409).json({
         success: false,
         code: 'ROUND_ALREADY_EVALUATED',
-        message: `Round for Level ${currentLevel} has already been evaluated.`,
+        message: `Round for Level ${currentLevel} already has a result.`,
       });
     }
 
@@ -549,7 +549,7 @@ const evaluateStudentRoundByUsn = async (req, res) => {
         code: targetRound.status === 'evaluated' ? 'ROUND_ALREADY_EVALUATED' : 'INVALID_ROUND_STATUS',
         message:
           targetRound.status === 'evaluated'
-            ? `Round for Level ${currentLevel} has already been evaluated.`
+            ? `Round for Level ${currentLevel} already has a result.`
             : `Cannot evaluate round with status '${targetRound.status}'. Only 'inProgress' or 'timeExpired' rounds may be evaluated.`,
       });
     }
@@ -559,7 +559,7 @@ const evaluateStudentRoundByUsn = async (req, res) => {
       return res.status(409).json({
         success: false,
         code: 'ROUND_ALREADY_EVALUATED',
-        message: `Round for Level ${currentLevel} has already been evaluated.`,
+        message: `Round for Level ${currentLevel} already has a result.`,
       });
     }
 
@@ -591,7 +591,7 @@ const evaluateStudentRoundByUsn = async (req, res) => {
         code: latestStatus === 'evaluated' ? 'ROUND_ALREADY_EVALUATED' : 'INVALID_ROUND_STATUS',
         message:
           latestStatus === 'evaluated'
-            ? `Round for Level ${currentLevel} has already been evaluated.`
+            ? `Round for Level ${currentLevel} already has a result.`
             : `Cannot evaluate round with current status '${latestStatus}'.`,
       });
     }
@@ -617,7 +617,7 @@ const evaluateStudentRoundByUsn = async (req, res) => {
         return res.status(409).json({
           success: false,
           code: 'ROUND_ALREADY_EVALUATED',
-          message: `Round for Level ${currentLevel} has already been evaluated.`,
+          message: `Round for Level ${currentLevel} already has a result.`,
         });
       }
 
@@ -630,7 +630,7 @@ const evaluateStudentRoundByUsn = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: `Round evaluated as ${normalizedResult}.`,
+      message: `Round marked ${normalizedResult === 'PASS' ? 'correct' : 'not correct'}.`,
       evaluation: formatEvaluationResponse(savedEvaluation),
       student: formatStudentVolunteerResponse(student, evaluatedRound),
       round: {
@@ -649,7 +649,7 @@ const evaluateStudentRoundByUsn = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to evaluate student round.',
+      message: 'Could not give a result for the round.',
     });
   }
 };

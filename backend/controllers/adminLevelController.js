@@ -160,7 +160,7 @@ const validateLevelUpdatePayload = (body) => {
       error: {
         status: 400,
         code: 'EMPTY_UPDATE_PAYLOAD',
-        message: 'At least one allowed level configuration field must be provided.',
+        message: 'Give at least one level setting to change.',
       },
     };
   }
@@ -170,7 +170,7 @@ const validateLevelUpdatePayload = (body) => {
       error: {
         status: 400,
         code: 'IMMUTABLE_LEVEL_NUMBER',
-        message: 'Level number is immutable and cannot be modified.',
+        message: 'Level number cannot be changed.',
       },
     };
   }
@@ -181,7 +181,7 @@ const validateLevelUpdatePayload = (body) => {
       error: {
         status: 400,
         code: 'UNSUPPORTED_FIELDS',
-        message: `Unsupported field(s): ${unsupportedKeys.join(', ')}. Allowed fields: ${Array.from(ALLOWED_UPDATE_FIELDS).join(', ')}.`,
+        message: `Fields we do not use: ${unsupportedKeys.join(', ')}. You can change: ${Array.from(ALLOWED_UPDATE_FIELDS).join(', ')}.`,
       },
     };
   }
@@ -194,7 +194,7 @@ const validateLevelUpdatePayload = (body) => {
         error: {
           status: 400,
           code: 'INVALID_LEVEL_NAME',
-          message: 'Level name must be a non-empty string.',
+          message: 'Level name cannot be empty.',
         },
       };
     }
@@ -208,7 +208,7 @@ const validateLevelUpdatePayload = (body) => {
         error: {
           status: 400,
           code: 'INVALID_FIELD_TYPE',
-          message: 'durationSeconds must be a finite number.',
+          message: 'Time must be a number of seconds.',
         },
       };
     }
@@ -217,7 +217,7 @@ const validateLevelUpdatePayload = (body) => {
         error: {
           status: 400,
           code: 'INVALID_DURATION_SECONDS',
-          message: 'durationSeconds must be at least 10 seconds.',
+          message: 'Time must be at least 10 seconds.',
         },
       };
     }
@@ -232,7 +232,7 @@ const validateLevelUpdatePayload = (body) => {
           error: {
             status: 400,
             code: 'INVALID_FIELD_TYPE',
-            message: `${field} must be a finite number.`,
+            message: `${field} must be a number.`,
           },
         };
       }
@@ -257,7 +257,7 @@ const validateLevelUpdatePayload = (body) => {
           error: {
             status: 400,
             code: 'INVALID_FIELD_TYPE',
-            message: `${field} must be a boolean.`,
+            message: `${field} must be true or false.`,
           },
         };
       }
@@ -293,13 +293,13 @@ const listLevels = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Competition levels retrieved successfully.',
+      message: 'Levels loaded.',
       totalLevels: levels.length,
       levels,
     });
   } catch (error) {
     console.error('Admin list levels error:', error.message);
-    return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Failed to retrieve competition levels.');
+    return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Could not load the levels.');
   }
 };
 
@@ -327,7 +327,7 @@ const updateLevel = async (req, res) => {
         res,
         404,
         'LEVEL_NOT_FOUND',
-        `Level ${levelNumber} configuration was not found.`
+        `Level ${levelNumber} settings were not found.`
       );
     }
 
@@ -381,12 +381,12 @@ const updateLevel = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: `Level ${levelNumber} configuration updated successfully.`,
+      message: `Level ${levelNumber} saved.`,
       level: formatAdminLevelResponse(level, usageFlags),
     });
   } catch (error) {
     console.error('Admin update level error:', error.message);
-    return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Failed to update level configuration.');
+    return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Could not save the level.');
   }
 };
 
@@ -408,7 +408,7 @@ const activateLevel = async (req, res) => {
         res,
         404,
         'LEVEL_NOT_FOUND',
-        `Level ${levelNumber} configuration was not found.`
+        `Level ${levelNumber} settings were not found.`
       );
     }
 
@@ -419,12 +419,12 @@ const activateLevel = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: `Level ${levelNumber} activated successfully.`,
+      message: `Level ${levelNumber} switched on.`,
       level: formatAdminLevelResponse(level, usageFlags),
     });
   } catch (error) {
     console.error('Admin activate level error:', error.message);
-    return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Failed to activate level.');
+    return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Could not switch on the level.');
   }
 };
 
@@ -446,7 +446,7 @@ const deactivateLevel = async (req, res) => {
         res,
         404,
         'LEVEL_NOT_FOUND',
-        `Level ${levelNumber} configuration was not found.`
+        `Level ${levelNumber} settings were not found.`
       );
     }
 
@@ -505,12 +505,12 @@ const deactivateLevel = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: `Level ${levelNumber} deactivated successfully.`,
+      message: `Level ${levelNumber} switched off.`,
       level: formatAdminLevelResponse(level, usageFlags),
     });
   } catch (error) {
     console.error('Admin deactivate level error:', error.message);
-    return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Failed to deactivate level.');
+    return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Could not switch off the level.');
   }
 };
 

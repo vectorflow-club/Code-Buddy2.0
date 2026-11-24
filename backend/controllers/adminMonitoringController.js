@@ -57,7 +57,7 @@ const parseSafePagination = (query = {}) => {
       error: {
         status: 400,
         code: 'INVALID_QUERY_PARAMETER',
-        message: 'Malformed or nested query parameters are not permitted.',
+        message: 'The search details are not in the right shape.',
       },
     };
   }
@@ -82,7 +82,7 @@ const validateEnumFilter = (
       error: {
         status: 400,
         code,
-        message: `${label} filter must be a string.`,
+        message: `${label} must be text.`,
       },
     };
   }
@@ -94,7 +94,7 @@ const validateEnumFilter = (
       error: {
         status: 400,
         code,
-        message: `${label} filter must be one of: ${Array.from(validSet).join(', ')}.`,
+        message: `${label} must be one of: ${Array.from(validSet).join(', ')}.`,
       },
     };
   }
@@ -111,7 +111,7 @@ const validateBooleanFilter = (rawValue, code, label) => {
       error: {
         status: 400,
         code,
-        message: `${label} filter must be either 'true' or 'false'.`,
+        message: `${label} must be true or false.`,
       },
     };
   }
@@ -122,7 +122,7 @@ const validateBooleanFilter = (rawValue, code, label) => {
       error: {
         status: 400,
         code,
-        message: `${label} filter must be either 'true' or 'false'.`,
+        message: `${label} must be true or false.`,
       },
     };
   }
@@ -139,7 +139,7 @@ const validateLevelFilter = (rawValue, paramName = 'levelNumber') => {
       error: {
         status: 400,
         code: 'INVALID_LEVEL_FILTER',
-        message: `${paramName} filter must be an integer between 1 and 6.`,
+        message: `${paramName} must be a whole number from 1 to 6.`,
       },
     };
   }
@@ -150,7 +150,7 @@ const validateLevelFilter = (rawValue, paramName = 'levelNumber') => {
       error: {
         status: 400,
         code: 'INVALID_LEVEL_FILTER',
-        message: `${paramName} filter must be an integer between 1 and 6.`,
+        message: `${paramName} must be a whole number from 1 to 6.`,
       },
     };
   }
@@ -167,7 +167,7 @@ const validateUsnFilter = (rawValue) => {
       error: {
         status: 400,
         code: 'INVALID_USN_FILTER',
-        message: 'USN filter must be an 8-15 character alphanumeric string.',
+        message: 'USN must be 8-15 letters or numbers.',
       },
     };
   }
@@ -178,7 +178,7 @@ const validateUsnFilter = (rawValue) => {
       error: {
         status: 400,
         code: 'INVALID_USN_FILTER',
-        message: 'USN filter must be an 8-15 character alphanumeric string.',
+        message: 'USN must be 8-15 letters or numbers.',
       },
     };
   }
@@ -195,7 +195,7 @@ const validateSearchQuery = (rawValue) => {
       error: {
         status: 400,
         code: 'INVALID_SEARCH_QUERY',
-        message: 'Search query must be a string.',
+        message: 'Search words must be text.',
       },
     };
   }
@@ -206,7 +206,7 @@ const validateSearchQuery = (rawValue) => {
       error: {
         status: 400,
         code: 'INVALID_SEARCH_QUERY',
-        message: `Search query must not exceed ${MAX_SEARCH_LENGTH} characters.`,
+        message: `Search words must be ${MAX_SEARCH_LENGTH} letters or less.`,
       },
     };
   }
@@ -232,7 +232,7 @@ const resolveParticipantByIdentifier = async (rawIdentifier) => {
       error: {
         status: 400,
         code: 'INVALID_PARTICIPANT_IDENTIFIER',
-        message: 'Participant identifier must be a valid student ID or USN.',
+        message: 'Give a student ID or USN.',
       },
     };
   }
@@ -243,7 +243,7 @@ const resolveParticipantByIdentifier = async (rawIdentifier) => {
       error: {
         status: 400,
         code: 'INVALID_PARTICIPANT_IDENTIFIER',
-        message: 'Participant identifier must be a valid student ID or USN.',
+        message: 'Give a student ID or USN.',
       },
     };
   }
@@ -276,7 +276,7 @@ const resolveParticipantByIdentifier = async (rawIdentifier) => {
       error: {
         status: 404,
         code: 'PARTICIPANT_NOT_FOUND',
-        message: 'Participant not found.',
+        message: 'No student found.',
       },
     };
   }
@@ -507,7 +507,7 @@ const listParticipants = async (req, res) => {
     const participantList = Array.isArray(students) ? students : [];
     return res.status(200).json({
       success: true,
-      message: 'Participants retrieved successfully.',
+      message: 'Students loaded.',
       count: participantList.length,
       pagination: buildPaginationMeta(page, limit, totalItems),
       participants: participantList.map(formatAdminParticipantSummary),
@@ -517,7 +517,7 @@ const listParticipants = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to retrieve participants.',
+      message: 'Could not load the students.',
     });
   }
 };
@@ -609,7 +609,7 @@ const getParticipantDetails = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Participant details retrieved successfully.',
+      message: 'Student details loaded.',
       participant: formatAdminParticipantSummary(student),
       wallet: {
         walletBalance: student.walletBalance ?? 0,
@@ -631,7 +631,7 @@ const getParticipantDetails = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to retrieve participant details.',
+      message: 'Could not load the student details.',
     });
   }
 };
@@ -662,7 +662,7 @@ const reopenEliminatedParticipant = async (req, res) => {
       return res.status(409).json({
         success: false,
         code: 'STUDENT_NOT_ELIMINATED',
-        message: `Participant ${student.usn || student._id} is not eliminated and cannot be re-opened.`,
+        message: `Student ${student.usn || student._id} is not out of the game and cannot be re-opened.`,
       });
     }
 
@@ -709,7 +709,7 @@ const reopenEliminatedParticipant = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: `Participant ${student.usn || student._id} re-opened at Level ${student.currentLevel}.`,
+      message: `Student ${student.usn || student._id} is back in at Level ${student.currentLevel}.`,
       participant: formatAdminParticipantSummary(updatedStudent),
       removedRoundId,
     });
@@ -725,7 +725,7 @@ const reopenEliminatedParticipant = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to re-open participant.',
+      message: 'Could not re-open the student.',
     });
   }
 };
@@ -772,7 +772,7 @@ const adjustParticipantWallet = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'MISSING_REASON',
-        message: 'A reason is required for a wallet adjustment.',
+        message: 'Give a reason for changing the money.',
       });
     }
 
@@ -781,7 +781,7 @@ const adjustParticipantWallet = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INSUFFICIENT_BALANCE',
-        message: `Adjustment of ${amount} would take the wallet balance below zero (current balance ${currentBalance}).`,
+        message: `That change would leave the money below zero (money now ${currentBalance}).`,
       });
     }
 
@@ -829,7 +829,7 @@ const adjustParticipantWallet = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: `Wallet adjusted by ${amount > 0 ? `+${amount}` : amount} for participant ${student.usn || student._id}.`,
+      message: `Money changed by ${amount > 0 ? `+${amount}` : amount} for student ${student.usn || student._id}.`,
       participant: formatAdminParticipantSummary(updatedStudent),
       transaction: formatAdminTransactionResponse(savedTransaction, updatedStudent),
       walletBalance: updatedStudent.walletBalance,
@@ -846,7 +846,7 @@ const adjustParticipantWallet = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to adjust wallet balance.',
+      message: 'Could not change the money.',
     });
   }
 };
@@ -929,7 +929,7 @@ const listRounds = async (req, res) => {
     if (empty) {
       return res.status(200).json({
         success: true,
-        message: 'Rounds retrieved successfully.',
+        message: 'Rounds loaded.',
         count: 0,
         pagination: buildPaginationMeta(page, limit, 0),
         rounds: [],
@@ -1003,7 +1003,7 @@ const listRounds = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Rounds retrieved successfully.',
+      message: 'Rounds loaded.',
       count: formattedRounds.length,
       pagination: buildPaginationMeta(page, limit, totalItems),
       rounds: formattedRounds,
@@ -1013,7 +1013,7 @@ const listRounds = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to retrieve rounds.',
+      message: 'Could not load the rounds.',
     });
   }
 };
@@ -1080,7 +1080,7 @@ const getParticipantRounds = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Participant round history retrieved successfully.',
+      message: 'Student round history loaded.',
       participant: formatAdminParticipantSummary(student),
       count: formattedRounds.length,
       pagination: buildPaginationMeta(page, limit, totalItems),
@@ -1091,7 +1091,7 @@ const getParticipantRounds = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to retrieve participant rounds.',
+      message: 'Could not load the student rounds.',
     });
   }
 };
@@ -1136,7 +1136,7 @@ const listTransactions = async (req, res) => {
     if (empty) {
       return res.status(200).json({
         success: true,
-        message: 'Transactions retrieved successfully.',
+        message: 'Money moves loaded.',
         count: 0,
         pagination: buildPaginationMeta(page, limit, 0),
         transactions: [],
@@ -1182,7 +1182,7 @@ const listTransactions = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Transactions retrieved successfully.',
+      message: 'Money moves loaded.',
       count: formattedTransactions.length,
       pagination: buildPaginationMeta(page, limit, totalItems),
       transactions: formattedTransactions,
@@ -1192,7 +1192,7 @@ const listTransactions = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to retrieve transactions.',
+      message: 'Could not load the money moves.',
     });
   }
 };
@@ -1251,7 +1251,7 @@ const getParticipantTransactions = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Participant transaction history retrieved successfully.',
+      message: 'Student money history loaded.',
       participant: formatAdminParticipantSummary(student),
       wallet: {
         walletBalance: student.walletBalance ?? 0,
@@ -1268,7 +1268,7 @@ const getParticipantTransactions = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to retrieve participant transactions.',
+      message: 'Could not load the student money moves.',
     });
   }
 };
@@ -1552,7 +1552,7 @@ const getAdminDashboard = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Admin dashboard statistics retrieved successfully.',
+      message: 'Admin numbers loaded.',
       generatedAt: new Date().toISOString(),
       dashboard: {
         participants: {
@@ -1613,7 +1613,7 @@ const getAdminDashboard = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to retrieve admin dashboard statistics.',
+      message: 'Could not load the admin numbers.',
     });
   }
 };

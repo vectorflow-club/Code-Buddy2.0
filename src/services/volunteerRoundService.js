@@ -42,7 +42,7 @@ function mapVolunteerApiError(error) {
         : status === 401 || status === 403
           ? "Your organizer session ended. Please sign in again."
           : !ok
-            ? `The round request failed (HTTP ${status}).`
+            ? `The round action did not work (error ${status}).`
             : "The reply was not understood. Please try again.";
     const kind = !isObjectPayload
       ? ok ? "invalid_response" : "http"
@@ -56,7 +56,7 @@ function mapVolunteerApiError(error) {
 
 async function volunteerRequest(usn, action = "", body) {
   const session = getVolunteerSession();
-  if (!session?.token) throw new Error("Your organizer session is missing. Please sign in again.");
+  if (!session?.token) throw new Error("Your organizer sign-in is missing. Please sign in again.");
   const suffix = action ? `/${action}` : "";
   const path = `/api/volunteer/students/${encodeURIComponent(usn)}/round${suffix}`;
 
@@ -93,7 +93,7 @@ export function getVolunteerStudentRound(usn) {
 
 export async function getVolunteerDashboard({ page = 1, limit = 20 } = {}) {
   const session = getVolunteerSession();
-  if (!session?.token) throw new Error("Your organizer session is missing. Please sign in again.");
+  if (!session?.token) throw new Error("Your organizer sign-in is missing. Please sign in again.");
 
   let payload;
   try {

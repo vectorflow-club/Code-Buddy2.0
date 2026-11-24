@@ -26,7 +26,7 @@ export default function VolunteerLayout() {
     loginPath: "/volunteer/login",
     profileKey: "volunteer",
     expiredCodes: VOLUNTEER_EXPIRED_CODES,
-    validateErrorMessage: "Could not validate the organizer session.",
+    validateErrorMessage: "We could not check the organizer sign-in.",
   });
 
   if (checking) return <div role="status" style={{ padding: 24 }}>Checking organizer session…</div>;
@@ -68,7 +68,7 @@ export default function VolunteerLayout() {
             className="vol-nav-link"
           >
             <ClipboardList size={18} />
-            <span>Evaluations</span>
+            <span>Results</span>
           </NavLink>
         </nav>
 
@@ -87,7 +87,7 @@ export default function VolunteerLayout() {
             onClick={handleLogout}
           >
             <LogOut size={17} />
-            Logout
+            Log out
           </button>
         </div>
       </aside>

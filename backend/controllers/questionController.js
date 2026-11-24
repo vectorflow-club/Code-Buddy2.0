@@ -85,7 +85,7 @@ const createQuestion = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_TITLE',
-        message: 'Question title is required and must be at least 3 characters long.',
+        message: 'Question title needs at least 3 letters.',
       });
     }
 
@@ -93,7 +93,7 @@ const createQuestion = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_STATEMENT',
-        message: 'Problem statement is required and must be at least 10 characters long.',
+        message: 'Problem needs at least 10 letters.',
       });
     }
 
@@ -102,7 +102,7 @@ const createQuestion = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_LEVEL_NUMBER',
-        message: 'Level number must be an integer between 1 and 6.',
+        message: 'Level must be a whole number from 1 to 6.',
       });
     }
 
@@ -118,7 +118,7 @@ const createQuestion = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_CONSTRAINTS',
-        message: 'Constraints must be an array of strings.',
+        message: 'Limits must be a list of lines.',
       });
     }
 
@@ -126,7 +126,7 @@ const createQuestion = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_EXAMPLES',
-        message: 'Examples must be an array of sample test cases.',
+        message: 'Examples must be a list of test cases.',
       });
     }
     for (let i = 0; i < examples.length; i++) {
@@ -135,7 +135,7 @@ const createQuestion = async (req, res) => {
         return res.status(400).json({
           success: false,
           code: 'INVALID_EXAMPLE_FORMAT',
-          message: `Example at index ${i} must contain string 'input' and 'output'.`,
+          message: `Example ${i + 1} needs text for 'input' and 'output'.`,
         });
       }
     }
@@ -144,7 +144,7 @@ const createQuestion = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_HIDDEN_TEST_CASES',
-        message: 'Hidden test cases must be an array of test cases.',
+        message: 'Hidden test cases must be a list of test cases.',
       });
     }
     for (let i = 0; i < hiddenTestCases.length; i++) {
@@ -153,7 +153,7 @@ const createQuestion = async (req, res) => {
         return res.status(400).json({
           success: false,
           code: 'INVALID_TEST_CASE_FORMAT',
-          message: `Hidden test case at index ${i} must contain string 'input' and 'expectedOutput'.`,
+          message: `Hidden test case ${i + 1} needs text for 'input' and 'expectedOutput'.`,
         });
       }
     }
@@ -162,7 +162,7 @@ const createQuestion = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_BANK_NUMBER',
-        message: 'Question number must be a string of at most 20 characters.',
+        message: 'Question number must be 20 letters or less.',
       });
     }
 
@@ -170,7 +170,7 @@ const createQuestion = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_SHOW_BANK_NUMBER',
-        message: 'showBankNumber must be a boolean.',
+        message: 'showBankNumber must be true or false.',
       });
     }
 
@@ -211,7 +211,7 @@ const createQuestion = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Question created successfully.',
+      message: 'Question added.',
       question: formatQuestionAdminResponse(question),
     });
   } catch (error) {
@@ -219,7 +219,7 @@ const createQuestion = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to create question.',
+      message: 'Could not add the question.',
     });
   }
 };
@@ -239,7 +239,7 @@ const listQuestions = async (req, res) => {
         return res.status(400).json({
           success: false,
           code: 'INVALID_FILTER_LEVEL',
-          message: 'levelNumber query filter must be an integer between 1 and 6.',
+          message: 'Level must be a whole number from 1 to 6.',
         });
       }
       filter.levelNumber = level;
@@ -284,7 +284,7 @@ const listQuestions = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to retrieve questions list.',
+      message: 'Could not load the questions.',
     });
   }
 };
@@ -302,7 +302,7 @@ const getQuestionById = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_ID',
-        message: 'Invalid question ID format.',
+        message: 'That question ID does not look right.',
       });
     }
 
@@ -327,7 +327,7 @@ const getQuestionById = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to retrieve question details.',
+      message: 'Could not load the question details.',
     });
   }
 };
@@ -350,7 +350,7 @@ const updateQuestion = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_ID',
-        message: 'Invalid question ID format.',
+        message: 'That question ID does not look right.',
       });
     }
 
@@ -373,14 +373,14 @@ const updateQuestion = async (req, res) => {
         return res.status(400).json({
           success: false,
           code: 'INVALID_LEVEL_NUMBER',
-          message: 'Level number must be an integer between 1 and 6.',
+          message: 'Level must be a whole number from 1 to 6.',
         });
       }
       if (isAssigned && newLevel !== question.levelNumber) {
         return res.status(400).json({
           success: false,
           code: 'QUESTION_ALREADY_ASSIGNED',
-          message: 'Cannot modify levelNumber because this question is already assigned in competition rounds.',
+          message: 'Cannot change the level: this question was already given in rounds.',
         });
       }
       question.levelNumber = newLevel;
@@ -399,7 +399,7 @@ const updateQuestion = async (req, res) => {
         return res.status(400).json({
           success: false,
           code: 'QUESTION_ALREADY_ASSIGNED',
-          message: 'Cannot modify difficulty because this question is already assigned in competition rounds.',
+          message: 'Cannot change the difficulty: this question was already given in rounds.',
         });
       }
       question.difficulty = newDiff;
@@ -410,7 +410,7 @@ const updateQuestion = async (req, res) => {
         return res.status(400).json({
           success: false,
           code: 'INVALID_BANK_NUMBER',
-          message: 'Question number must be a string of at most 20 characters.',
+          message: 'Question number must be 20 letters or less.',
         });
       }
       const newBankNumber = body.bankNumber.trim();
@@ -432,7 +432,7 @@ const updateQuestion = async (req, res) => {
         return res.status(400).json({
           success: false,
           code: 'INVALID_SHOW_BANK_NUMBER',
-          message: 'showBankNumber must be a boolean.',
+          message: 'showBankNumber must be true or false.',
         });
       }
       question.showBankNumber = body.showBankNumber;
@@ -443,7 +443,7 @@ const updateQuestion = async (req, res) => {
         return res.status(400).json({
           success: false,
           code: 'INVALID_TITLE',
-          message: 'Question title must be at least 3 characters long.',
+          message: 'Question title needs at least 3 letters.',
         });
       }
       question.title = body.title.trim();
@@ -454,7 +454,7 @@ const updateQuestion = async (req, res) => {
         return res.status(400).json({
           success: false,
           code: 'INVALID_STATEMENT',
-          message: 'Problem statement must be at least 10 characters long.',
+          message: 'Problem needs at least 10 letters.',
         });
       }
       question.statement = body.statement.trim();
@@ -465,7 +465,7 @@ const updateQuestion = async (req, res) => {
         return res.status(400).json({
           success: false,
           code: 'INVALID_CONSTRAINTS',
-          message: 'Constraints must be an array of strings.',
+          message: 'Limits must be a list of lines.',
         });
       }
       question.constraints = body.constraints.map((c) => c.trim());
@@ -476,7 +476,7 @@ const updateQuestion = async (req, res) => {
         return res.status(400).json({
           success: false,
           code: 'INVALID_EXAMPLES',
-          message: 'Examples must be an array of sample test cases.',
+          message: 'Examples must be a list of test cases.',
         });
       }
       for (let i = 0; i < body.examples.length; i++) {
@@ -485,7 +485,7 @@ const updateQuestion = async (req, res) => {
           return res.status(400).json({
             success: false,
             code: 'INVALID_EXAMPLE_FORMAT',
-            message: `Example at index ${i} must contain string 'input' and 'output'.`,
+            message: `Example ${i + 1} needs text for 'input' and 'output'.`,
           });
         }
       }
@@ -503,7 +503,7 @@ const updateQuestion = async (req, res) => {
         return res.status(400).json({
           success: false,
           code: 'INVALID_HIDDEN_TEST_CASES',
-          message: 'Hidden test cases must be an array.',
+          message: 'Hidden test cases must be a list.',
         });
       }
       for (let i = 0; i < body.hiddenTestCases.length; i++) {
@@ -512,7 +512,7 @@ const updateQuestion = async (req, res) => {
           return res.status(400).json({
             success: false,
             code: 'INVALID_TEST_CASE_FORMAT',
-            message: `Hidden test case at index ${i} must contain string 'input' and 'expectedOutput'.`,
+            message: `Hidden test case ${i + 1} needs text for 'input' and 'expectedOutput'.`,
           });
         }
       }
@@ -530,7 +530,7 @@ const updateQuestion = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Question updated successfully.',
+      message: 'Question saved.',
       question: formatQuestionAdminResponse(question),
       isAssigned: Boolean(isAssigned),
     });
@@ -539,7 +539,7 @@ const updateQuestion = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to update question.',
+      message: 'Could not save the question.',
     });
   }
 };
@@ -557,7 +557,7 @@ const deactivateQuestion = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_ID',
-        message: 'Invalid question ID format.',
+        message: 'That question ID does not look right.',
       });
     }
 
@@ -575,7 +575,7 @@ const deactivateQuestion = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Question deactivated successfully.',
+      message: 'Question switched off.',
       question: formatQuestionAdminResponse(question),
     });
   } catch (error) {
@@ -583,7 +583,7 @@ const deactivateQuestion = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to deactivate question.',
+      message: 'Could not switch off the question.',
     });
   }
 };
@@ -601,7 +601,7 @@ const reactivateQuestion = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_ID',
-        message: 'Invalid question ID format.',
+        message: 'That question ID does not look right.',
       });
     }
 
@@ -619,7 +619,7 @@ const reactivateQuestion = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Question reactivated successfully.',
+      message: 'Question switched on.',
       question: formatQuestionAdminResponse(question),
     });
   } catch (error) {
@@ -627,7 +627,7 @@ const reactivateQuestion = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to reactivate question.',
+      message: 'Could not switch on the question.',
     });
   }
 };
@@ -649,7 +649,7 @@ const deleteQuestion = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_ID',
-        message: 'Invalid question ID format.',
+        message: 'That question ID does not look right.',
       });
     }
 
@@ -670,7 +670,7 @@ const deleteQuestion = async (req, res) => {
       return res.status(409).json({
         success: false,
         code: 'QUESTION_HAS_ACTIVE_ROUNDS',
-        message: `Cannot delete this question because it is assigned to ${activeRoundCount} active round${activeRoundCount === 1 ? '' : 's'}.`,
+        message: `Cannot delete this question: it is used in ${activeRoundCount} round${activeRoundCount === 1 ? '' : 's'} still going.`,
       });
     }
 
@@ -678,14 +678,14 @@ const deleteQuestion = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Question deleted permanently.',
+      message: 'Question deleted for good.',
     });
   } catch (error) {
     console.error('deleteQuestion error:', error.message);
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to delete question.',
+      message: 'Could not delete the question.',
     });
   }
 };

@@ -34,7 +34,7 @@ const recoverAbandonedRound = async (req, res) => {
     return res.status(400).json({
       success: false,
       code: 'INVALID_ROUND_ID',
-      message: 'Round ID must be a valid 24-character ObjectId.',
+      message: 'Round ID must be 24 letters or numbers.',
     });
   }
 
@@ -160,7 +160,7 @@ const recoverAbandonedRound = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: `Abandoned round for Level ${recoveryOutput.round.levelNumber} recovered in place and is ready to be started again.`,
+      message: `Round for Level ${recoveryOutput.round.levelNumber} is back and ready to start again.`,
       round: formatAdminRoundResponse(recoveryOutput.round, recoveryOutput.student, null),
     });
   } catch (error) {
@@ -181,7 +181,7 @@ const recoverAbandonedRound = async (req, res) => {
       return res.status(409).json({
         success: false,
         code: 'ROUND_RECOVERY_CONFLICT',
-        message: 'Concurrent recovery conflict occurred. Please verify round status before retrying.',
+        message: 'Someone else changed this round at the same time. Check the round and try again.',
       });
     }
 
@@ -189,7 +189,7 @@ const recoverAbandonedRound = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to recover abandoned round.',
+      message: 'Could not bring the round back.',
     });
   } finally {
     await session.endSession();

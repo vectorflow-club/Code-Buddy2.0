@@ -160,7 +160,7 @@ const resolveAuthenticatedAccount = async (req, role, subjectId) => {
       error: {
         status: 403,
         code: 'FORBIDDEN_ROLE',
-        message: 'Access denied. Insufficient role authorization.',
+        message: 'Access denied. Your account cannot do this.',
       },
     };
   }
@@ -234,7 +234,7 @@ const createRoleGuard = (role) => {
         return res.status(403).json({
           success: false,
           code: 'FORBIDDEN_ROLE',
-          message: `Access denied. ${config.label} authorization required.`,
+          message: `Access denied. You need to sign in as ${config.label.toLowerCase()}.`,
         });
       }
 
@@ -287,7 +287,7 @@ const createRoleAuthorizer = (role) => {
       return res.status(403).json({
         success: false,
         code: 'FORBIDDEN_ROLE',
-        message: `Access denied. ${config.label} authorization required.`,
+        message: `Access denied. You need to sign in as ${config.label.toLowerCase()}.`,
       });
     }
     next();
@@ -334,7 +334,7 @@ const protectRoles = (...allowedRoles) => {
         return res.status(403).json({
           success: false,
           code: 'FORBIDDEN_ROLE',
-          message: 'Access denied. Insufficient role authorization.',
+          message: 'Access denied. Your account cannot do this.',
         });
       }
 

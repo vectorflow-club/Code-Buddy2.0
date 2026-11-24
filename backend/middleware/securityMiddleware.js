@@ -440,7 +440,7 @@ const createCredentialLimiterPair = ({ bucket, windowMs, accountMax, ipMax }) =>
       return `login-acct:${bucket}:${resolvedIp}:${accountHash}`;
     },
     handler: createRateLimitResponseHandler(
-      'Too many failed login attempts for this account. Please wait and try again later.'
+      'Too many failed sign-ins for this account. Please wait and try again later.'
     ),
   });
 
@@ -456,7 +456,7 @@ const createCredentialLimiterPair = ({ bucket, windowMs, accountMax, ipMax }) =>
       return `login-ip:${bucket}:${resolvedIp}`;
     },
     handler: createRateLimitResponseHandler(
-      'Too many failed login attempts from this network. Please wait and try again later.'
+      'Too many failed sign-ins from this network. Please wait and try again later.'
     ),
   });
 
@@ -537,7 +537,7 @@ const getRateLimiters = () => {
       return `api:${resolvedIp}`;
     },
     handler: createRateLimitResponseHandler(
-      'Too many requests from this network. Please wait briefly before retrying.'
+      'Too many requests from this network. Please wait a bit and try again.'
     ),
   });
 
@@ -567,7 +567,7 @@ const getRateLimiters = () => {
       return `google-auth:${resolvedIp}`;
     },
     handler: createRateLimitResponseHandler(
-      'Too many Google sign-in requests from this network. Please wait and try again shortly.'
+      'Too many Google sign-in requests from this network. Please wait a bit and try again.'
     ),
   });
 

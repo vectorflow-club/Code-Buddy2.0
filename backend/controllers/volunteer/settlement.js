@@ -432,7 +432,7 @@ const settleStudentRoundByUsn = async (req, res) => {
     return res.status(400).json({
       success: false,
       code: 'UNSUPPORTED_FIELDS',
-      message: `Settlement requests do not accept request body fields: ${bodyKeys.join(', ')}.`,
+      message: `You cannot send extra details when updating money: ${bodyKeys.join(', ')}.`,
     });
   }
 
@@ -457,7 +457,7 @@ const settleStudentRoundByUsn = async (req, res) => {
     return res.status(404).json({
       success: false,
       code: 'ROUND_NOT_ALLOCATED',
-      message: `Student ${normalizedUsn} does not have an allocated round for Level ${currentLevel}.`,
+      message: `Student ${normalizedUsn} has no round for Level ${currentLevel} yet.`,
     });
   }
 
@@ -465,7 +465,7 @@ const settleStudentRoundByUsn = async (req, res) => {
     return res.status(409).json({
       success: false,
       code: 'ROUND_NOT_EVALUATED',
-      message: `Cannot settle round with status '${existingRound.status}'. Round must be evaluated before settlement.`,
+      message: `Cannot update money for a round that is '${existingRound.status}'. Give a result first.`,
     });
   }
 
@@ -546,7 +546,7 @@ const settleStudentRoundByUsn = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: `Round wallet settled successfully (${settlementOutput.evaluation.status}).`,
+      message: `Money updated for the round (${settlementOutput.evaluation.status === 'PASS' ? 'correct' : 'not correct'}).`,
       settlement: {
         previousWalletBalance: settlementOutput.previousWalletBalance,
         targetBalance: settlementOutput.targetBalance,
@@ -572,10 +572,10 @@ const settleStudentRoundByUsn = async (req, res) => {
     return handleTxErrorResponse(res, error, {
       logPrefix: 'Error settling student round wallet',
       duplicateKeyCode: 'ROUND_ALREADY_SETTLED',
-      duplicateKeyMessage: `Round for Level ${currentLevel} has already been settled.`,
+      duplicateKeyMessage: `Money for Level ${currentLevel} is already updated.`,
       conflictCode: 'SETTLEMENT_CONFLICT',
-      conflictMessage: 'Concurrent settlement conflict occurred. Please verify round status before retrying.',
-      fallbackMessage: 'Failed to settle student round wallet.',
+      conflictMessage: 'Someone else changed this round at the same time. Check the round and try again.',
+      fallbackMessage: 'Could not update the money for the round.',
     });
   } finally {
     await session.endSession();
@@ -595,7 +595,7 @@ const progressStudentRoundByUsn = async (req, res) => {
     return res.status(400).json({
       success: false,
       code: 'UNSUPPORTED_FIELDS',
-      message: `Progression requests do not accept request body fields: ${bodyKeys.join(', ')}.`,
+      message: `You cannot send extra details when moving to the next level: ${bodyKeys.join(', ')}.`,
     });
   }
 
@@ -867,9 +867,9 @@ const progressStudentRoundByUsn = async (req, res) => {
       success: true,
       message: progressionOutput.isPass
         ? progressionOutput.isFinalLevel
-          ? 'Final level cleared. Competition completed successfully.'
-          : `Level ${progressionOutput.previousLevel} cleared. Student advanced to Level ${progressionOutput.newLevel}.`
-        : `Round failed at Level ${progressionOutput.previousLevel}. Student has been eliminated.`,
+          ? 'Final level cleared. Competition finished.'
+          : `Level ${progressionOutput.previousLevel} cleared. Student moved to Level ${progressionOutput.newLevel}.`
+        : `Round failed at Level ${progressionOutput.previousLevel}. Student is out.`,
       settlement: {
         didSettleNow: progressionOutput.didSettleNow,
         previousWalletBalance: progressionOutput.previousWalletBalance,
@@ -918,10 +918,10 @@ const progressStudentRoundByUsn = async (req, res) => {
     return handleTxErrorResponse(res, error, {
       logPrefix: 'Error progressing student round',
       duplicateKeyCode: 'ROUND_ALREADY_SETTLED',
-      duplicateKeyMessage: 'Round settlement already exists for this round.',
+      duplicateKeyMessage: 'Money for this round is already updated.',
       conflictCode: 'PROGRESSION_CONFLICT',
-      conflictMessage: 'Concurrent progression conflict occurred. Please verify round status before retrying.',
-      fallbackMessage: 'Failed to progress student round.',
+      conflictMessage: 'Someone else changed this round at the same time. Check the round and try again.',
+      fallbackMessage: 'Could not move the student on.',
     });
   } finally {
     await session.endSession();

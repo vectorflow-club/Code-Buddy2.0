@@ -16,7 +16,7 @@ const parsePaginationQuery = (query = {}) => {
         error: {
           status: 400,
           code: 'INVALID_PAGINATION',
-          message: "Query parameter 'page' must be a positive integer.",
+          message: "Page must be a whole number above 0.",
         },
       };
     }
@@ -26,7 +26,7 @@ const parsePaginationQuery = (query = {}) => {
         error: {
           status: 400,
           code: 'INVALID_PAGINATION',
-          message: "Query parameter 'page' must be at least 1.",
+          message: "Page must be 1 or more.",
         },
       };
     }
@@ -39,7 +39,7 @@ const parsePaginationQuery = (query = {}) => {
         error: {
           status: 400,
           code: 'INVALID_PAGINATION',
-          message: "Query parameter 'limit' must be a positive integer.",
+          message: "How many per page must be a whole number above 0.",
         },
       };
     }
@@ -49,7 +49,7 @@ const parsePaginationQuery = (query = {}) => {
         error: {
           status: 400,
           code: 'INVALID_PAGINATION',
-          message: `Query parameter 'limit' must be between 1 and ${MAX_LIMIT}.`,
+          message: `How many per page must be between 1 and ${MAX_LIMIT}.`,
         },
       };
     }

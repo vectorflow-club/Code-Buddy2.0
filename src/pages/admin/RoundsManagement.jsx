@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { Pagination } from "../../components/ui";
 import { useAdminList } from "../../hooks/useAdminList";
-import { formatDate } from "../../utils/formatters";
+import { evaluationStatusLabel, formatDate, roundStatusLabel } from "../../utils/formatters";
 import { getAdminRounds, recoverAdminRound } from "../../services/adminDataService";
 import "./participants.css";
 
@@ -53,7 +53,7 @@ export default function RoundsManagement() {
 
   const recoverRound = async (round) => {
     if (recoveryInFlight.current || round?.status !== "abandoned" || !round.id) return;
-    const confirmed = window.confirm("Recover this abandoned round? It will be checked for eligibility first.");
+    const confirmed = window.confirm("Bring this round back? It will be checked first.");
     if (!confirmed) return;
 
     recoveryInFlight.current = true;
@@ -63,7 +63,7 @@ export default function RoundsManagement() {
     try {
       const result = await recoverAdminRound(round.id);
       setRounds((current) => current.map((item) => item.id === result.round.id ? result.round : item));
-      setRecoverySuccess(result.message || `Round ${result.round.id} was recovered and is ready.`);
+      setRecoverySuccess(result.message || `Round ${result.round.id} is back and ready.`);
       refresh();
     } catch (requestError) {
       setRecoveryError(requestError);
@@ -80,9 +80,9 @@ export default function RoundsManagement() {
     <div className="participant-management">
       <div className="participant-page-header">
         <div>
-          <span className="admin-eyebrow">COMPETITION MANAGEMENT</span>
+          <span className="admin-eyebrow">MANAGE THE COMPETITION</span>
           <h1>Rounds.</h1>
-          <p>Review participant rounds, questions and evaluation state.</p>
+          <p>See student rounds, questions, and results.</p>
         </div>
       </div>
 
@@ -90,10 +90,10 @@ export default function RoundsManagement() {
         <div className="participant-toolbar">
           <div className="participant-search">
             <Search size={18} />
-            <input name="search" type="search" placeholder="Search participant name, USN or question..." value={draftFilters.search} onChange={handleFilterChange} maxLength={100} />
+            <input name="search" type="search" placeholder="Search student name, USN or question..." value={draftFilters.search} onChange={handleFilterChange} maxLength={100} />
           </div>
           <div className="participant-search">
-            <input name="usn" type="search" aria-label="Filter by USN" placeholder="Filter by USN..." value={draftFilters.usn} onChange={handleFilterChange} minLength={8} maxLength={15} pattern="[A-Za-z0-9]{8,15}" title="Enter an 8 to 15 character alphanumeric USN" />
+            <input name="usn" type="search" aria-label="Filter by USN" placeholder="Filter by USN..." value={draftFilters.usn} onChange={handleFilterChange} minLength={8} maxLength={15} pattern="[A-Za-z0-9]{8,15}" title="Type a USN, 8 to 15 letters or numbers" />
           </div>
         </div>
         <div className="participant-toolbar">
@@ -101,13 +101,13 @@ export default function RoundsManagement() {
             <option value="">All Levels</option>
             {[1, 2, 3, 4, 5, 6].map((level) => <option key={level} value={level}>Level {level}</option>)}
           </select>
-          <select name="status" aria-label="Filter by round status" value={draftFilters.status} onChange={handleFilterChange}>
-            <option value="">All Round Statuses</option>
-            {roundStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
+          <select name="status" aria-label="Filter by round state" value={draftFilters.status} onChange={handleFilterChange}>
+            <option value="">All round states</option>
+            {roundStatuses.map((status) => <option key={status} value={status}>{roundStatusLabel(status)}</option>)}
           </select>
-          <select name="evaluationStatus" aria-label="Filter by evaluation status" value={draftFilters.evaluationStatus} onChange={handleFilterChange}>
-            <option value="">All Evaluation Statuses</option>
-            {evaluationStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
+          <select name="evaluationStatus" aria-label="Filter by result" value={draftFilters.evaluationStatus} onChange={handleFilterChange}>
+            <option value="">All results</option>
+            {evaluationStatuses.map((status) => <option key={status} value={status}>{evaluationStatusLabel(status)}</option>)}
           </select>
           <button className="participant-view-btn" type="submit" disabled={loading}>Apply filters</button>
           <button className="participant-view-btn" type="button" onClick={clearFilters} disabled={loading}>Clear filters</button>
@@ -125,7 +125,7 @@ export default function RoundsManagement() {
       {recoverySuccess && <p role="status">{recoverySuccess}</p>}
       {recoveryError && (
         <p role="alert">
-          {recoveryError.message || "Could not recover this round."}
+          {recoveryError.message || "Could not bring this round back."}
           {recoveryError.code ? ` (${recoveryError.code})` : ""} {recoveryError.status ? `HTTP ${recoveryError.status}.` : ""}{" "}
           <button
             className="participant-view-btn"
@@ -143,20 +143,20 @@ export default function RoundsManagement() {
 
       <div className="participant-table-container">
         <div className="participant-table-heading">
-          <h2>Round Records</h2>
+          <h2>Rounds</h2>
           <span>{pagination ? `${pagination.totalItems} total rounds` : ""}</span>
         </div>
         <div className="participant-table-scroll">
           <table className="participant-table">
             <thead>
-              <tr><th>ROUND</th><th>PARTICIPANT</th><th>QUESTION</th><th>TIMER</th><th>EVALUATION</th><th>ACTION</th></tr>
+              <tr><th>ROUND</th><th>STUDENT</th><th>QUESTION</th><th>TIMER</th><th>RESULT</th><th>ACTION</th></tr>
             </thead>
             <tbody>
               {rounds.map((round) => (
                 <tr key={round.id}>
                   <td>
                     <strong>Level {round.levelNumber ?? "—"}</strong>
-                    <span className="participant-status">{round.status || "—"}</span>
+                    <span className="participant-status">{roundStatusLabel(round.status)}</span>
                   </td>
                   <td>
                     <strong>{round.participant?.name || "—"}</strong>
@@ -169,14 +169,14 @@ export default function RoundsManagement() {
                   <td>
                     <strong>{formatSeconds(round.durationSeconds)}</strong>
                     <small>Remaining: {formatSeconds(round.remainingSeconds)}</small>
-                    <small>Deadline: {formatDate(round.deadline)}</small>
-                    <small>Expired: {displayState(round.isExpired)}</small>
+                    <small>Ends at: {formatDate(round.deadline)}</small>
+                    <small>Time up: {displayState(round.isExpired)}</small>
                   </td>
                   <td>
-                    <strong>{round.evaluation?.status || "—"}</strong>
+                    <strong>{evaluationStatusLabel(round.evaluation?.status)}</strong>
                     <small>Language: {round.evaluation?.programmingLanguage || "—"}</small>
-                    <small>Settled: {displayState(round.evaluation?.isSettled)}</small>
-                    <small>Progressed: {displayState(round.evaluation?.isProgressed)}</small>
+                    <small>Money done: {displayState(round.evaluation?.isSettled)}</small>
+                    <small>Moved on: {displayState(round.evaluation?.isProgressed)}</small>
                   </td>
                   <td>
                     {round.status === "abandoned" && (
@@ -186,7 +186,7 @@ export default function RoundsManagement() {
                         onClick={() => recoverRound(round)}
                         disabled={loading || recoveringRoundId !== null}
                       >
-                        {recoveringRoundId === round.id ? "Recovering…" : "Recover"}
+                        {recoveringRoundId === round.id ? "Bringing back…" : "Bring back"}
                       </button>
                     )}
                     {round.status !== "abandoned" && "—"}
@@ -194,9 +194,9 @@ export default function RoundsManagement() {
                 </tr>
               ))}
               {!loading && !error && rounds.length === 0 && (
-                <tr><td colSpan="6" className="participant-empty">No rounds found for the selected filters.</td></tr>
+                <tr><td colSpan="6" className="participant-empty">No rounds match these filters.</td></tr>
               )}
-              {!loading && error && <tr><td colSpan="6" className="participant-empty">Round records are unavailable.</td></tr>}
+              {!loading && error && <tr><td colSpan="6" className="participant-empty">Rounds are not shown.</td></tr>}
               {loading && <tr><td colSpan="6" className="participant-empty">Loading rounds…</td></tr>}
             </tbody>
           </table>

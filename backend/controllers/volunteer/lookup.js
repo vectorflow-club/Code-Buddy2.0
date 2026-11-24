@@ -35,7 +35,7 @@ const resolveRegisteredStudent = async (rawUsn) => {
       error: {
         status: 400,
         code: 'MISSING_USN',
-        message: 'University Seat Number (USN) is required.',
+        message: 'USN is needed.',
       },
     };
   }
@@ -46,7 +46,7 @@ const resolveRegisteredStudent = async (rawUsn) => {
       error: {
         status: 400,
         code: 'INVALID_USN_FORMAT',
-        message: 'Invalid USN format. USN must be 8–15 alphanumeric characters.',
+        message: 'That USN does not look right. Use 8–15 letters or numbers.',
       },
     };
   }
@@ -57,7 +57,7 @@ const resolveRegisteredStudent = async (rawUsn) => {
       error: {
         status: 404,
         code: 'STUDENT_NOT_FOUND',
-        message: `No registered student found with USN ${normalizedUsn}.`,
+        message: `No student signed up with USN ${normalizedUsn}.`,
       },
     };
   }
@@ -67,7 +67,7 @@ const resolveRegisteredStudent = async (rawUsn) => {
       error: {
         status: 400,
         code: 'REGISTRATION_INCOMPLETE',
-        message: `Student with USN ${normalizedUsn} has not completed registration.`,
+        message: `Student with USN ${normalizedUsn} has not finished signing up.`,
       },
     };
   }
@@ -78,7 +78,7 @@ const resolveRegisteredStudent = async (rawUsn) => {
       error: {
         status: 400,
         code: 'INVALID_STUDENT_LEVEL',
-        message: 'Student current level is invalid.',
+        message: 'The current level for this student is not right.',
       },
     };
   }
@@ -115,7 +115,7 @@ const getStudentActiveRoundByUsn = async (req, res) => {
       return res.status(404).json({
         success: false,
         code: 'ROUND_NOT_ALLOCATED',
-        message: `Student ${normalizedUsn} does not have an allocated active round for Level ${currentLevel}.`,
+        message: `Student ${normalizedUsn} has no round for Level ${currentLevel} yet.`,
       });
     }
 
@@ -139,8 +139,8 @@ const getStudentActiveRoundByUsn = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: timerSync.isExpired
-        ? 'Round timer has expired.'
-        : 'Round details retrieved successfully.',
+        ? 'Time is up for this round.'
+        : 'Round details loaded.',
       student: formatStudentVolunteerResponse(student, syncedRound),
       round: formatRoundVolunteerResponse(syncedRound, {
         remainingSeconds: timerSync.remainingSeconds,
@@ -153,7 +153,7 @@ const getStudentActiveRoundByUsn = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to retrieve student round details.',
+      message: 'Could not load the student round details.',
     });
   }
 };

@@ -27,7 +27,7 @@ export function useStaffLogin({ login, target }) {
       await login(username.trim(), password);
       navigate(target, { replace: true });
     } catch (loginError) {
-      setError(loginError.message || "Unable to sign in. Please try again.");
+      setError(loginError.message || "Could not sign you in. Please try again.");
     } finally {
       setLoading(false);
     }

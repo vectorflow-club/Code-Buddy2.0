@@ -1,7 +1,7 @@
 import { Search } from "lucide-react";
 import { Pagination } from "../../components/ui";
 import { useAdminList } from "../../hooks/useAdminList";
-import { formatDate } from "../../utils/formatters";
+import { formatDate, transactionTypeLabel } from "../../utils/formatters";
 import { getAdminTransactions } from "../../services/adminDataService";
 import "./participants.css";
 
@@ -42,9 +42,9 @@ export default function TransactionsManagement() {
     <div className="participant-management">
       <div className="participant-page-header">
         <div>
-          <span className="admin-eyebrow">COMPETITION MANAGEMENT</span>
-          <h1>Transactions.</h1>
-          <p>Review the competition transaction ledger.</p>
+          <span className="admin-eyebrow">MANAGE THE COMPETITION</span>
+          <h1>Money moves.</h1>
+          <p>See every money move in the competition.</p>
         </div>
       </div>
 
@@ -52,16 +52,16 @@ export default function TransactionsManagement() {
         <div className="participant-toolbar">
           <div className="participant-search">
             <Search size={18} />
-            <input name="search" type="search" placeholder="Search participant name, USN or description..." value={draftFilters.search} onChange={handleFilterChange} maxLength={100} />
+            <input name="search" type="search" placeholder="Search student name, USN or note..." value={draftFilters.search} onChange={handleFilterChange} maxLength={100} />
           </div>
           <div className="participant-search">
-            <input name="usn" type="search" aria-label="Filter by USN" placeholder="Filter by USN..." value={draftFilters.usn} onChange={handleFilterChange} minLength={8} maxLength={15} pattern="[A-Za-z0-9]{8,15}" title="Enter an 8 to 15 character alphanumeric USN" />
+            <input name="usn" type="search" aria-label="Filter by USN" placeholder="Filter by USN..." value={draftFilters.usn} onChange={handleFilterChange} minLength={8} maxLength={15} pattern="[A-Za-z0-9]{8,15}" title="Type a USN, 8 to 15 letters or numbers" />
           </div>
         </div>
         <div className="participant-toolbar">
-          <select name="type" aria-label="Filter by transaction type" value={draftFilters.type} onChange={handleFilterChange}>
-            <option value="">All Transaction Types</option>
-            {transactionTypes.map((type) => <option key={type} value={type}>{type}</option>)}
+          <select name="type" aria-label="Filter by type of money move" value={draftFilters.type} onChange={handleFilterChange}>
+            <option value="">All types of money move</option>
+            {transactionTypes.map((type) => <option key={type} value={type}>{transactionTypeLabel(type)}</option>)}
           </select>
           <select name="levelNumber" aria-label="Filter by level" value={draftFilters.levelNumber} onChange={handleFilterChange}>
             <option value="">All Levels</option>
@@ -74,33 +74,33 @@ export default function TransactionsManagement() {
 
       {error && (
         <p role="alert">
-          {error.message || "Could not load transactions."}
+          {error.message || "Could not load the money moves."}
           {error.code ? ` (${error.code})` : ""} {error.status ? `HTTP ${error.status}.` : ""}{" "}
           <button className="participant-view-btn" type="button" onClick={retry} disabled={loading}>Retry</button>
         </p>
       )}
-      {loading && <p role="status">Loading transactions…</p>}
+      {loading && <p role="status">Loading money moves…</p>}
 
       <div className="participant-table-container">
         <div className="participant-table-heading">
-          <h2>Transaction Records</h2>
-          <span>{pagination ? `${pagination.totalItems} total transactions` : ""}</span>
+          <h2>Money records</h2>
+          <span>{pagination ? `${pagination.totalItems} money moves` : ""}</span>
         </div>
         <div className="participant-table-scroll">
           <table className="participant-table">
             <thead>
-              <tr><th>TRANSACTION</th><th>AMOUNT</th><th>LEVEL / ROUND</th><th>DESCRIPTION</th><th>DATE / TIME</th><th>PARTICIPANT</th></tr>
+              <tr><th>MOVE</th><th>AMOUNT</th><th>LEVEL / ROUND</th><th>DESCRIPTION</th><th>DATE / TIME</th><th>STUDENT</th></tr>
             </thead>
             <tbody>
               {transactions.map((transaction) => (
                 <tr key={transaction.id}>
                   <td>
-                    <strong>{transaction.type || "—"}</strong>
+                    <strong>{transactionTypeLabel(transaction.type)}</strong>
                     <small>{transaction.id || "—"}</small>
                   </td>
                   <td>
                     <strong>{displayAmount(transaction.amount)}</strong>
-                    <small>Balance after: {displayAmount(transaction.balanceAfter)}</small>
+                    <small>Money after: {displayAmount(transaction.balanceAfter)}</small>
                   </td>
                   <td>
                     <strong>{transaction.levelNumber == null ? "—" : `Level ${transaction.levelNumber}`}</strong>
@@ -115,14 +115,14 @@ export default function TransactionsManagement() {
                 </tr>
               ))}
               {!loading && !error && transactions.length === 0 && (
-                <tr><td colSpan="6" className="participant-empty">No transactions found for the selected filters.</td></tr>
+                <tr><td colSpan="6" className="participant-empty">No money moves match these filters.</td></tr>
               )}
-              {!loading && error && <tr><td colSpan="6" className="participant-empty">Transaction records are unavailable.</td></tr>}
-              {loading && <tr><td colSpan="6" className="participant-empty">Loading transactions…</td></tr>}
+              {!loading && error && <tr><td colSpan="6" className="participant-empty">Money records are not shown.</td></tr>}
+              {loading && <tr><td colSpan="6" className="participant-empty">Loading money moves…</td></tr>}
             </tbody>
           </table>
         </div>
-        <Pagination pagination={pagination} limit={filters.limit} loading={loading} onPageChange={changePage} onLimitChange={changeLimit} perPageLabel="Transactions per page" />
+        <Pagination pagination={pagination} limit={filters.limit} loading={loading} onPageChange={changePage} onLimitChange={changeLimit} perPageLabel="Money moves per page" />
       </div>
     </div>
   );

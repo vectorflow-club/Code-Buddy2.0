@@ -218,7 +218,7 @@ export default function QuestionManagement() {
 
   const handleDelete = async (question) => {
     const confirmed = window.confirm(
-      `Are you sure you want to ${question.isActive ? "deactivate" : "reactivate"} "${question.title}"?`
+      `Are you sure you want to switch ${question.isActive ? "off" : "on"} "${question.title}"?`
     );
     if (!confirmed) return;
     setError("");
@@ -226,13 +226,13 @@ export default function QuestionManagement() {
       await setAdminQuestionActive(question.id, !question.isActive);
       await loadQuestions();
     } catch (updateError) {
-      setError(updateError.message || "Could not update the question status.");
+      setError(updateError.message || "Could not turn the question off or on.");
     }
   };
 
   const handlePermanentDelete = async (question) => {
     const confirmed = window.confirm(
-      `Are you sure you want to permanently delete "${question.title}"? This cannot be undone.`
+      `Delete "${question.title}" forever? You cannot undo this.`
     );
     if (!confirmed) return;
     setError("");
@@ -250,11 +250,11 @@ export default function QuestionManagement() {
       <div className="question-page-header">
         <div>
           <span className="admin-eyebrow">
-            COMPETITION MANAGEMENT
+            MANAGE THE COMPETITION
           </span>
           <h1>Question Bank.</h1>
           <p>
-            Create, edit and manage coding questions across levels.
+            Add and change coding questions for each level.
           </p>
         </div>
 
@@ -297,7 +297,7 @@ export default function QuestionManagement() {
 
           <input
             type="text"
-            placeholder="Search by question title or ID..."
+            placeholder="Search by title or number..."
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
@@ -307,7 +307,7 @@ export default function QuestionManagement() {
           value={difficulty}
           onChange={(event) => setDifficulty(event.target.value)}
         >
-          <option value="ALL">All Difficulties</option>
+          <option value="ALL">Easy and hard</option>
           <option value="EASY">Easy</option>
           <option value="HARD">Hard</option>
         </select>
@@ -363,7 +363,7 @@ export default function QuestionManagement() {
                           : question.isActive ? "question-status available" : "question-status inactive"
                       }
                     >
-                      {question.assigned ? "Assigned" : question.isActive ? "Available" : "Inactive"}
+                      {question.assigned ? "Given out" : question.isActive ? "Available" : "Switched off"}
                     </span>
                   </td>
 
@@ -378,14 +378,14 @@ export default function QuestionManagement() {
                       </button>
 
                       <button
-                        title={question.isActive ? "Deactivate question" : "Reactivate question"}
+                        title={question.isActive ? "Switch off question" : "Switch on question"}
                         onClick={() => handleDelete(question)}
                       >
                         <Trash2 size={16} />
                       </button>
 
                       <button
-                        title="Permanently delete question"
+                        title="Delete question forever"
                         onClick={() => handlePermanentDelete(question)}
                       >
                         <Trash size={16} />
@@ -414,7 +414,7 @@ export default function QuestionManagement() {
             <div className="question-modal-header">
               <div>
                 <span className="admin-eyebrow">
-                  QUESTION MANAGEMENT
+                  QUESTIONS
                 </span>
 
                 <h2>
@@ -437,10 +437,10 @@ export default function QuestionManagement() {
               <div className="question-form-grid">
 
                 <div className="question-form-field full-width">
-                  <label>Question Title</label>
+                  <label>Title</label>
                   <input
                     type="text"
-                    placeholder="Enter question title"
+                    placeholder="Type the title"
                     value={form.title}
                     onChange={(event) =>
                       setForm({ ...form, title: event.target.value })
@@ -450,7 +450,7 @@ export default function QuestionManagement() {
                 </div>
 
                 <div className="question-form-field">
-                  <label>Competition Level</label>
+                  <label>Level</label>
                   <input
                     type="number"
                     min="1"
@@ -476,7 +476,7 @@ export default function QuestionManagement() {
                 </div>
 
                 <div className="question-form-field full-width">
-                  <label>Problem Statement</label>
+                  <label>Problem</label>
                   <textarea
                     rows="4"
                     placeholder="Describe the coding problem..."
@@ -489,10 +489,10 @@ export default function QuestionManagement() {
                 </div>
 
                 <div className="question-form-field full-width">
-                  <label>Constraints</label>
+                  <label>Limits</label>
                   <textarea
                     rows="2"
-                    placeholder="Enter input constraints"
+                    placeholder="Type the limits, one per line"
                     value={form.constraints}
                     onChange={(event) =>
                       setForm({ ...form, constraints: event.target.value })
@@ -527,7 +527,7 @@ export default function QuestionManagement() {
                 </div>
 
                 <div className="question-form-field full-width">
-                  <label>Visible test cases (shown to students)</label>
+                  <label>Test cases students can see</label>
                   {form.examples.map((example, index) => (
                     <div className="test-case-row" key={index}>
                       <textarea
@@ -551,7 +551,7 @@ export default function QuestionManagement() {
                           type="button"
                           onClick={() => moveExampleToHidden(index)}
                         >
-                          Make hidden
+                          Hide it
                         </button>
                         <button
                           type="button"
@@ -567,12 +567,12 @@ export default function QuestionManagement() {
                     className="test-case-add-btn"
                     onClick={addExample}
                   >
-                    + Add visible test case
+                    + Add a test case students can see
                   </button>
                 </div>
 
                 <div className="question-form-field full-width">
-                  <label>Hidden test cases (not shown to students)</label>
+                  <label>Test cases students cannot see</label>
                   {form.hiddenTestCases.map((testCase, index) => (
                     <div className="test-case-row" key={index}>
                       <textarea
@@ -596,7 +596,7 @@ export default function QuestionManagement() {
                           type="button"
                           onClick={() => moveHiddenToVisible(index)}
                         >
-                          Make visible
+                          Show it
                         </button>
                         <button
                           type="button"
@@ -612,7 +612,7 @@ export default function QuestionManagement() {
                     className="test-case-add-btn"
                     onClick={addHiddenCase}
                   >
-                    + Add hidden test case
+                    + Add a hidden test case
                   </button>
                 </div>
 

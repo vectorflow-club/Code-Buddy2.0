@@ -41,7 +41,7 @@ function editableLocation(value) {
 // original password cannot be recovered, so the admin resets it instead.
 function displayPassword(password) {
   if (!password) return "—";
-  if (password.startsWith("$2")) return "Scrambled (reset to set a readable password)";
+  if (password.startsWith("$2")) return "Hidden - set a new password to see it";
   return password;
 }
 
@@ -188,10 +188,10 @@ export default function VolunteerManagement() {
       });
       setShowForm(false);
       setForm({ ...emptyForm });
-      setSuccess("Organizer created successfully.");
+      setSuccess("Organizer added.");
       await loadVolunteers();
     } catch (saveError) {
-      setError(saveError.message || "Could not create the organizer.");
+      setError(saveError.message || "Could not add the organizer.");
     } finally {
       setSaving(false);
     }
@@ -255,7 +255,7 @@ export default function VolunteerManagement() {
       merged.sort((a, b) => a.lineNumber - b.lineNumber);
       setBulkResults(merged);
     } catch (bulkSaveError) {
-      setBulkError(bulkSaveError.message || "Could not add organizers in bulk.");
+      setBulkError(bulkSaveError.message || "Could not add the organizers.");
     } finally {
       setBulkSaving(false);
     }
@@ -277,10 +277,10 @@ export default function VolunteerManagement() {
       setSelectedVolunteer({ ...result.volunteer, password: selectedVolunteer.password });
       setEditForm({ name: result.volunteer.name || "", assignedLab: editableLocation(result.volunteer.assignedLab || "") });
       setEditing(false);
-      setDetailSuccess(result.message || "Organizer details updated successfully.");
+      setDetailSuccess(result.message || "Organizer details saved.");
       await loadVolunteers();
     } catch (updateError) {
-      setDetailError(updateError.message || "Could not update organizer details.");
+      setDetailError(updateError.message || "Could not save the organizer details.");
     } finally {
       setDetailSaving(false);
     }
@@ -298,9 +298,9 @@ export default function VolunteerManagement() {
       setSelectedVolunteer({ ...result.volunteer, password: resetTo });
       setNewPassword("");
       setResettingPassword(false);
-      setDetailSuccess(result.message || "Organizer password reset successfully.");
+      setDetailSuccess(result.message || "Password changed.");
     } catch (resetError) {
-      setDetailError(resetError.message || "Could not reset the organizer password.");
+      setDetailError(resetError.message || "Could not change the password.");
     } finally {
       setPasswordSaving(false);
     }
@@ -313,7 +313,7 @@ export default function VolunteerManagement() {
     setDetailSuccess("");
     try {
       const result = await deleteAdminVolunteer(selectedVolunteer.id);
-      setSuccess(result.message || "Organizer deleted permanently.");
+      setSuccess(result.message || "Organizer deleted for good.");
       closeDetails();
       await loadVolunteers();
     } catch (deleteError) {
@@ -331,14 +331,14 @@ export default function VolunteerManagement() {
     setSuccess("");
     try {
       const result = await setAdminVolunteerActive(volunteer.id, !volunteer.isActive);
-      setSuccess(result.message || `Organizer ${volunteer.isActive ? "deactivated" : "reactivated"} successfully.`);
+      setSuccess(result.message || `Organizer switched ${volunteer.isActive ? "off" : "on"}.`);
       await loadVolunteers();
       if (selectedVolunteer?.id === volunteer.id) {
         setSelectedVolunteer({ ...result.volunteer, password: selectedVolunteer.password });
-        setDetailSuccess(result.message || "Organizer status updated successfully.");
+        setDetailSuccess(result.message || "Organizer status saved.");
       }
     } catch (updateError) {
-      setError(updateError.message || "Could not update the organizer status.");
+      setError(updateError.message || "Could not switch the organizer off or on.");
     } finally {
       setUpdatingId(null);
     }
@@ -348,9 +348,9 @@ export default function VolunteerManagement() {
     <div className="volunteer-management">
       <div className="volunteer-page-header">
         <div>
-          <span className="admin-eyebrow">COMPETITION MANAGEMENT</span>
-          <h1>Organizer Management.</h1>
-          <p>Manage organizer accounts and competition assignments.</p>
+          <span className="admin-eyebrow">MANAGE THE COMPETITION</span>
+          <h1>Organizers.</h1>
+          <p>Organizer accounts and their spots.</p>
         </div>
         <div style={{ display: "flex", gap: "12px" }}>
           <button className="volunteer-add-btn" onClick={openBulkForm}>
@@ -365,20 +365,20 @@ export default function VolunteerManagement() {
       </div>
 
       <div className="volunteer-summary">
-        <div><Users size={21} /><span>Total Organizers</span><strong>{volunteers.length}</strong></div>
-        <div><UserCheck size={21} /><span>Active Organizers</span><strong>{activeCount}</strong></div>
-        <div><UserX size={21} /><span>Inactive Organizers</span><strong>{inactiveCount}</strong></div>
+        <div><Users size={21} /><span>Total organizers</span><strong>{volunteers.length}</strong></div>
+        <div><UserCheck size={21} /><span>Active</span><strong>{activeCount}</strong></div>
+        <div><UserX size={21} /><span>Switched off</span><strong>{inactiveCount}</strong></div>
       </div>
 
       <div className="volunteer-toolbar">
         <div className="volunteer-search">
           <Search size={18} />
-          <input type="text" placeholder="Search name, username or assigned location..." value={search} onChange={(event) => setSearch(event.target.value)} />
+          <input type="text" placeholder="Search name, username or spot..." value={search} onChange={(event) => setSearch(event.target.value)} />
         </div>
         <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-          <option value="ALL">All Statuses</option>
+          <option value="ALL">All</option>
           <option value="ACTIVE">Active</option>
-          <option value="INACTIVE">Inactive</option>
+          <option value="INACTIVE">Switched off</option>
         </select>
       </div>
 
@@ -386,10 +386,10 @@ export default function VolunteerManagement() {
       {success && <p className="volunteer-api-message" role="status">{success}</p>}
 
       <div className="volunteer-table-container">
-        <div className="volunteer-table-heading"><h2>Organizer Directory</h2><span>{filteredVolunteers.length} organizers</span></div>
+        <div className="volunteer-table-heading"><h2>All organizers</h2><span>{filteredVolunteers.length} organizers</span></div>
         <div className="volunteer-table-scroll">
           <table className="volunteer-table">
-            <thead><tr><th>ORGANIZER</th><th>ASSIGNED LOCATION</th><th>STATUS</th><th>ACTIONS</th></tr></thead>
+            <thead><tr><th>ORGANIZER</th><th>SPOT</th><th>STATUS</th><th>ACTIONS</th></tr></thead>
             <tbody>
               {filteredVolunteers.map((volunteer) => {
                 const status = statusLabel(volunteer);
@@ -397,11 +397,11 @@ export default function VolunteerManagement() {
                   <tr key={volunteer.id}>
                     <td><strong>{volunteer.name}</strong><small>{volunteer.username}</small></td>
                     <td>{volunteer.assignedLab || "—"}</td>
-                    <td><span className={`volunteer-status ${status.toLowerCase()}`}>{status}</span></td>
+                    <td><span className={`volunteer-status ${status.toLowerCase()}`}>{status === "ACTIVE" ? "Active" : "Switched off"}</span></td>
                     <td>
                       <div className="volunteer-actions">
         <button type="button" title="View details" aria-label={`View ${volunteer.name}`} disabled={detailSaving || passwordSaving} onClick={() => openVolunteerDetails(volunteer)}><Eye size={15} /></button>
-                        <button type="button" title={volunteer.isActive ? "Deactivate organizer" : "Reactivate organizer"} aria-label={volunteer.isActive ? "Deactivate organizer" : "Reactivate organizer"} disabled={updatingId !== null} onClick={() => toggleStatus(volunteer)}>
+                        <button type="button" title={volunteer.isActive ? "Switch off organizer" : "Switch on organizer"} aria-label={volunteer.isActive ? "Switch off organizer" : "Switch on organizer"} disabled={updatingId !== null} onClick={() => toggleStatus(volunteer)}>
                           {volunteer.isActive ? <UserX size={15} /> : <UserCheck size={15} />}
                         </button>
                       </div>
@@ -423,10 +423,10 @@ export default function VolunteerManagement() {
             <div className="volunteer-modal-header"><div><span className="admin-eyebrow">ORGANIZER ACCOUNTS</span><h2>Add Organizer</h2></div><button type="button" onClick={closeForm} aria-label="Close add organizer form"><X size={20} /></button></div>
             {error && <p className="volunteer-api-message" role="alert">{error}</p>}
             <form onSubmit={handleSave}>
-              <div className="volunteer-form-field"><label htmlFor="volunteer-name">Full Name</label><input id="volunteer-name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Enter organizer name" required minLength={2} /></div>
-              <div className="volunteer-form-field"><label htmlFor="volunteer-username">Username</label><input id="volunteer-username" value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} placeholder="Enter username" autoComplete="off" required minLength={3} /></div>
-              <div className="volunteer-form-field"><label htmlFor="volunteer-password">Password</label><input id="volunteer-password" type="text" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder="Set an initial password" autoComplete="new-password" required /></div>
-              <div className="volunteer-form-field"><label htmlFor="volunteer-location">Assigned Location</label><select id="volunteer-location" value={form.assignedLab} onChange={(event) => setForm({ ...form, assignedLab: event.target.value })} required><option value="">Select a location</option>{ORGANIZER_LOCATIONS.map((location) => <option key={location} value={location}>{location}</option>)}</select></div>
+              <div className="volunteer-form-field"><label htmlFor="volunteer-name">Full Name</label><input id="volunteer-name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Type the name" required minLength={2} /></div>
+              <div className="volunteer-form-field"><label htmlFor="volunteer-username">Username</label><input id="volunteer-username" value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} placeholder="Type a username" autoComplete="off" required minLength={3} /></div>
+              <div className="volunteer-form-field"><label htmlFor="volunteer-password">Password</label><input id="volunteer-password" type="text" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder="Type a password" autoComplete="new-password" required /></div>
+              <div className="volunteer-form-field"><label htmlFor="volunteer-location">Spot</label><select id="volunteer-location" value={form.assignedLab} onChange={(event) => setForm({ ...form, assignedLab: event.target.value })} required><option value="">Pick a spot</option>{ORGANIZER_LOCATIONS.map((location) => <option key={location} value={location}>{location}</option>)}</select></div>
               <div className="volunteer-form-actions"><button type="button" onClick={closeForm} disabled={saving}>Cancel</button><button type="submit" disabled={saving}>{saving ? "Adding…" : "Add Organizer"}</button></div>
             </form>
           </div>
@@ -440,7 +440,7 @@ export default function VolunteerManagement() {
             {bulkError && <p className="volunteer-api-message" role="alert">{bulkError}</p>}
             <form onSubmit={handleBulkSave}>
               <div className="volunteer-form-field"><label htmlFor="volunteer-bulk-text">Organizers</label><textarea id="volunteer-bulk-text" value={bulkText} onChange={(event) => setBulkText(event.target.value)} placeholder={"Ananya Rao, ananya, password123, CCD\nLikith Kumar, likith, password123, M Block Entrance"} rows={8} /></div>
-              <p className="volunteer-bulk-hint">One organizer per line: Full Name, username, password, location. Locations must be M Block Entrance, CCD or Mangaluru Canteen. Up to {MAX_BULK_ROWS} lines at a time.</p>
+              <p className="volunteer-bulk-hint">One organizer per line: Full Name, username, password, spot. The spot must be M Block Entrance, CCD or Mangaluru Canteen. Up to {MAX_BULK_ROWS} lines at a time.</p>
               {bulkResults && (
                 <ul className="volunteer-bulk-results" role="status">
                   {bulkResults.map((result) => (
@@ -470,16 +470,16 @@ export default function VolunteerManagement() {
                   <div><span>Username</span><strong>{selectedVolunteer.username}</strong></div>
                   <div><span>Password</span><strong>{displayPassword(selectedVolunteer.password)}</strong></div>
                   <div><span>Role</span><strong>{selectedVolunteer.role || "—"}</strong></div>
-                  <div><span>Assigned Location</span><strong>{selectedVolunteer.assignedLab || "—"}</strong></div>
-                  <div><span>Account Status</span><strong>{statusLabel(selectedVolunteer)}</strong></div>
-                  <div><span>Created</span><strong>{selectedVolunteer.createdAt || "—"}</strong></div>
-                  <div><span>Last Updated</span><strong>{selectedVolunteer.updatedAt || "—"}</strong></div>
+                  <div><span>Spot</span><strong>{selectedVolunteer.assignedLab || "—"}</strong></div>
+                  <div><span>Status</span><strong>{statusLabel(selectedVolunteer)}</strong></div>
+                  <div><span>Added on</span><strong>{selectedVolunteer.createdAt || "—"}</strong></div>
+                  <div><span>Last changed</span><strong>{selectedVolunteer.updatedAt || "—"}</strong></div>
                 </div>
                 {!editing && !resettingPassword && !confirmingDelete && <div className="volunteer-form-actions"><button type="button" onClick={() => { setEditForm({ name: selectedVolunteer.name || "", assignedLab: editableLocation(selectedVolunteer.assignedLab || "") }); setEditing(true); setDetailError(""); }}>Edit details</button><button type="button" onClick={() => { setNewPassword(""); setResettingPassword(true); setDetailError(""); }}>Reset password</button><button type="button" onClick={() => { setConfirmingDelete(true); setDetailError(""); }}>Delete</button></div>}
-                {confirmingDelete && <div className="volunteer-form-actions"><span className="volunteer-delete-warning">Delete permanently? This cannot be undone.</span><button type="button" onClick={() => setConfirmingDelete(false)} disabled={deleting}>Cancel</button><button type="button" className="volunteer-danger-btn" onClick={handleDelete} disabled={deleting}>{deleting ? "Deleting…" : "Delete permanently"}</button></div>}
+                {confirmingDelete && <div className="volunteer-form-actions"><span className="volunteer-delete-warning">Delete for good? You cannot undo this.</span><button type="button" onClick={() => setConfirmingDelete(false)} disabled={deleting}>Cancel</button><button type="button" className="volunteer-danger-btn" onClick={handleDelete} disabled={deleting}>{deleting ? "Deleting…" : "Delete for good"}</button></div>}
                 {editing && <form onSubmit={handleUpdate}>
                   <div className="volunteer-form-field"><label htmlFor="edit-volunteer-name">Full Name</label><input id="edit-volunteer-name" value={editForm.name} onChange={(event) => setEditForm({ ...editForm, name: event.target.value })} required minLength={2} /></div>
-                  <div className="volunteer-form-field"><label htmlFor="edit-volunteer-location">Assigned Location</label><select id="edit-volunteer-location" value={editForm.assignedLab} onChange={(event) => setEditForm({ ...editForm, assignedLab: event.target.value })} required><option value="">Select a location</option>{ORGANIZER_LOCATIONS.map((location) => <option key={location} value={location}>{location}</option>)}</select></div>
+                  <div className="volunteer-form-field"><label htmlFor="edit-volunteer-location">Spot</label><select id="edit-volunteer-location" value={editForm.assignedLab} onChange={(event) => setEditForm({ ...editForm, assignedLab: event.target.value })} required><option value="">Pick a spot</option>{ORGANIZER_LOCATIONS.map((location) => <option key={location} value={location}>{location}</option>)}</select></div>
                   <div className="volunteer-form-actions"><button type="button" onClick={() => setEditing(false)} disabled={detailSaving}>Cancel</button><button type="submit" disabled={detailSaving}>{detailSaving ? "Saving…" : "Save changes"}</button></div>
                 </form>}
                 {resettingPassword && <form onSubmit={handlePasswordReset}>

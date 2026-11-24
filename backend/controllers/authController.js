@@ -75,7 +75,7 @@ const verifyGoogleAuth = async (req, res) => {
       return res.status(500).json({
         success: false,
         code: 'CONFIGURATION_ERROR',
-        message: 'Google sign-in is temporarily unavailable. Please try again later.',
+        message: 'Google sign-in is not working right now. Please try again later.',
       });
     }
 
@@ -119,7 +119,7 @@ const verifyGoogleAuth = async (req, res) => {
       return res.status(401).json({
         success: false,
         code: 'INVALID_ISSUER',
-        message: 'Google sign-in could not be verified. Please try again.',
+        message: 'Google sign-in could not be checked. Please try again.',
       });
     }
 
@@ -127,7 +127,7 @@ const verifyGoogleAuth = async (req, res) => {
       return res.status(403).json({
         success: false,
         code: 'UNVERIFIED_EMAIL',
-        message: 'Your Google email address must be verified before signing in.',
+        message: 'Your Google email must be checked before you sign in.',
       });
     }
 
@@ -136,7 +136,7 @@ const verifyGoogleAuth = async (req, res) => {
       return res.status(403).json({
         success: false,
         code: 'INVALID_DOMAIN',
-        message: 'Only verified Google accounts with the @vvce.ac.in domain are permitted.',
+        message: 'Only checked Google accounts ending in @vvce.ac.in can sign in.',
       });
     }
 
@@ -144,7 +144,7 @@ const verifyGoogleAuth = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INCOMPLETE_GOOGLE_PROFILE',
-        message: 'Google profile is missing required identity information.',
+        message: 'Your Google profile is missing some details.',
       });
     }
 
@@ -166,7 +166,7 @@ const verifyGoogleAuth = async (req, res) => {
           return res.status(409).json({
             success: false,
             code: 'ACCOUNT_CONFLICT',
-            message: 'An account associated with this email already exists under a different identity.',
+            message: 'An account with this email already exists.',
           });
         }
 
@@ -189,7 +189,7 @@ const verifyGoogleAuth = async (req, res) => {
         return res.status(409).json({
           success: false,
           code: 'ACCOUNT_CONFLICT',
-          message: 'An account associated with this email or identity already exists.',
+          message: 'An account with this email already exists.',
         });
       }
       return res.status(500).json({
@@ -223,7 +223,7 @@ const verifyGoogleAuth = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'An unexpected internal error occurred.',
+      message: 'Something went wrong on our side. Please try again.',
     });
   }
 };
@@ -262,7 +262,7 @@ const completeRegistration = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'UNSUPPORTED_FIELDS',
-        message: `Registration request contains unsupported fields: ${extraFields.join(', ')}. Only 'usn', 'year', and 'location' are permitted.`,
+        message: `Sign-up has fields we do not use: ${extraFields.join(', ')}. Only 'usn', 'year', and 'location' are allowed.`,
       });
     }
 
@@ -272,7 +272,7 @@ const completeRegistration = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'MISSING_USN',
-        message: 'University Seat Number (USN) is required.',
+        message: 'USN is needed.',
       });
     }
 
@@ -280,7 +280,7 @@ const completeRegistration = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'MISSING_YEAR',
-        message: 'Academic year of study is required.',
+        message: 'Year of study is needed.',
       });
     }
 
@@ -288,7 +288,7 @@ const completeRegistration = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'MISSING_LOCATION',
-        message: 'Event location is required.',
+        message: 'Spot is needed.',
       });
     }
 
@@ -320,7 +320,7 @@ const completeRegistration = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'INVALID_LOCATION',
-        message: `Choose your event location (${ORGANIZER_LOCATIONS.join(', ')}).`,
+        message: `Choose your spot (${ORGANIZER_LOCATIONS.join(', ')}).`,
       });
     }
 
@@ -333,7 +333,7 @@ const completeRegistration = async (req, res) => {
       return res.status(409).json({
         success: false,
         code: 'DUPLICATE_USN',
-        message: 'That USN is already registered. Check the number or contact competition support.',
+        message: 'That USN is already signed up. Check the number or ask the event team.',
       });
     }
 
@@ -363,13 +363,13 @@ const completeRegistration = async (req, res) => {
         return res.status(409).json({
           success: false,
           code: 'DUPLICATE_USN',
-          message: 'That USN is already registered. Check the number or contact competition support.',
+          message: 'That USN is already signed up. Check the number or ask the event team.',
         });
       }
       return res.status(500).json({
         success: false,
         code: 'DATABASE_ERROR',
-        message: 'Something went wrong while completing your registration. Please try again.',
+        message: 'Something went wrong while finishing your sign-up. Please try again.',
       });
     }
 
@@ -379,7 +379,7 @@ const completeRegistration = async (req, res) => {
         return res.status(401).json({
           success: false,
           code: 'USER_NOT_FOUND',
-          message: 'Student account no longer exists.',
+          message: 'That student account is gone.',
         });
       }
 
@@ -392,7 +392,7 @@ const completeRegistration = async (req, res) => {
         const liveState = await resolveStudentLiveState(latestStudent);
         return res.status(200).json({
           success: true,
-          message: 'Student registration is already complete.',
+          message: 'Sign-up is already done.',
           student: formatStudentResponse(latestStudent, liveState),
         });
       }
@@ -400,14 +400,14 @@ const completeRegistration = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'REGISTRATION_ALREADY_COMPLETED',
-        message: 'Registration is already complete. Your USN, academic year, and location cannot be modified.',
+        message: 'Sign-up is already done. Your USN, year, and spot cannot be changed.',
       });
     }
 
     const liveState = await resolveStudentLiveState(updatedStudent);
     return res.status(200).json({
       success: true,
-      message: 'Student registration completed successfully.',
+      message: 'Sign-up done.',
       student: formatStudentResponse(updatedStudent, liveState),
     });
   } catch (error) {
@@ -415,7 +415,7 @@ const completeRegistration = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'An unexpected internal error occurred.',
+      message: 'Something went wrong on our side. Please try again.',
     });
   }
 };
@@ -441,7 +441,7 @@ const getMe = async (req, res) => {
     return res.status(500).json({
       success: false,
       code: 'INTERNAL_ERROR',
-      message: 'Failed to retrieve student profile.',
+      message: 'Could not load your profile.',
     });
   }
 };

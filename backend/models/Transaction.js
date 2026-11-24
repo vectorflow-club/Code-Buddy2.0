@@ -13,7 +13,7 @@ const transactionSchema = new mongoose.Schema(
       type: String,
       enum: {
         values: Object.values(TRANSACTION_TYPES),
-        message: '{VALUE} is not a valid transaction type',
+        message: '{VALUE} is not a valid type of money move',
       },
       required: [true, 'Transaction type is required'],
       index: true,
@@ -22,7 +22,7 @@ const transactionSchema = new mongoose.Schema(
       type: String,
       enum: {
         values: ['SUCCESS', 'PENDING', 'FAILED'],
-        message: '{VALUE} is not a valid transaction status',
+        message: '{VALUE} is not a valid money move state',
       },
       default: 'SUCCESS',
       index: true,

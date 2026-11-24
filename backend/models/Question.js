@@ -69,7 +69,7 @@ const questionSchema = new mongoose.Schema(
       type: String,
       enum: {
         values: ['EASY', 'HARD'],
-        message: '{VALUE} is not a valid difficulty level',
+        message: '{VALUE} is not a valid difficulty',
       },
       required: [true, 'Difficulty is required'],
       index: true,

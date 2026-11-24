@@ -38,17 +38,17 @@ function buildRequestUrl(baseUrl, path, method) {
 
   try {
     const base = new URL(`${baseUrl.replace(/\/+$/, '')}/`)
-    if (!['http:', 'https:'].includes(base.protocol) || base.username || base.password) throw new Error('Unsupported API URL configuration.')
+    if (!['http:', 'https:'].includes(base.protocol) || base.username || base.password) throw new Error('The site address is not supported.')
     return new URL(relativePath, base).toString()
   } catch (cause) {
-    throw new ApiError('The API base URL is invalid.', API_ERROR_CODES.CONFIGURATION, { method, cause })
+    throw new ApiError('The site address is wrong.', API_ERROR_CODES.CONFIGURATION, { method, cause })
   }
 }
 
 function responseMessage(body, status) {
   if (typeof body?.message === 'string' && body.message.trim()) return body.message
   if (typeof body?.error === 'string' && body.error.trim()) return body.error
-  return `The site replied with error ${status}.`
+  return `Something went wrong on the site (error ${status}).`
 }
 
 export function createApiClient({ baseUrl = backendConfig.apiBaseUrl, getAccessToken = () => null, fetchImpl = (...args) => globalThis.fetch(...args) } = {}) {
@@ -67,7 +67,7 @@ export function createApiClient({ baseUrl = backendConfig.apiBaseUrl, getAccessT
     try {
       accessToken = await accessTokenProvider()
     } catch (cause) {
-      throw new ApiError('An access token could not be obtained.', API_ERROR_CODES.TOKEN, { method, url, cause })
+      throw new ApiError('Your sign-in could not be checked.', API_ERROR_CODES.TOKEN, { method, url, cause })
     }
     if (typeof accessToken === 'string' && accessToken.trim()) {
       headers.set('Authorization', `Bearer ${accessToken.trim()}`)

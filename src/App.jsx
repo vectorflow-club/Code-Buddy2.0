@@ -45,7 +45,7 @@ function StudentSessionGate() {
         <ErrorState
           message={
             loadError.message ||
-            'Your student session could not be loaded.'
+            'We could not load your session.'
           }
         />
         <button

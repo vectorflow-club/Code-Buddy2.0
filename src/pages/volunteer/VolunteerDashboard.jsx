@@ -32,15 +32,15 @@ function rosterStatus(entry) {
     case "inProgress":
       return { label: "Solving now", tone: "pending" };
     case "timeExpired":
-      return { label: "Time expired", tone: "pending" };
+      return { label: "Time up", tone: "pending" };
     case "submitted":
-      return { label: "Needs evaluation", tone: "pending" };
+      return { label: "Needs a result", tone: "pending" };
     case "evaluated":
-      return { label: "Evaluated", tone: "completed" };
+      return { label: "Result given", tone: "completed" };
     default:
       return entry.levelsCleared > 0
         ? { label: "Between levels", tone: "neutral" }
-        : { label: "Registered", tone: "neutral" };
+        : { label: "Signed up", tone: "neutral" };
   }
 }
 
@@ -115,26 +115,26 @@ export default function VolunteerDashboard() {
       const response = await getVolunteerStudentRound(trimmedUsn);
       navigate("/volunteer/evaluations", { state: { lookupResult: response } });
     } catch (error) {
-      const message = error?.message || "The participant lookup failed. Please try again.";
+      const message = error?.message || "Finding the student did not work. Please try again.";
       const codeMessages = {
-        MISSING_USN: `USN is required: ${message}`,
-        INVALID_USN_FORMAT: `The USN format is invalid: ${message}`,
-        STUDENT_NOT_FOUND: `No registered participant was found for that USN: ${message}`,
-        REGISTRATION_INCOMPLETE: `The participant registration is incomplete: ${message}`,
-        INVALID_STUDENT_LEVEL: `The participant's current level is invalid: ${message}`,
-        ROUND_NOT_ALLOCATED: `No round is currently allocated for this participant: ${message}`,
+        MISSING_USN: `USN is needed: ${message}`,
+        INVALID_USN_FORMAT: `That USN does not look right: ${message}`,
+        STUDENT_NOT_FOUND: `No student with that USN signed up: ${message}`,
+        REGISTRATION_INCOMPLETE: `That student has not finished signing up: ${message}`,
+        INVALID_STUDENT_LEVEL: `That student's current level is not right: ${message}`,
+        ROUND_NOT_ALLOCATED: `No round has been given to this student yet: ${message}`,
       };
 
       if (error?.kind === "network") {
-        setLookupError(`Network error. Check your connection and retry. ${message}`);
+        setLookupError(`No connection. Check your internet and try again. ${message}`);
       } else if (codeMessages[error?.code]) {
         setLookupError(codeMessages[error.code]);
       } else if (error?.status >= 500 || error?.code === "INTERNAL_SERVER_ERROR") {
-        setLookupError(`Something went wrong. Please try the lookup again. ${message}`);
+        setLookupError(`Something went wrong. Please search again. ${message}`);
       } else if (error?.kind === "http" || error?.kind === "api") {
         setLookupError(message);
       } else {
-        setLookupError(`The lookup could not be completed. Please retry. ${message}`);
+        setLookupError(`The search did not work. Please try again. ${message}`);
       }
     } finally {
       lookupInProgress.current = false;
@@ -167,9 +167,9 @@ export default function VolunteerDashboard() {
     setRowBusy({ usn: entry.usn, action: label });
     setRowError("");
     const steps = [
-      ["evaluation", () => evaluateVolunteerStudentRound(entry.usn, { result })],
-      ["settlement", () => settleVolunteerStudentRound(entry.usn)],
-      ["progression", () => progressVolunteerStudentRound(entry.usn)],
+      ["giving the result", () => evaluateVolunteerStudentRound(entry.usn, { result })],
+      ["updating the money", () => settleVolunteerStudentRound(entry.usn)],
+      ["moving to the next level", () => progressVolunteerStudentRound(entry.usn)],
     ];
     try {
       for (const [stepName, runStep] of steps) {
@@ -231,7 +231,7 @@ export default function VolunteerDashboard() {
           <p className="vol-eyebrow">ORGANIZER PANEL</p>
           <h1>Welcome back, {volunteerName}!</h1>
           <p className="vol-subtitle">
-            Here&apos;s an overview of your assigned participants and evaluations.
+            Here are the students at your spot and their results.
           </p>
         </div>
 
@@ -242,29 +242,29 @@ export default function VolunteerDashboard() {
       </header>
 
       <p className="vol-subtitle" role="status">
-        Look up a registered participant by USN to view their current round.
+        Find a student by USN to see their current round.
       </p>
 
       <div className="vol-stats-grid">
         <div className="vol-stat-card">
           <div className="vol-stat-icon"><Users size={21} /></div>
-          <p>Assigned Participants</p>
+          <p>Students here</p>
           <h2>{stats ? stats.assignedParticipants : "-"}</h2>
-          <span>Registered at {spotLabel}</span>
+          <span>Signed up at {spotLabel}</span>
         </div>
 
         <div className="vol-stat-card">
           <div className="vol-stat-icon"><Clock size={21} /></div>
-          <p>Pending Evaluations</p>
+          <p>Results to give</p>
           <h2>{stats ? stats.pendingEvaluations : "-"}</h2>
-          <span>Rounds awaiting a verdict at {spotLabel}</span>
+          <span>Rounds waiting for a result at {spotLabel}</span>
         </div>
 
         <div className="vol-stat-card">
           <div className="vol-stat-icon"><CheckCircle2 size={21} /></div>
-          <p>Completed Evaluations</p>
+          <p>Results given</p>
           <h2>{stats ? stats.completedEvaluations : "-"}</h2>
-          <span>Verdicts recorded at {spotLabel}</span>
+          <span>Results given at {spotLabel}</span>
         </div>
 
         <div className="vol-stat-card">
@@ -272,10 +272,10 @@ export default function VolunteerDashboard() {
             <ClipboardList size={21} />
           </div>
 
-          <p>Evaluation Progress</p>
+          <p>Results done</p>
 
           <h2>{stats ? `${stats.evaluationProgress}%` : "-"}</h2>
-          <span>Share of evaluations complete at {spotLabel}</span>
+          <span>Share of results finished at {spotLabel}</span>
         </div>
       </div>
 
@@ -284,11 +284,11 @@ export default function VolunteerDashboard() {
           <div>
             <p className="vol-eyebrow">YOUR WORKSPACE</p>
             <h2>Participants</h2>
-            <p>Students registered at {spotLabel}. Enter a USN below to find a participant from any spot.</p>
+            <p>Students signed up at {spotLabel}. Enter a USN below to find a student from any spot.</p>
           </div>
 
           <span className="vol-count">
-            {pagination ? `${pagination.totalItems} participants` : "USN lookup"}
+            {pagination ? `${pagination.totalItems} students` : "USN lookup"}
           </span>
         </div>
 
@@ -297,14 +297,14 @@ export default function VolunteerDashboard() {
             <Search size={17} />
             <input
               type="text"
-              placeholder="Enter participant USN..."
+              placeholder="Enter student USN..."
               value={usn}
               onChange={(event) => {
                 setUsn(event.target.value);
                 if (lookupError) setLookupError("");
               }}
               disabled={lookupPending}
-              aria-label="Participant USN"
+              aria-label="Student USN"
               aria-invalid={Boolean(lookupError)}
               aria-describedby={lookupError ? "volunteer-lookup-error" : undefined}
             />
@@ -312,10 +312,10 @@ export default function VolunteerDashboard() {
 
           <button type="submit" className="vol-filter" disabled={lookupPending}>
             {lookupPending
-              ? "Looking up…"
+              ? "Searching…"
               : lookupError
-                ? "Retry lookup"
-                : "Look up participant"}
+                ? "Search again"
+                : "Find student"}
           </button>
 
           <button
@@ -344,7 +344,7 @@ export default function VolunteerDashboard() {
           <table className="vol-table">
             <thead>
               <tr>
-                <th>PARTICIPANT</th>
+                <th>STUDENT</th>
                 <th>USN</th>
                 <th>CURRENT LEVEL</th>
                 <th>STATUS</th>
@@ -357,7 +357,7 @@ export default function VolunteerDashboard() {
               {dashboardLoading && !dashboard ? (
                 <tr>
                   <td colSpan="6" className="vol-empty-state" role="status">
-                    Loading participants...
+                    Loading students...
                   </td>
                 </tr>
               ) : dashboardError ? (
@@ -376,7 +376,7 @@ export default function VolunteerDashboard() {
               ) : participants.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="vol-empty-state" role="status">
-                    No participants have registered at {spotLabel} yet.
+                    No students have signed up at {spotLabel} yet.
                   </td>
                 </tr>
               ) : (
@@ -398,7 +398,7 @@ export default function VolunteerDashboard() {
                       <td>
                         <span className={`vol-status-tag vol-${status.tone}`}>{status.label}</span>
                       </td>
-                      <td className="vol-balance">{formatCurrency(entry.walletBalance)}</td>
+                      <td className="vol-balance">{formatCurrency(entry.walletBalance)}{isTerminal && <span className="vol-to-pay">To pay</span>}</td>
                       <td>
                         <span className="vol-row-actions">
                           {canStart && (

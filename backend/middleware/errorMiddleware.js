@@ -13,7 +13,7 @@ const { buildErrorResponse } = require('../utils');
  */
 const notFoundHandler = (req, res) => {
   return res.status(404).json(
-    buildErrorResponse('ROUTE_NOT_FOUND', 'The requested route was not found.')
+    buildErrorResponse('ROUTE_NOT_FOUND', 'That page does not exist.')
   );
 };
 
@@ -29,7 +29,7 @@ const errorHandler = (err, req, res, next) => {
   if (!err || typeof err !== 'object') {
     console.error(`[ErrorHandler] ${req.method} ${req.originalUrl} -> Non-object error thrown`);
     return res.status(500).json(
-      buildErrorResponse('INTERNAL_SERVER_ERROR', 'An unexpected internal error occurred.')
+      buildErrorResponse('INTERNAL_SERVER_ERROR', 'Something went wrong on our side. Please try again.')
     );
   }
 
@@ -41,7 +41,7 @@ const errorHandler = (err, req, res, next) => {
 
   if (err.type === 'entity.too.large' || err.status === 413 || err.statusCode === 413) {
     return res.status(413).json(
-      buildErrorResponse('PAYLOAD_TOO_LARGE', 'Request payload exceeds the maximum allowed size limit.')
+      buildErrorResponse('PAYLOAD_TOO_LARGE', 'What you sent is too big.')
     );
   }
 
@@ -50,7 +50,7 @@ const errorHandler = (err, req, res, next) => {
     (err instanceof SyntaxError && (err.status === 400 || err.statusCode === 400) && 'body' in err)
   ) {
     return res.status(400).json(
-      buildErrorResponse('INVALID_JSON_BODY', 'Malformed JSON request body.')
+      buildErrorResponse('INVALID_JSON_BODY', 'What you sent could not be read.')
     );
   }
 
@@ -63,7 +63,7 @@ const errorHandler = (err, req, res, next) => {
     const message =
       typeof err.message === 'string' && err.message.trim() !== ''
         ? err.message
-        : 'Request could not be processed.';
+        : 'That could not be done. Please try again.';
     return res.status(explicitStatus).json(buildErrorResponse(code, message));
   }
 
@@ -74,7 +74,7 @@ const errorHandler = (err, req, res, next) => {
     const summary =
       fieldMessages.length > 0
         ? fieldMessages.join(' ')
-        : 'Request data failed validation.';
+        : 'Some details are not right. Please check and try again.';
     return res.status(400).json(buildErrorResponse('VALIDATION_ERROR', summary));
   }
 
@@ -82,24 +82,24 @@ const errorHandler = (err, req, res, next) => {
     if (explicitStatus >= 500 || err.isInternalError) {
       console.error(`[ErrorHandler] ${req.method} ${req.originalUrl} -> Internal CastError (${err.path || 'unknown'})`);
       return res.status(500).json(
-        buildErrorResponse('INTERNAL_SERVER_ERROR', 'An unexpected internal error occurred.')
+        buildErrorResponse('INTERNAL_SERVER_ERROR', 'Something went wrong on our side. Please try again.')
       );
     }
 
     if (err.kind === 'ObjectId' || err.path === '_id') {
       return res.status(400).json(
-        buildErrorResponse('INVALID_ID', 'Invalid identifier format.')
+        buildErrorResponse('INVALID_ID', 'That ID does not look right.')
       );
     }
 
     return res.status(400).json(
-      buildErrorResponse('INVALID_FIELD_FORMAT', 'Invalid value format provided for request field.')
+      buildErrorResponse('INVALID_FIELD_FORMAT', 'One value does not look right.')
     );
   }
 
   if (err.code === 11000 || (typeof err.message === 'string' && err.message.includes('E11000'))) {
     return res.status(409).json(
-      buildErrorResponse('DUPLICATE_RESOURCE', 'A record with the provided unique value already exists.')
+      buildErrorResponse('DUPLICATE_RESOURCE', 'That value is already used.')
     );
   }
 
@@ -109,7 +109,7 @@ const errorHandler = (err, req, res, next) => {
   );
 
   return res.status(500).json(
-    buildErrorResponse('INTERNAL_SERVER_ERROR', 'An unexpected internal error occurred.')
+    buildErrorResponse('INTERNAL_SERVER_ERROR', 'Something went wrong on our side. Please try again.')
   );
 };
 

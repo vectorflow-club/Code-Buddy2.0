@@ -12,18 +12,18 @@ export class AdminDataApiError extends Error {
 
 const adminRequest = createAdminRequest({
   makeError: (message, meta) => new AdminDataApiError(message, meta),
-  sessionMessage: "Your admin session is missing. Please sign in again.",
+  sessionMessage: "Your admin sign-in is missing. Please sign in again.",
   configMessage:
     "The admin side is not set up. Please check the site settings and try again.",
   networkMessage: "Could not reach the site. Check your connection and try again.",
-  unauthorizedMessage: "Your admin session is no longer authorized. Please sign in again.",
-  failureMessage: (status) => `The admin request failed (HTTP ${status}).`,
+  unauthorizedMessage: "Your admin sign-in ran out. Please sign in again.",
+  failureMessage: (status) => `The admin side had a problem (error ${status}).`,
 });
 
 export async function getAdminDashboardStats() {
   const payload = await adminRequest("/api/admin/dashboard");
   if (!payload.dashboard || typeof payload.dashboard !== "object") {
-    throw new Error("The admin dashboard response is missing dashboard statistics.");
+    throw new Error("The admin reply did not include the numbers.");
   }
   return payload.dashboard;
 }
@@ -36,7 +36,7 @@ async function getPaginatedCollection(path, collectionName) {
     const separator = path.includes("?") ? "&" : "?";
     const payload = await adminRequest(`${path}${separator}page=${page}&limit=100`);
     if (!Array.isArray(payload[collectionName])) {
-      throw new Error(`The admin response is missing a valid ${collectionName} array.`);
+      throw new Error(`The admin reply came back incomplete.`);
     }
     results.push(...payload[collectionName]);
     totalPages = Number(payload.pagination?.totalPages) || 1;
@@ -53,7 +53,7 @@ export function getAdminParticipants({ search = "" } = {}) {
 export async function getAdminParticipantDetails(identifier) {
   const payload = await adminRequest(`/api/admin/participants/${encodeURIComponent(identifier)}`);
   if (!payload.participant || typeof payload.participant !== "object") {
-    throw new Error("The participant details response is missing participant data.");
+    throw new Error("The student details reply came back incomplete.");
   }
   return payload;
 }
@@ -64,7 +64,7 @@ export async function reopenAdminParticipant(identifier) {
     { method: "POST" },
   );
   if (!payload.participant || typeof payload.participant !== "object") {
-    throw new Error("The re-open response is missing participant data.");
+    throw new Error("The re-open reply came back incomplete.");
   }
   return payload;
 }
@@ -75,10 +75,10 @@ export async function adjustAdminParticipantWallet(identifier, { amount, reason 
     { method: "POST", body: { amount, reason } },
   );
   if (!payload.transaction || typeof payload.transaction !== "object") {
-    throw new Error("The wallet adjustment response is missing transaction data.");
+    throw new Error("The money change reply came back incomplete.");
   }
   if (typeof payload.walletBalance !== "number") {
-    throw new Error("The wallet adjustment response is missing the new wallet balance.");
+    throw new Error("The money change reply did not include the new amount.");
   }
   return payload;
 }
@@ -99,17 +99,17 @@ function validateParticipantHistoryResponse(payload, collectionName) {
     typeof payload.participant !== "object" ||
     Array.isArray(payload.participant)
   ) {
-    throw new Error("The participant history response is missing participant data.");
+    throw new Error("The student history reply came back incomplete.");
   }
   if (!Array.isArray(payload[collectionName])) {
-    throw new Error(`The participant history response is missing ${collectionName}.`);
+    throw new Error(`The student history reply came back incomplete.`);
   }
   if (
     !payload.pagination ||
     typeof payload.pagination !== "object" ||
     Array.isArray(payload.pagination)
   ) {
-    throw new Error("The participant history response is missing pagination data.");
+    throw new Error("The student history reply came back incomplete.");
   }
   return payload;
 }
@@ -164,7 +164,7 @@ export async function getAdminRounds({
     typeof pagination.hasPrevPage === "boolean";
 
   if (!Array.isArray(payload.rounds) || !validPagination) {
-    throw new AdminDataApiError("The admin rounds response is missing a valid rounds array or pagination data.", {
+    throw new AdminDataApiError("The rounds reply came back incomplete.", {
       status: null,
       code: null,
       kind: "response",
@@ -187,7 +187,7 @@ export async function recoverAdminRound(roundId) {
     round.id.length === 0 ||
     round.status !== "ready"
   ) {
-    throw new AdminDataApiError("The admin recovery response is missing a valid recovered round.", {
+    throw new AdminDataApiError("The round recovery reply came back incomplete.", {
       kind: "response",
     });
   }
@@ -228,7 +228,7 @@ export async function getAdminTransactions({
     !validPagination
   ) {
     throw new AdminDataApiError(
-      "The admin transactions response is missing valid transaction or pagination data.",
+      "The money moves reply came back incomplete.",
       { kind: "response" },
     );
   }

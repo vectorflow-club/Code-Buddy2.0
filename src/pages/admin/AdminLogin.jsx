@@ -86,7 +86,7 @@ export default function AdminLogin() {
         </form>
 
         <p className="admin-login-footer">
-          Restricted access · Authorised administrators only
+          Admins only
         </p>
       </div>
     </div>

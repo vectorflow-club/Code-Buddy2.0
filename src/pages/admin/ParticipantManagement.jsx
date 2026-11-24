@@ -10,7 +10,7 @@ import {
 import "./participants.css";
 import { useFetchState } from "../../hooks/useFetchState";
 import { usePagedHistory } from "../../hooks/usePagedHistory";
-import { displayStatus, formatCurrency, formatDate } from "../../utils/formatters";
+import { competitionStatusLabel, displayStatus, evaluationStatusLabel, formatCurrency, formatDate, roundStatusLabel, statusCountLabel, transactionTypeLabel } from "../../utils/formatters";
 import {
   adjustAdminParticipantWallet,
   getAdminParticipantDetails,
@@ -21,15 +21,15 @@ import {
 } from "../../services/adminDataService";
 
 function formatCounts(counts) {
-  if (!counts || typeof counts !== "object" || Array.isArray(counts)) return "Not available";
+  if (!counts || typeof counts !== "object" || Array.isArray(counts)) return "Not shown";
   return Object.entries(counts)
-    .map(([status, count]) => `${status}: ${count}`)
+    .map(([status, count]) => `${statusCountLabel(status)}: ${count}`)
     .join(" · ");
 }
 
 function formatTransactionTotals(totals) {
   if (!totals || typeof totals !== "object" || Array.isArray(totals)) {
-    return "Not available";
+    return "Not shown";
   }
   return Object.entries(totals)
     .map(([type, value]) => {
@@ -37,7 +37,7 @@ function formatTransactionTotals(totals) {
       const amount = value && typeof value.totalAmount === "number"
         ? value.totalAmount
         : "—";
-      return `${type}: ${count} / ₹${amount}`;
+      return `${transactionTypeLabel(type)}: ${count} / ₹${amount}`;
     })
     .join(" · ");
 }
@@ -54,7 +54,7 @@ export default function ParticipantManagement() {
   }, []);
   const { data: participants, loading, error, setError, reload: loadParticipants } = useFetchState(fetchParticipants, {
     initialData: [],
-    errorMessage: "Could not load participants.",
+    errorMessage: "Could not load the students.",
   });
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -81,7 +81,7 @@ export default function ParticipantManagement() {
     error: transactionHistoryError,
     page: transactionPage,
     load: loadTransactionHistory,
-  } = usePagedHistory(getAdminParticipantTransactions, "Could not load transaction history.");
+  } = usePagedHistory(getAdminParticipantTransactions, "Could not load the money history.");
   const [activeHistory, setActiveHistory] = useState("");
 
   const filteredParticipants = participants.filter((participant) => {
@@ -132,7 +132,7 @@ export default function ParticipantManagement() {
         setRetryDetailsParticipant(null);
       })
       .catch((detailsLoadError) => {
-        setDetailsError(detailsLoadError.message || "Could not load participant details.");
+        setDetailsError(detailsLoadError.message || "Could not load the student details.");
       })
       .finally(() => setDetailsLoading(false));
 
@@ -145,7 +145,7 @@ export default function ParticipantManagement() {
 
   const handleReopen = async (participant) => {
     const confirmed = window.confirm(
-      `Re-open ${participant.name} at Level ${participant.level}? The wrongly judged round will be removed and they can enter the level again with a new question. Their wallet balance stays the same.`
+      `Re-open ${participant.name} at Level ${participant.level}? The wrongly judged round will be removed and they can enter the level again with a new question. Their money stays the same.`
     );
     if (!confirmed) return;
     setError("");
@@ -154,7 +154,7 @@ export default function ParticipantManagement() {
       await reopenAdminParticipant(participant.usn || participant.id);
       await loadParticipants();
     } catch (reopenError) {
-      setError(reopenError.message || "Could not re-open the participant.");
+      setError(reopenError.message || "Could not re-open that student.");
     } finally {
       setReopeningId(null);
     }
@@ -168,7 +168,7 @@ export default function ParticipantManagement() {
       return;
     }
     if (!adjustReason.trim()) {
-      setAdjustError("Enter a reason for the adjustment.");
+      setAdjustError("Give a reason for the change.");
       setAdjustSuccess("");
       return;
     }
@@ -182,9 +182,9 @@ export default function ParticipantManagement() {
       );
       await openParticipant(selectedParticipant);
       await loadParticipants();
-      setAdjustSuccess(`Wallet updated. New balance: ${formatCurrency(result.walletBalance)}.`);
+      setAdjustSuccess(`Money updated. New amount: ${formatCurrency(result.walletBalance)}.`);
     } catch (adjustFailure) {
-      setAdjustError(adjustFailure.message || "Could not adjust the wallet.");
+      setAdjustError(adjustFailure.message || "Could not change the money.");
     } finally {
       setAdjusting(false);
     }
@@ -196,11 +196,11 @@ export default function ParticipantManagement() {
       <div className="participant-page-header">
         <div>
           <span className="admin-eyebrow">
-            COMPETITION MANAGEMENT
+            MANAGE THE COMPETITION
           </span>
-          <h1>Participants.</h1>
+          <h1>Students.</h1>
           <p>
-            Monitor registered students and their competition progress.
+            See students who signed up and how far they got.
           </p>
         </div>
       </div>
@@ -208,7 +208,7 @@ export default function ParticipantManagement() {
       <div className="participant-summary">
         <div>
           <Users size={21} />
-          <span>Total Participants</span>
+          <span>Total students</span>
           <strong>{participants.length}</strong>
         </div>
 
@@ -232,7 +232,7 @@ export default function ParticipantManagement() {
       </div>
 
       {error && <p role="alert">{error} <button type="button" onClick={loadParticipants}>Retry</button></p>}
-      {loading && <p role="status">Loading participants…</p>}
+      {loading && <p role="status">Loading students…</p>}
 
       <div className="participant-toolbar">
         <div className="participant-search">
@@ -249,7 +249,7 @@ export default function ParticipantManagement() {
           value={statusFilter}
           onChange={(event) => setStatusFilter(event.target.value)}
         >
-          <option value="ALL">All Statuses</option>
+          <option value="ALL">All</option>
           <option value="ACTIVE">Active</option>
           <option value="ELIMINATED">Eliminated</option>
           <option value="COMPLETED">Completed</option>
@@ -258,7 +258,7 @@ export default function ParticipantManagement() {
 
       <div className="participant-table-container">
         <div className="participant-table-heading">
-          <h2>Registered Participants</h2>
+          <h2>Students signed up</h2>
           <span>{filteredParticipants.length} students</span>
         </div>
 
@@ -269,7 +269,7 @@ export default function ParticipantManagement() {
                 <th>STUDENT</th>
                 <th>USN</th>
                 <th>LEVEL</th>
-                <th>PRIZE SECURED</th>
+                <th>PRIZE WON</th>
                 <th>STATUS</th>
                 <th>DETAILS</th>
               </tr>
@@ -280,7 +280,7 @@ export default function ParticipantManagement() {
                 <tr key={participant.id}>
                   <td>
                     <strong>{participant.name}</strong>
-                    <small>Email is not available in this list</small>
+                    <small>Email not shown here</small>
                   </td>
 
                   <td>{participant.usn || "—"}</td>
@@ -291,7 +291,7 @@ export default function ParticipantManagement() {
                     <span
                       className={`participant-status ${participant.status.toLowerCase()}`}
                     >
-                      {participant.status}
+                      {competitionStatusLabel(participant.competitionStatus)}
                     </span>
                   </td>
 
@@ -328,7 +328,7 @@ export default function ParticipantManagement() {
               {!loading && !error && filteredParticipants.length === 0 && (
                 <tr>
                   <td colSpan="6" className="participant-empty">
-                    No participants found.
+                    No students found.
                   </td>
                 </tr>
               )}
@@ -364,7 +364,7 @@ export default function ParticipantManagement() {
 
               <div>
                 <span>Email</span>
-                <strong>Email is not available here</strong>
+                <strong>Email not shown here</strong>
               </div>
 
               <div>
@@ -373,47 +373,47 @@ export default function ParticipantManagement() {
               </div>
 
               <div>
-                <span>Prize Secured</span>
+                <span>Prize won</span>
                 <strong>{formatCurrency(selectedParticipant.prize)}</strong>
               </div>
 
               <div>
-                <span>Competition Status</span>
-                  <strong>{selectedParticipant.competitionStatus || selectedParticipant.status}</strong>
+                <span>Status</span>
+                  <strong>{competitionStatusLabel(selectedParticipant.competitionStatus)}</strong>
               </div>
                 <div>
-                  <span>Current Wallet Balance</span>
+                  <span>Money now</span>
                   <strong>{selectedParticipant.walletBalance === undefined ? "—" : formatCurrency(selectedParticipant.walletBalance)}</strong>
                 </div>
               <div>
-                <span>Total Rounds / Completed</span>
+                <span>Rounds / Finished</span>
                 <strong>
                   {selectedParticipant.summary
                     ? `${selectedParticipant.summary.totalRounds} / ${selectedParticipant.summary.completedRounds}`
-                    : "Not available"}
+                    : "Not shown"}
                 </strong>
               </div>
               <div>
-                <span>Round Counts by Status</span>
+                <span>Rounds by result</span>
                 <strong>{formatCounts(selectedParticipant.summary?.roundCountsByStatus)}</strong>
               </div>
               <div>
-                <span>Evaluation Counts by Status</span>
+                <span>Results by outcome</span>
                 <strong>{formatCounts(selectedParticipant.summary?.evaluationCountsByStatus)}</strong>
               </div>
               <div>
-                <span>Total Transactions</span>
-                <strong>{selectedParticipant.summary?.totalTransactions ?? "Not available"}</strong>
+                <span>Money moves</span>
+                <strong>{selectedParticipant.summary?.totalTransactions ?? "Not shown"}</strong>
               </div>
               <div>
-                <span>Transaction Totals by Type</span>
+                <span>Money totals by type</span>
                 <strong>{formatTransactionTotals(selectedParticipant.summary?.transactionTotalsByType)}</strong>
               </div>
             </div>
 
             <div className="participant-adjust">
-              <h3>Adjust wallet balance</h3>
-              <p>Add or subtract an amount. Every adjustment is recorded with its reason.</p>
+              <h3>Change the money</h3>
+              <p>Add or take away money. Every change is saved with its reason.</p>
               <div className="participant-adjust-row">
                 <input
                   type="number"
@@ -425,7 +425,7 @@ export default function ParticipantManagement() {
                 />
                 <input
                   type="text"
-                  placeholder="Reason, e.g. wrong settlement corrected"
+                  placeholder="Reason, e.g. wrong payment fixed"
                   value={adjustReason}
                   onChange={(event) => setAdjustReason(event.target.value)}
                   disabled={adjusting}
@@ -436,14 +436,14 @@ export default function ParticipantManagement() {
                   disabled={adjusting}
                   onClick={handleAdjustWallet}
                 >
-                  {adjusting ? "Applying..." : "Apply adjustment"}
+                  {adjusting ? "Applying..." : "Apply change"}
                 </button>
               </div>
               {adjustError && <p role="alert">{adjustError}</p>}
               {adjustSuccess && <p role="status">{adjustSuccess}</p>}
             </div>
 
-            {detailsLoading && <p role="status">Loading participant details…</p>}
+            {detailsLoading && <p role="status">Loading student details…</p>}
             {detailsError && (
               <p role="alert">
                 {detailsError}{" "}
@@ -473,7 +473,7 @@ export default function ParticipantManagement() {
                 aria-expanded={activeHistory === "transactions"}
                 onClick={() => setActiveHistory(activeHistory === "transactions" ? "" : "transactions")}
               >
-                Transaction History
+                Money history
               </button>
             </div>
 
@@ -505,26 +505,26 @@ export default function ParticipantManagement() {
                           <tr>
                             <th>LEVEL</th>
                             <th>STATUS</th>
-                            <th>DURATION</th>
-                            <th>EVALUATION</th>
-                            <th>SETTLED</th>
-                            <th>PROGRESSED</th>
+                            <th>TIME</th>
+                            <th>RESULT</th>
+                            <th>MONEY UPDATED</th>
+                            <th>MOVED ON</th>
                           </tr>
                         </thead>
                         <tbody>
                           {roundHistory.rounds.map((historyRound) => (
                             <tr key={historyRound.id}>
                               <td>Level {historyRound.levelNumber}</td>
-                              <td>{historyRound.status}</td>
+                              <td>{roundStatusLabel(historyRound.status)}</td>
                               <td>{historyRound.durationSeconds} sec</td>
-                              <td>{historyRound.evaluation?.status ?? "Not available"}</td>
+                              <td>{evaluationStatusLabel(historyRound.evaluation?.status)}</td>
                               <td>{historyRound.evaluation?.isSettled ? "Yes" : "No"}</td>
                               <td>{historyRound.evaluation?.isProgressed ? "Yes" : "No"}</td>
                             </tr>
                           ))}
                           {roundHistory.rounds.length === 0 && (
                             <tr>
-                              <td colSpan="6" className="participant-empty">No round history found.</td>
+                              <td colSpan="6" className="participant-empty">No rounds found.</td>
                             </tr>
                           )}
                         </tbody>
@@ -557,10 +557,10 @@ export default function ParticipantManagement() {
             {activeHistory === "transactions" && (
               <div className="participant-table-container">
                 <div className="participant-table-heading">
-                  <h2>Transaction History</h2>
-                  <span>{transactionHistory?.pagination?.totalItems ?? 0} transactions</span>
+                  <h2>Money history</h2>
+                  <span>{transactionHistory?.pagination?.totalItems ?? 0} money moves</span>
                 </div>
-                {transactionHistoryLoading && <p role="status">Loading transaction history…</p>}
+                {transactionHistoryLoading && <p role="status">Loading money history…</p>}
                 {transactionHistoryError && (
                   <p role="alert">
                     {transactionHistoryError}{" "}
@@ -583,7 +583,7 @@ export default function ParticipantManagement() {
                             <th>DATE</th>
                             <th>TYPE</th>
                             <th>AMOUNT</th>
-                            <th>BALANCE AFTER</th>
+                            <th>MONEY AFTER</th>
                             <th>LEVEL</th>
                             <th>DESCRIPTION</th>
                           </tr>
@@ -592,7 +592,7 @@ export default function ParticipantManagement() {
                           {transactionHistory.transactions.map((transaction) => (
                             <tr key={transaction.id}>
                               <td>{formatDate(transaction.timestamp)}</td>
-                              <td>{transaction.type}</td>
+                              <td>{transactionTypeLabel(transaction.type)}</td>
                               <td>{formatCurrency(transaction.amount)}</td>
                               <td>{formatCurrency(transaction.balanceAfter)}</td>
                               <td>{transaction.levelNumber ?? "—"}</td>
@@ -601,7 +601,7 @@ export default function ParticipantManagement() {
                           ))}
                           {transactionHistory.transactions.length === 0 && (
                             <tr>
-                              <td colSpan="6" className="participant-empty">No transaction history found.</td>
+                              <td colSpan="6" className="participant-empty">No money moves found.</td>
                             </tr>
                           )}
                         </tbody>

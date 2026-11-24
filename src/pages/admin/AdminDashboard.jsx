@@ -5,9 +5,9 @@ import { useFetchState } from "../../hooks/useFetchState";
 import { getAdminDashboardStats } from "../../services/adminDataService";
 
 const emptyStats = [
-  { label: "Registered Students", value: "—", caption: "Completed student registration" },
-  { label: "Active Participants", value: "—", caption: "Registered, in progress, or cleared" },
-  { label: "Eliminated", value: "—", caption: "Competition records" },
+  { label: "Students signed up", value: "—", caption: "Finished signing up" },
+  { label: "Still playing", value: "—", caption: "Signed up, playing, or cleared a level" },
+  { label: "Eliminated", value: "—", caption: "Out of the game" },
   { label: "Completed", value: "—", caption: "Finished all levels" },
 ];
 
@@ -15,7 +15,7 @@ export default function AdminDashboard() {
   const fetchDashboard = useCallback(() => getAdminDashboardStats(), []);
   const { data: dashboard, loading, error, reload: loadDashboard } = useFetchState(fetchDashboard, {
     initialData: null,
-    errorMessage: "Could not load competition statistics.",
+    errorMessage: "Could not load the numbers.",
   });
 
   const participants = dashboard?.participants;
@@ -31,24 +31,24 @@ export default function AdminDashboard() {
   return (
     <div className="admin-dashboard">
       <SectionHeading
-        kicker="COMPETITION MANAGEMENT"
+        kicker="MANAGE THE COMPETITION"
         title="Admin overview."
-        detail="Monitor participants and manage the Code Buddy competition."
+        detail="Watch the students and run the Code Buddy competition."
       />
 
       <div className="admin-welcome">
         <div>
           <span className="admin-eyebrow">VVCE CODE SPRINT</span>
-          <h2>Competition control center.</h2>
-          <p>Manage questions, levels, organizers and participants.</p>
+          <h2>Control room.</h2>
+          <p>Questions, levels, organizers and students.</p>
         </div>
         <Activity size={38} />
       </div>
 
       <SectionHeading
-        kicker="LIVE STATISTICS"
+        kicker="LIVE NUMBERS"
         title="Competition at a glance."
-        detail="Live competition statistics."
+        detail="Live numbers."
       />
 
       {error && (
@@ -57,7 +57,7 @@ export default function AdminDashboard() {
           <button type="button" onClick={loadDashboard}>Retry</button>
         </div>
       )}
-      {loading && <p role="status">Loading competition statistics…</p>}
+      {loading && <p role="status">Loading the numbers…</p>}
 
       <div className="admin-stats-grid">
         {stats.map((item, index) => (
@@ -73,16 +73,16 @@ export default function AdminDashboard() {
 
       <SectionHeading
         kicker="QUICK ACCESS"
-        title="Management shortcuts."
-        detail="Navigate to the main competition management areas."
+        title="Shortcuts."
+        detail="Go to the main pages."
       />
 
       <div className="admin-quick-grid">
         {[
-          { title: "Question Bank", detail: "Add and manage coding questions.", icon: Trophy },
-          { title: "Participants", detail: "View registered students.", icon: Users },
-          { title: "Organizers", detail: "Manage organizer accounts.", icon: UserX },
-          { title: "Wallet Records", detail: "Review competition transactions.", icon: Wallet },
+          { title: "Question Bank", detail: "Add coding questions.", icon: Trophy },
+          { title: "Students", detail: "See students who signed up.", icon: Users },
+          { title: "Organizers", detail: "Organizer accounts.", icon: UserX },
+          { title: "Money records", detail: "See money moves.", icon: Wallet },
         ].map(({ title, detail, icon: Icon }) => (
           <article className="admin-quick-card" key={title}>
             <Icon size={22} />

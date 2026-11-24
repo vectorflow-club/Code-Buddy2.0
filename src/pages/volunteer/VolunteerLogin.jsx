@@ -39,8 +39,8 @@ export default function VolunteerLogin() {
         <h1>Welcome back</h1>
 
         <p className="vol-login-description">
-          Sign in with your organizer username to manage
-          your assigned participants and evaluations.
+          Sign in with your organizer username to see
+          your students and give results.
         </p>
 
         <form onSubmit={handleSubmit}>
@@ -110,7 +110,7 @@ export default function VolunteerLogin() {
         </form>
 
         <p className="vol-login-footer">
-          Login credentials are provided by the competition administrator.
+          The event team gives you your username and password.
         </p>
       </div>
 

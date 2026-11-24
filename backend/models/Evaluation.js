@@ -32,7 +32,7 @@ const evaluationSchema = new mongoose.Schema(
       type: String,
       enum: {
         values: ['PENDING', 'PASS', 'FAIL'],
-        message: '{VALUE} is not a valid evaluation status',
+        message: '{VALUE} is not a valid result',
       },
       default: 'PENDING',
       index: true,

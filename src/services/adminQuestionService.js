@@ -2,18 +2,18 @@ import { createAdminRequest } from "./adminRequest";
 
 const adminRequest = createAdminRequest({
   makeError: (message) => new Error(message),
-  sessionMessage: "Your admin session is missing. Please sign in again.",
+  sessionMessage: "Your admin sign-in is missing. Please sign in again.",
   configMessage:
     "The admin side is not set up. Please check the site settings and try again.",
   networkMessage: "Could not reach the site. Check your connection and try again.",
-  unauthorizedMessage: "Your admin session is no longer authorized. Please sign in again.",
-  failureMessage: (status) => `The question request failed (HTTP ${status}).`,
+  unauthorizedMessage: "Your admin sign-in ran out. Please sign in again.",
+  failureMessage: (status) => `The question change did not work (error ${status}).`,
 });
 
 export async function getAdminQuestionList() {
   const payload = await adminRequest("/api/admin/questions");
   if (!Array.isArray(payload.questions)) {
-    throw new Error("The question list response is missing a valid questions array.");
+    throw new Error("The questions reply came back incomplete.");
   }
   return payload.questions;
 }

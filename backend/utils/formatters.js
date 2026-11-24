@@ -21,14 +21,14 @@ const parseValidDeadlineMs = (deadline) => {
   if (deadline === null || deadline === undefined || deadline === '') {
     return {
       errorCode: 'MISSING_ROUND_DEADLINE',
-      message: 'Active round is missing a stored deadline.',
+      message: 'Your round has no end time saved.',
     };
   }
 
   if (!(deadline instanceof Date) && typeof deadline !== 'string' && typeof deadline !== 'number') {
     return {
       errorCode: 'INVALID_ROUND_DEADLINE',
-      message: 'Active round contains an invalid deadline value.',
+      message: 'Your round has a wrong end time.',
     };
   }
 
@@ -36,7 +36,7 @@ const parseValidDeadlineMs = (deadline) => {
   if (!Number.isFinite(timestampMs) || timestampMs <= 0) {
     return {
       errorCode: 'INVALID_ROUND_DEADLINE',
-      message: 'Active round contains an invalid deadline timestamp.',
+      message: 'Your round has a wrong end time.',
     };
   }
 
