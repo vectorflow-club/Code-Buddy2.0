@@ -83,6 +83,20 @@ export default function VolunteerDashboard() {
     [loadDashboard, page]
   );
 
+  // Keep the roster live while the organizer watches this page: students
+  // allocate new levels from their phones, and without a refresh the row
+  // keeps its old state (no Start button for a freshly allocated round).
+  // Same 10-second cadence as the student dashboard. Silent, so the table
+  // does not flash a loading state; paused while a row action is in
+  // flight, and the interval is cleaned up on unmount and page change.
+  useEffect(() => {
+    if (rowBusy) return undefined;
+    const timerId = window.setInterval(() => {
+      refreshDashboard();
+    }, 10000);
+    return () => window.clearInterval(timerId);
+  }, [refreshDashboard, rowBusy]);
+
   async function handleLookup(event) {
     event.preventDefault();
     if (lookupInProgress.current) return;
@@ -284,6 +298,15 @@ export default function VolunteerDashboard() {
               : lookupError
                 ? "Retry lookup"
                 : "Look up participant"}
+          </button>
+
+          <button
+            type="button"
+            className="vol-filter"
+            disabled={dashboardLoading}
+            onClick={() => loadDashboard(page)}
+          >
+            Refresh
           </button>
         </form>
 
