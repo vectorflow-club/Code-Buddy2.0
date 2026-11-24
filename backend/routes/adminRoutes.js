@@ -19,6 +19,8 @@ const {
   getAdminDashboard,
   listParticipants,
   getParticipantDetails,
+  reopenEliminatedParticipant,
+  adjustParticipantWallet,
   listRounds,
   getParticipantRounds,
   listTransactions,
@@ -165,6 +167,25 @@ router.get(
  * @access  Protected (Admin only)
  */
 router.get('/participants/:identifier', protectAdmin, authorizeAdmin, getParticipantDetails);
+
+/**
+ * @route   POST /api/admin/participants/:identifier/reopen
+ * @desc    Re-open an eliminated participant at the same level after a wrong verdict
+ * @access  Protected (Admin only)
+ */
+router.post('/participants/:identifier/reopen', protectAdmin, authorizeAdmin, reopenEliminatedParticipant);
+
+/**
+ * @route   POST /api/admin/participants/:identifier/wallet-adjustments
+ * @desc    Adjust a participant's wallet balance with a reasoned ADMIN_ADJUSTMENT ledger entry
+ * @access  Protected (Admin only)
+ */
+router.post(
+  '/participants/:identifier/wallet-adjustments',
+  protectAdmin,
+  authorizeAdmin,
+  adjustParticipantWallet
+);
 
 /**
  * @route   GET /api/admin/rounds

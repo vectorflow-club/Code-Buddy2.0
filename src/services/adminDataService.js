@@ -58,6 +58,31 @@ export async function getAdminParticipantDetails(identifier) {
   return payload;
 }
 
+export async function reopenAdminParticipant(identifier) {
+  const payload = await adminRequest(
+    `/api/admin/participants/${encodeURIComponent(identifier)}/reopen`,
+    { method: "POST" },
+  );
+  if (!payload.participant || typeof payload.participant !== "object") {
+    throw new Error("The re-open response is missing participant data.");
+  }
+  return payload;
+}
+
+export async function adjustAdminParticipantWallet(identifier, { amount, reason }) {
+  const payload = await adminRequest(
+    `/api/admin/participants/${encodeURIComponent(identifier)}/wallet-adjustments`,
+    { method: "POST", body: { amount, reason } },
+  );
+  if (!payload.transaction || typeof payload.transaction !== "object") {
+    throw new Error("The wallet adjustment response is missing transaction data.");
+  }
+  if (typeof payload.walletBalance !== "number") {
+    throw new Error("The wallet adjustment response is missing the new wallet balance.");
+  }
+  return payload;
+}
+
 function buildQueryString(parameters) {
   const query = new URLSearchParams();
   Object.entries(parameters).forEach(([key, value]) => {

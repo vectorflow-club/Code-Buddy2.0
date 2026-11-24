@@ -12,10 +12,12 @@ import { useFetchState } from "../../hooks/useFetchState";
 import { usePagedHistory } from "../../hooks/usePagedHistory";
 import { displayStatus, formatCurrency, formatDate } from "../../utils/formatters";
 import {
+  adjustAdminParticipantWallet,
   getAdminParticipantDetails,
   getAdminParticipantRounds,
   getAdminParticipantTransactions,
   getAdminParticipants,
+  reopenAdminParticipant,
 } from "../../services/adminDataService";
 
 function formatCounts(counts) {
@@ -60,6 +62,12 @@ export default function ParticipantManagement() {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState("");
   const [retryDetailsParticipant, setRetryDetailsParticipant] = useState(null);
+  const [reopeningId, setReopeningId] = useState(null);
+  const [adjustAmount, setAdjustAmount] = useState("");
+  const [adjustReason, setAdjustReason] = useState("");
+  const [adjusting, setAdjusting] = useState(false);
+  const [adjustError, setAdjustError] = useState("");
+  const [adjustSuccess, setAdjustSuccess] = useState("");
   const {
     data: roundHistory,
     loading: roundHistoryLoading,
@@ -106,6 +114,10 @@ export default function ParticipantManagement() {
     setDetailsLoading(true);
     setDetailsError("");
     setError("");
+    setAdjustAmount("");
+    setAdjustReason("");
+    setAdjustError("");
+    setAdjustSuccess("");
 
     const detailsRequest = getAdminParticipantDetails(identifier)
       .then((result) => {
@@ -129,6 +141,53 @@ export default function ParticipantManagement() {
       loadRoundHistory(identifier, 1),
       loadTransactionHistory(identifier, 1),
     ]);
+  };
+
+  const handleReopen = async (participant) => {
+    const confirmed = window.confirm(
+      `Re-open ${participant.name} at Level ${participant.level}? The wrongly judged round will be removed and they can enter the level again with a new question. Their wallet balance stays the same.`
+    );
+    if (!confirmed) return;
+    setError("");
+    setReopeningId(participant.id);
+    try {
+      await reopenAdminParticipant(participant.usn || participant.id);
+      await loadParticipants();
+    } catch (reopenError) {
+      setError(reopenError.message || "Could not re-open the participant.");
+    } finally {
+      setReopeningId(null);
+    }
+  };
+
+  const handleAdjustWallet = async () => {
+    const amount = Number(adjustAmount);
+    if (!Number.isInteger(amount) || amount === 0) {
+      setAdjustError("Enter a whole number of rupees (positive to add, negative to subtract).");
+      setAdjustSuccess("");
+      return;
+    }
+    if (!adjustReason.trim()) {
+      setAdjustError("Enter a reason for the adjustment.");
+      setAdjustSuccess("");
+      return;
+    }
+    setAdjustError("");
+    setAdjustSuccess("");
+    setAdjusting(true);
+    try {
+      const result = await adjustAdminParticipantWallet(
+        selectedParticipant.usn || selectedParticipant.id,
+        { amount, reason: adjustReason.trim() }
+      );
+      await openParticipant(selectedParticipant);
+      await loadParticipants();
+      setAdjustSuccess(`Wallet updated. New balance: ${formatCurrency(result.walletBalance)}.`);
+    } catch (adjustFailure) {
+      setAdjustError(adjustFailure.message || "Could not adjust the wallet.");
+    } finally {
+      setAdjusting(false);
+    }
   };
 
   return (
@@ -237,14 +296,31 @@ export default function ParticipantManagement() {
                   </td>
 
                   <td>
-                    <button
-                      className="participant-view-btn"
-                      onClick={() => openParticipant(participant)}
-                      disabled={detailsLoading || roundHistoryLoading || transactionHistoryLoading}
-                    >
-                      <Eye size={16} />
-                      View
-                    </button>
+                    <div className="participant-row-actions">
+                      <button
+                        className="participant-view-btn"
+                        onClick={() => openParticipant(participant)}
+                        disabled={detailsLoading || roundHistoryLoading || transactionHistoryLoading}
+                      >
+                        <Eye size={16} />
+                        View
+                      </button>
+                      {participant.status === "ELIMINATED" && (
+                        <button
+                          type="button"
+                          className="participant-view-btn"
+                          disabled={
+                            reopeningId === participant.id ||
+                            detailsLoading ||
+                            roundHistoryLoading ||
+                            transactionHistoryLoading
+                          }
+                          onClick={() => handleReopen(participant)}
+                        >
+                          {reopeningId === participant.id ? "Re-opening..." : "Re-open"}
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -333,6 +409,38 @@ export default function ParticipantManagement() {
                 <span>Transaction Totals by Type</span>
                 <strong>{formatTransactionTotals(selectedParticipant.summary?.transactionTotalsByType)}</strong>
               </div>
+            </div>
+
+            <div className="participant-adjust">
+              <h3>Adjust wallet balance</h3>
+              <p>Add or subtract an amount. Every adjustment is recorded with its reason.</p>
+              <div className="participant-adjust-row">
+                <input
+                  type="number"
+                  step="1"
+                  placeholder="Amount, e.g. 100 or -50"
+                  value={adjustAmount}
+                  onChange={(event) => setAdjustAmount(event.target.value)}
+                  disabled={adjusting}
+                />
+                <input
+                  type="text"
+                  placeholder="Reason, e.g. wrong settlement corrected"
+                  value={adjustReason}
+                  onChange={(event) => setAdjustReason(event.target.value)}
+                  disabled={adjusting}
+                />
+                <button
+                  type="button"
+                  className="participant-view-btn"
+                  disabled={adjusting}
+                  onClick={handleAdjustWallet}
+                >
+                  {adjusting ? "Applying..." : "Apply adjustment"}
+                </button>
+              </div>
+              {adjustError && <p role="alert">{adjustError}</p>}
+              {adjustSuccess && <p role="status">{adjustSuccess}</p>}
             </div>
 
             {detailsLoading && <p role="status">Loading participant details…</p>}

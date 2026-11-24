@@ -1891,6 +1891,195 @@ async function run() {
         'Lookup student eliminated after FAIL progress'
       );
     });
+
+    await runSuite('Suite I: Admin Tools - Question Deactivation, Re-open Eliminated, Wallet Adjustment', async () => {
+      // B4: the backend allows deactivating a question that was ever allocated
+      // (the UI used to block this; the toggle now relies on this endpoint).
+      const anyRound = await env.models.Round.findOne().lean();
+      check(Boolean(anyRound), 'At least one round exists for the B4 check');
+      const assignedQuestionId = anyRound.questionId.toString();
+      const assignedCheck = await env.models.Round.exists({ questionId: anyRound.questionId });
+      check(Boolean(assignedCheck), 'Chosen question is assigned to a round');
+
+      const deactAssigned = await env
+        .http()
+        .patch(`/api/admin/questions/${assignedQuestionId}/deactivate`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      checkEqual(deactAssigned.status, 200, 'Deactivate assigned question -> 200');
+      checkEqual(deactAssigned.body.question.isActive, false, 'Assigned question isActive false after deactivate');
+
+      const reactAssigned = await env
+        .http()
+        .patch(`/api/admin/questions/${assignedQuestionId}/reactivate`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      checkEqual(reactAssigned.status, 200, 'Reactivate assigned question -> 200');
+      checkEqual(reactAssigned.body.question.isActive, true, 'Assigned question isActive true after reactivate');
+
+      // B5: eliminate a student at L2, re-open, re-enter and clear L2.
+      const reopenStudent = await provisionAndRegisterStudent({
+        tag: 'reopen1',
+        name: 'Reopen One',
+        usn: '4VV24CS910',
+        year: '2nd Year',
+      });
+
+      await playOneLevel({
+        studentToken: reopenStudent.token,
+        usn: reopenStudent.usn,
+        vToken: volunteerToken,
+        result: 'PASS',
+        expectLevelNumber: 1,
+      });
+
+      const failPlay = await playOneLevel({
+        studentToken: reopenStudent.token,
+        usn: reopenStudent.usn,
+        vToken: volunteerToken,
+        result: 'FAIL',
+        expectLevelNumber: 2,
+      });
+      const voidedRoundId = failPlay.allocRes.body.round.id;
+
+      const eliminated = await env.models.Student.findById(reopenStudent.studentId).lean();
+      checkEqual(eliminated.competitionStatus, 'eliminated', 'L2 FAIL eliminated the student');
+      checkEqual(eliminated.currentLevel, 2, 'Eliminated student stays at Level 2');
+      checkEqual(eliminated.walletBalance, 50, 'L2 FAIL keeps the 50 losing payout');
+
+      const reopenRes = await env
+        .http()
+        .post(`/api/admin/participants/${reopenStudent.usn}/reopen`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      checkEqual(reopenRes.status, 200, 'Re-open eliminated student -> 200');
+      checkEqual(reopenRes.body.participant.competitionStatus, 'inProgress', 'Re-opened status is inProgress');
+      checkEqual(reopenRes.body.participant.currentLevel, 2, 'Re-opened student stays at Level 2');
+      checkEqual(reopenRes.body.participant.walletBalance, 50, 'Re-open keeps the wallet untouched');
+      checkEqual(reopenRes.body.removedRoundId, voidedRoundId, 'Re-open reports the removed round id');
+
+      const reopened = await env.models.Student.findById(reopenStudent.studentId).lean();
+      checkEqual(reopened.competitionStatus, 'inProgress', 'DB status inProgress after re-open');
+      checkEqual(reopened.roundAvailability, 'ready', 'DB roundAvailability ready after re-open');
+      checkEqual(reopened.walletBalance, 50, 'DB wallet still 50 after re-open');
+      const removedRound = await env.models.Round.findById(voidedRoundId).lean();
+      checkEqual(removedRound, null, 'Voided round is deleted');
+      const keptEvaluation = await env.models.Evaluation.findOne({ roundId: voidedRoundId }).lean();
+      check(Boolean(keptEvaluation), 'Evaluation record is kept as the audit trail');
+      checkEqual(keptEvaluation.status, 'FAIL', 'Kept evaluation still says FAIL');
+      const keptTxCount = await env.models.Transaction.countDocuments({
+        studentId: reopenStudent.studentId,
+      });
+      check(keptTxCount > 0, 'Ledger transactions are kept after re-open');
+
+      const freshAlloc = await env
+        .http()
+        .post('/api/rounds/allocate')
+        .set('Authorization', `Bearer ${reopenStudent.token}`);
+      checkEqual(freshAlloc.status, 201, 'Fresh allocate after re-open -> 201');
+      check(freshAlloc.body.round.id !== voidedRoundId, 'Fresh allocate creates a new round');
+      checkEqual(freshAlloc.body.round.levelNumber, 2, 'Fresh round is Level 2');
+
+      // The re-entered student can play the level through to a PASS.
+      await playOneLevel({
+        studentToken: reopenStudent.token,
+        usn: reopenStudent.usn,
+        vToken: volunteerToken,
+        result: 'PASS',
+        expectLevelNumber: 2,
+        expectedAllocStatus: 200,
+      });
+      const cleared = await env.models.Student.findById(reopenStudent.studentId).lean();
+      checkEqual(cleared.currentLevel, 3, 'Re-entered student clears L2 and moves to Level 3');
+      checkEqual(cleared.walletBalance, 100, 'Re-entered student wins L2 and holds 100');
+
+      // Re-open refuses a student who is not eliminated.
+      const reopenAgain = await env
+        .http()
+        .post(`/api/admin/participants/${reopenStudent.usn}/reopen`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      checkEqual(reopenAgain.status, 409, 'Re-open on a playing student -> 409');
+      checkEqual(reopenAgain.body.code, 'STUDENT_NOT_ELIMINATED', 'Code STUDENT_NOT_ELIMINATED');
+
+      const reopenMissing = await env
+        .http()
+        .post('/api/admin/participants/4VV24CS999/reopen')
+        .set('Authorization', `Bearer ${adminToken}`);
+      checkEqual(reopenMissing.status, 404, 'Re-open on an unknown USN -> 404');
+      checkEqual(reopenMissing.body.code, 'PARTICIPANT_NOT_FOUND', 'Code PARTICIPANT_NOT_FOUND');
+
+      // B6: wallet adjustments.
+      const adjStudent = await provisionAndRegisterStudent({
+        tag: 'adj1',
+        name: 'Adjust One',
+        usn: '4VV24CS911',
+        year: '2nd Year',
+      });
+
+      const adjUp = await env
+        .http()
+        .post(`/api/admin/participants/${adjStudent.usn}/wallet-adjustments`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ amount: 100, reason: 'Test credit' });
+      checkEqual(adjUp.status, 200, 'Positive adjustment -> 200');
+      checkEqual(adjUp.body.walletBalance, 100, 'Positive adjustment sets balance 100');
+      checkEqual(adjUp.body.transaction.type, 'ADMIN_ADJUSTMENT', 'Ledger type ADMIN_ADJUSTMENT');
+      checkEqual(adjUp.body.transaction.amount, 100, 'Ledger amount 100');
+      checkEqual(adjUp.body.transaction.balanceAfter, 100, 'Ledger balanceAfter 100');
+      check(adjUp.body.transaction.description.includes('Test credit'), 'Ledger description carries the reason');
+      check(adjUp.body.transaction.description.includes('+100'), 'Ledger description carries the signed amount');
+
+      const adjDown = await env
+        .http()
+        .post(`/api/admin/participants/${adjStudent.usn}/wallet-adjustments`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ amount: -30, reason: 'Test debit' });
+      checkEqual(adjDown.status, 200, 'Negative adjustment -> 200');
+      checkEqual(adjDown.body.walletBalance, 70, 'Negative adjustment sets balance 70');
+      checkEqual(adjDown.body.transaction.amount, 30, 'Negative ledger amount is the absolute value');
+      checkEqual(adjDown.body.transaction.balanceAfter, 70, 'Negative ledger balanceAfter 70');
+
+      const adjAfter = await env.models.Student.findById(adjStudent.studentId).lean();
+      checkEqual(adjAfter.totalEarned, 0, 'Adjustments do not touch totalEarned');
+      checkEqual(adjAfter.totalRisked, 0, 'Adjustments do not touch totalRisked');
+
+      const adjTooFar = await env
+        .http()
+        .post(`/api/admin/participants/${adjStudent.usn}/wallet-adjustments`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ amount: -71, reason: 'Too much' });
+      checkEqual(adjTooFar.status, 400, 'Adjustment below zero -> 400');
+      checkEqual(adjTooFar.body.code, 'INSUFFICIENT_BALANCE', 'Code INSUFFICIENT_BALANCE');
+      const adjUnchanged = await env.models.Student.findById(adjStudent.studentId).lean();
+      checkEqual(adjUnchanged.walletBalance, 70, 'Failed adjustment leaves the balance unchanged');
+
+      const adjNoReason = await env
+        .http()
+        .post(`/api/admin/participants/${adjStudent.usn}/wallet-adjustments`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ amount: 10 });
+      checkEqual(adjNoReason.status, 400, 'Missing reason -> 400');
+      checkEqual(adjNoReason.body.code, 'MISSING_REASON', 'Code MISSING_REASON');
+
+      const adjBlankReason = await env
+        .http()
+        .post(`/api/admin/participants/${adjStudent.usn}/wallet-adjustments`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ amount: 10, reason: '   ' });
+      checkEqual(adjBlankReason.status, 400, 'Blank reason -> 400');
+
+      const adjZero = await env
+        .http()
+        .post(`/api/admin/participants/${adjStudent.usn}/wallet-adjustments`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ amount: 0, reason: 'Zero' });
+      checkEqual(adjZero.status, 400, 'Zero amount -> 400');
+      checkEqual(adjZero.body.code, 'INVALID_AMOUNT', 'Code INVALID_AMOUNT');
+
+      const adjText = await env
+        .http()
+        .post(`/api/admin/participants/${adjStudent.usn}/wallet-adjustments`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ amount: 'abc', reason: 'Text amount' });
+      checkEqual(adjText.status, 400, 'Non-numeric amount -> 400');
+    });
   } finally {
     await env.stop();
   }

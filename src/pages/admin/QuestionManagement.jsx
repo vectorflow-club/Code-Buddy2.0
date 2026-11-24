@@ -217,7 +217,6 @@ export default function QuestionManagement() {
   };
 
   const handleDelete = async (question) => {
-    if (question.assigned && question.isActive) return;
     const confirmed = window.confirm(
       `Are you sure you want to ${question.isActive ? "deactivate" : "reactivate"} "${question.title}"?`
     );
@@ -380,7 +379,6 @@ export default function QuestionManagement() {
 
                       <button
                         title={question.isActive ? "Deactivate question" : "Reactivate question"}
-                        disabled={question.assigned && question.isActive}
                         onClick={() => handleDelete(question)}
                       >
                         <Trash2 size={16} />

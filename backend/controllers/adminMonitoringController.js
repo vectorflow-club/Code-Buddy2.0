@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const { Student, Round, Evaluation, Transaction, Question, Volunteer } = require('../models');
 const {
   parsePaginationQuery,
@@ -631,6 +632,221 @@ const getParticipantDetails = async (req, res) => {
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
       message: 'Failed to retrieve participant details.',
+    });
+  }
+};
+
+/**
+ * Re-open an eliminated participant (audit fix B5).
+ * Endpoint: POST /api/admin/participants/:identifier/reopen
+ * Access: Protected (Admin only)
+ *
+ * A mis-marked FAIL eliminates a student with no in-app way back. Re-opening
+ * puts the student back to playing at the SAME level so they can enter the
+ * level again with a fresh question. The voided round is DELETED (not merely
+ * abandoned): the unique {studentId, levelNumber} index is plain, so an
+ * abandoned round would still block a fresh allocate with a duplicate-key
+ * error. The Evaluation record and all ledger Transactions are KEPT as the
+ * audit trail, and the wallet is left exactly as-is (money already kept
+ * stays kept). Only an eliminated student can be re-opened.
+ */
+const reopenEliminatedParticipant = async (req, res) => {
+  try {
+    const resolved = await resolveParticipantByIdentifier(req.params?.identifier);
+    if (resolved.error) {
+      return sendValidationError(res, resolved.error);
+    }
+
+    const { student } = resolved;
+    if (student.competitionStatus !== 'eliminated') {
+      return res.status(409).json({
+        success: false,
+        code: 'STUDENT_NOT_ELIMINATED',
+        message: `Participant ${student.usn || student._id} is not eliminated and cannot be re-opened.`,
+      });
+    }
+
+    const session = await mongoose.startSession();
+    let removedRoundId = null;
+    let updatedStudent = null;
+    try {
+      await session.withTransaction(async () => {
+        const round = await Round.findOne({
+          studentId: student._id,
+          levelNumber: student.currentLevel,
+        }).session(session);
+
+        if (round && round.status !== 'evaluated') {
+          const notEvaluated = new Error(
+            `Cannot re-open because the Level ${student.currentLevel} round is '${round.status}', not evaluated.`
+          );
+          notEvaluated.status = 409;
+          notEvaluated.code = 'ROUND_NOT_EVALUATED';
+          throw notEvaluated;
+        }
+
+        if (round) {
+          removedRoundId = round._id.toString();
+          await Round.deleteOne({ _id: round._id }).session(session);
+        }
+
+        updatedStudent = await Student.findByIdAndUpdate(
+          student._id,
+          { $set: { competitionStatus: 'inProgress', roundAvailability: 'ready' } },
+          { session, new: true, runValidators: true }
+        );
+
+        if (!updatedStudent) {
+          const missing = new Error('Participant update failed during re-open.');
+          missing.status = 404;
+          missing.code = 'PARTICIPANT_NOT_FOUND';
+          throw missing;
+        }
+      });
+    } finally {
+      await session.endSession();
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Participant ${student.usn || student._id} re-opened at Level ${student.currentLevel}.`,
+      participant: formatAdminParticipantSummary(updatedStudent),
+      removedRoundId,
+    });
+  } catch (error) {
+    console.error('Admin re-open participant error:', error.message);
+    if (error.status && error.code) {
+      return res.status(error.status).json({
+        success: false,
+        code: error.code,
+        message: error.message,
+      });
+    }
+    return res.status(500).json({
+      success: false,
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Failed to re-open participant.',
+    });
+  }
+};
+
+/**
+ * Adjust a participant's wallet balance (audit fix B6).
+ * Endpoint: POST /api/admin/participants/:identifier/wallet-adjustments
+ * Access: Protected (Admin only)
+ *
+ * Body: { amount, reason } - amount is a signed non-zero whole-rupee number
+ * (positive adds, negative subtracts); reason is a required non-empty note.
+ * Creates an ADMIN_ADJUSTMENT ledger entry carrying the reason, and updates
+ * walletBalance by the amount. The resulting balance must stay >= 0.
+ * totalEarned/totalRisked are untouched: an adjustment is a correction, not
+ * earnings. Transaction.amount stores the absolute value (the schema forbids
+ * negatives); the direction lives in the description.
+ */
+const adjustParticipantWallet = async (req, res) => {
+  try {
+    const resolved = await resolveParticipantByIdentifier(req.params?.identifier);
+    if (resolved.error) {
+      return sendValidationError(res, resolved.error);
+    }
+
+    const { student } = resolved;
+    const { amount, reason } = req.body || {};
+
+    if (
+      typeof amount !== 'number' ||
+      !Number.isFinite(amount) ||
+      !Number.isInteger(amount) ||
+      amount === 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        code: 'INVALID_AMOUNT',
+        message:
+          'Adjustment amount must be a non-zero whole number of rupees (positive to add, negative to subtract).',
+      });
+    }
+
+    const trimmedReason = typeof reason === 'string' ? reason.trim() : '';
+    if (!trimmedReason) {
+      return res.status(400).json({
+        success: false,
+        code: 'MISSING_REASON',
+        message: 'A reason is required for a wallet adjustment.',
+      });
+    }
+
+    const currentBalance = student.walletBalance ?? 0;
+    if (currentBalance + amount < 0) {
+      return res.status(400).json({
+        success: false,
+        code: 'INSUFFICIENT_BALANCE',
+        message: `Adjustment of ${amount} would take the wallet balance below zero (current balance ${currentBalance}).`,
+      });
+    }
+
+    const session = await mongoose.startSession();
+    let updatedStudent = null;
+    let savedTransaction = null;
+    try {
+      await session.withTransaction(async () => {
+        // Atomic guard: a concurrent adjustment cannot push the balance below zero.
+        const filter = { _id: student._id };
+        if (amount < 0) {
+          filter.walletBalance = { $gte: -amount };
+        }
+        updatedStudent = await Student.findOneAndUpdate(
+          filter,
+          { $inc: { walletBalance: amount } },
+          { session, new: true, runValidators: true }
+        );
+
+        if (!updatedStudent) {
+          const insufficient = new Error('Adjustment would take the wallet balance below zero.');
+          insufficient.status = 400;
+          insufficient.code = 'INSUFFICIENT_BALANCE';
+          throw insufficient;
+        }
+
+        const signedAmount = amount > 0 ? `+${amount}` : `${amount}`;
+        const transactionDoc = new Transaction({
+          studentId: student._id,
+          type: TRANSACTION_TYPES.ADMIN_ADJUSTMENT,
+          status: 'SUCCESS',
+          amount: Math.abs(amount),
+          balanceAfter: updatedStudent.walletBalance,
+          levelNumber: student.currentLevel ?? null,
+          roundId: null,
+          description: `Admin wallet adjustment (${signedAmount}): ${trimmedReason}`,
+          performedBy: req.admin ? req.admin._id : null,
+          timestamp: new Date(),
+        });
+        savedTransaction = await transactionDoc.save({ session });
+      });
+    } finally {
+      await session.endSession();
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Wallet adjusted by ${amount > 0 ? `+${amount}` : amount} for participant ${student.usn || student._id}.`,
+      participant: formatAdminParticipantSummary(updatedStudent),
+      transaction: formatAdminTransactionResponse(savedTransaction, updatedStudent),
+      walletBalance: updatedStudent.walletBalance,
+    });
+  } catch (error) {
+    console.error('Admin wallet adjustment error:', error.message);
+    if (error.status && error.code) {
+      return res.status(error.status).json({
+        success: false,
+        code: error.code,
+        message: error.message,
+      });
+    }
+    return res.status(500).json({
+      success: false,
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Failed to adjust wallet balance.',
     });
   }
 };
@@ -1406,6 +1622,8 @@ module.exports = {
   getAdminDashboard,
   listParticipants,
   getParticipantDetails,
+  reopenEliminatedParticipant,
+  adjustParticipantWallet,
   listRounds,
   getParticipantRounds,
   listTransactions,
