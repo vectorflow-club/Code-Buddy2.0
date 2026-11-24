@@ -46,3 +46,9 @@ export function setAdminQuestionActive(id, isActive) {
     method: "PATCH",
   });
 }
+
+export function deleteAdminQuestion(id) {
+  return adminRequest(`/api/admin/questions/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+}

@@ -1,5 +1,5 @@
 
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { StudentProvider, useStudent } from './context/StudentContext';
 import StudentLayout from './components/StudentLayout';
 import { ErrorState, LoadingState } from './components/ui';
@@ -29,7 +29,12 @@ import VolunteerDashboard from './pages/volunteer/VolunteerDashboard';
 import VolunteerLogin from './pages/volunteer/VolunteerLogin';
 import EvaluationWorkspace from './pages/volunteer/EvaluationWorkspace';
 
-function AppRoutes() {
+// The student session gate, as a layout route: it shows the loading state
+// or the student error page until the student session is known, then renders
+// the student subtree. Only student routes sit behind this gate, so /admin/*
+// and /volunteer/* render independently: a student session problem (or a
+// down backend) never blocks the admin or organizer side.
+function StudentSessionGate() {
   const { state, loading, loadError, refresh } = useStudent();
 
   if (loading) return <LoadingState />;
@@ -55,65 +60,72 @@ function AppRoutes() {
 
   if (!state) return <LoadingState />;
 
-  const signedIn = state.auth?.signedIn === true;
+  return <Outlet />;
+}
 
+function StudentLoginRoute() {
+  const { state } = useStudent();
+  return state.auth?.signedIn === true ? (
+    <Navigate to="/dashboard" replace />
+  ) : (
+    <AuthPage mode="login" />
+  );
+}
+
+function StudentRegisterRoute() {
+  const { state } = useStudent();
+  if (state.auth?.signedIn === true) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  if (state.pendingIdentity) {
+    return <AuthPage mode="register" />;
+  }
+  return <Navigate to="/login" replace />;
+}
+
+function StudentHomeRoute() {
+  const { state } = useStudent();
+  return (
+    <Navigate
+      to={state.auth?.signedIn === true ? '/dashboard' : '/login'}
+      replace
+    />
+  );
+}
+
+function StudentProtectedLayout() {
+  const { state } = useStudent();
+  return state.auth?.signedIn === true ? (
+    <StudentLayout />
+  ) : (
+    <Navigate to="/login" replace />
+  );
+}
+
+function AppRoutes() {
   return (
     <Routes>
-      {/* Student routes */}
-      <Route
-        path="/login"
-        element={
-          signedIn ? (
-            <Navigate to="/dashboard" replace />
-          ) : (
-            <AuthPage mode="login" />
-          )
-        }
-      />
+      {/* Student routes, gated on the student session only */}
+      <Route element={<StudentSessionGate />}>
+        <Route path="/login" element={<StudentLoginRoute />} />
 
-      <Route
-        path="/register"
-        element={
-          signedIn ? (
-            <Navigate to="/dashboard" replace />
-          ) : state.pendingIdentity ? (
-            <AuthPage mode="register" />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
+        <Route path="/register" element={<StudentRegisterRoute />} />
 
-      <Route
-        path="/"
-        element={
-          <Navigate
-            to={signedIn ? '/dashboard' : '/login'}
-            replace
+        <Route path="/" element={<StudentHomeRoute />} />
+
+        <Route element={<StudentProtectedLayout />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/records" element={<RecordsPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/wallet" element={<WalletPage />} />
+          <Route path="/history" element={<HistoryPage />} />
+          <Route path="/round" element={<RoundPage />} />
+          <Route path="/result/:result" element={<OutcomePage />} />
+          <Route
+            path="*"
+            element={<Navigate to="/dashboard" replace />}
           />
-        }
-      />
-
-      <Route
-        element={
-          signedIn ? (
-            <StudentLayout />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      >
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/records" element={<RecordsPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/wallet" element={<WalletPage />} />
-        <Route path="/history" element={<HistoryPage />} />
-        <Route path="/round" element={<RoundPage />} />
-        <Route path="/result/:result" element={<OutcomePage />} />
-        <Route
-          path="*"
-          element={<Navigate to="/dashboard" replace />}
-        />
+        </Route>
       </Route>
 
       {/* Admin routes */}

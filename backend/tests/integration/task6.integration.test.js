@@ -708,6 +708,48 @@ async function run() {
         .set('Authorization', `Bearer ${adminToken}`);
       checkEqual(qReact.status, 200, 'Admin reactivate question -> 200');
 
+      const qDelCreate = await env
+        .http()
+        .post('/api/admin/questions')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          title: 'Permanent Delete Test Question',
+          statement: 'Return the product of two integers.',
+          constraints: ['1 <= a, b <= 100'],
+          examples: [{ id: '1', title: 'Sample', input: '2 3', output: '6', explanation: 'Product.' }],
+          difficulty: 'EASY',
+          levelNumber: 1,
+          hiddenTestCases: [{ input: '4 5', expectedOutput: '20' }],
+        });
+      checkEqual(qDelCreate.status, 201, 'Create question for permanent delete test -> 201');
+      const delQId = qDelCreate.body.question.id;
+      env.createdTracker.questionIds.add(delQId);
+
+      const qDel = await env
+        .http()
+        .delete(`/api/admin/questions/${delQId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      checkEqual(qDel.status, 200, 'Delete unreferenced question -> 200');
+      checkEqual(qDel.body.success, true, 'Delete unreferenced question success');
+
+      const qDelGone = await env
+        .http()
+        .get(`/api/admin/questions/${delQId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      checkEqual(qDelGone.status, 404, 'Deleted question GET -> 404');
+
+      const qDelAgain = await env
+        .http()
+        .delete(`/api/admin/questions/${delQId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      checkEqual(qDelAgain.status, 404, 'Delete already-deleted question -> 404');
+
+      const qDelBadId = await env
+        .http()
+        .delete('/api/admin/questions/not-an-object-id')
+        .set('Authorization', `Bearer ${adminToken}`);
+      checkEqual(qDelBadId.status, 400, 'Delete with invalid ObjectId -> 400');
+
       const recStudent = await provisionAndRegisterStudent({
         tag: 'recovery_user',
         name: 'Recovery Target Student',
@@ -727,6 +769,56 @@ async function run() {
         .set('Authorization', `Bearer ${adminToken}`);
       checkEqual(nonAbandRes.status, 409, 'Recovering non-abandoned round rejected 409');
       checkEqual(nonAbandRes.body.code, 'ROUND_NOT_ABANDONED', 'Code ROUND_NOT_ABANDONED');
+
+      const guardQId = recAlloc.body.round.questionId;
+      check(Boolean(guardQId), 'Allocated round carries its question id');
+      const qGuardDel = await env
+        .http()
+        .delete(`/api/admin/questions/${guardQId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      checkEqual(qGuardDel.status, 409, 'Delete question in an active round -> 409');
+      checkEqual(qGuardDel.body.code, 'QUESTION_HAS_ACTIVE_ROUNDS', 'Code QUESTION_HAS_ACTIVE_ROUNDS');
+
+      const qTermCreate = await env
+        .http()
+        .post('/api/admin/questions')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          title: 'Delete Guard Terminal Round Test',
+          statement: 'Return the sum of two integers.',
+          constraints: ['1 <= a, b <= 100'],
+          examples: [{ id: '1', title: 'Sample', input: '1 2', output: '3', explanation: 'Sum.' }],
+          difficulty: 'EASY',
+          levelNumber: 1,
+          hiddenTestCases: [{ input: '4 5', expectedOutput: '9' }],
+        });
+      checkEqual(qTermCreate.status, 201, 'Create question for terminal-round delete test -> 201');
+      const termQId = qTermCreate.body.question.id;
+      env.createdTracker.questionIds.add(termQId);
+      const termRound = await env.models.Round.create({
+        studentId: recStudent.studentId,
+        // Level 2: the studentId+levelNumber index is unique and this
+        // student already holds the level-1 round (recRound). The guard
+        // only looks at questionId and status, so the level is irrelevant.
+        levelNumber: 2,
+        questionId: termQId,
+        questionSnapshot: {
+          questionId: termQId,
+          title: 'Delete Guard Terminal Round Test',
+          statement: 'Return the sum of two integers.',
+          difficulty: 'EASY',
+          levelNumber: 1,
+        },
+        status: 'evaluated',
+      });
+      const qTermDel = await env
+        .http()
+        .delete(`/api/admin/questions/${termQId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      checkEqual(qTermDel.status, 200, 'Delete question referenced only by a finished round -> 200');
+      await env.models.Round.findByIdAndDelete(termRound._id);
+      const termRoundGone = await env.models.Round.findById(termRound._id);
+      checkEqual(termRoundGone, null, 'Terminal test round removed after the delete test');
 
       await env.models.Round.findByIdAndUpdate(recRoundId, { $set: { status: 'abandoned' } });
 

@@ -1,17 +1,42 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { BookOpenText, CircleDot, Clock3, Wallet, Zap } from 'lucide-react'
 import { useStudent } from '../context/StudentContext'
 import { backendCompetitionService } from '../services/backendCompetitionService'
 import { formatCurrency } from '../utils/formatters'
-import { Button, InlineTag, MetricCard, NextArrow, SectionHeading } from '../components/ui'
+import { Button, CountdownDisplay, InlineTag, MetricCard, NextArrow, SectionHeading } from '../components/ui'
 
 export default function DashboardPage() {
   const { state, refresh } = useStudent()
   const navigate = useNavigate()
   const [entering, setEntering] = useState(false)
   const [enterError, setEnterError] = useState('')
+  const [liveRound, setLiveRound] = useState(null)
   const allocationInFlight = useRef(false)
+  // Live round timer, mirroring the Round page: fetch the active round on
+  // mount and re-poll every 10s while one exists. Fails soft: a failed
+  // fetch (backend down) leaves the dashboard as it was; the timer is
+  // extra, never a full-page error on the landing page.
+  useEffect(() => {
+    let mounted = true
+    backendCompetitionService.getActiveRound()
+      .then(active => { if (mounted) setLiveRound(active?.round || null) })
+      .catch(() => { if (mounted) setLiveRound(null) })
+    return () => { mounted = false }
+  }, [])
+  useEffect(() => {
+    if (!liveRound) return undefined
+    let mounted = true
+    const interval = window.setInterval(async () => {
+      try {
+        const active = await backendCompetitionService.getActiveRound()
+        if (mounted) setLiveRound(active?.round || null)
+      } catch (pollError) {
+        // Fail soft: keep the last known timer instead of erroring.
+      }
+    }, 10000)
+    return () => { mounted = false; window.clearInterval(interval) }
+  }, [liveRound?.id])
   const student = state.student
   const level = state.levelInfo?.level
   const balance = state.levelInfo?.walletBalance ?? student.walletBalance
@@ -42,7 +67,7 @@ export default function DashboardPage() {
   }
   return <div className="page dashboard-page">
     <div className="dashboard-heading"><div><p className="eyebrow">Verified student portal · {student.year}</p><h1>Good to see you,<br /><span>{student.name.split(' ')[0]}.</span></h1><p className="hero-subtitle">Your authenticated competition profile.</p></div><div className="dashboard-id"><span className="id-label">STUDENT IDENTIFICATION</span><strong>{student.usn}</strong><span>{student.email}</span><span>{student.year}</span></div></div>
-    <section className="round-banner"><div className="round-copy"><span className="round-mark"><Zap size={18} /></span><div><p className="eyebrow">Competition status</p><h2>{student.competitionStatus || 'Status unavailable'} · L{student.currentLevel || '—'}</h2><p>{roundMessage}</p>{level && <p>{level.name} · Entry risk {typeof level.entryFee === 'number' ? formatCurrency(level.entryFee, state.competition?.currency, state.competition?.locale) : 'Unavailable'} · Pass payout {typeof level.passReward === 'number' ? formatCurrency(level.passReward, state.competition?.currency, state.competition?.locale) : 'Unavailable'}</p>}</div></div><div className="round-banner-action"><InlineTag>{student.roundAvailability || 'Availability unavailable'}</InlineTag>{hasActiveRound ? <Button to="/round" variant="lime">Continue round <NextArrow /></Button> : canAllocate ? <Button disabled={entering} onClick={allocateRealRound} variant="lime">{entering ? 'Loading assignment…' : 'Enter current level'} <NextArrow /></Button> : student.roundAvailability === 'ready' && level && typeof balance === 'number' && typeof level.entryRiskAmount === 'number' && balance < level.entryRiskAmount ? <Button to="/result/insufficient" variant="outline">Wallet requirement</Button> : student.roundAvailability === 'eliminated' ? <Button to="/result/eliminated" variant="outline">View result</Button> : student.roundAvailability === 'completed' ? <Button to="/result/completed" variant="lime">View completion</Button> : student.roundAvailability === 'evaluationPending' ? <Button to="/round" variant="lime">View evaluation status</Button> : <span className="round-unavailable">{state.dataErrors?.levelInfo?.message || 'Current level information unavailable'}</span>}</div><div className="banner-index" aria-hidden="true">{String(student.currentLevel || 0).padStart(2, '0')}</div></section>
+    <section className="round-banner"><div className="round-copy"><span className="round-mark"><Zap size={18} /></span><div><p className="eyebrow">Competition status</p><h2>{student.competitionStatus || 'Status unavailable'} · L{student.currentLevel || '—'}</h2><p>{roundMessage}</p>{level && <p>{level.name} · Entry risk {typeof level.entryFee === 'number' ? formatCurrency(level.entryFee, state.competition?.currency, state.competition?.locale) : 'Unavailable'} · Pass payout {typeof level.passReward === 'number' ? formatCurrency(level.passReward, state.competition?.currency, state.competition?.locale) : 'Unavailable'}</p>}</div></div><div className="round-banner-action"><InlineTag>{student.roundAvailability || 'Availability unavailable'}</InlineTag>{liveRound?.status === 'inProgress' && <CountdownDisplay seconds={liveRound.remainingSeconds} status="Backend timer · live display" running />}{hasActiveRound ? <Button to="/round" variant="lime">Continue round <NextArrow /></Button> : canAllocate ? <Button disabled={entering} onClick={allocateRealRound} variant="lime">{entering ? 'Loading assignment…' : 'Enter current level'} <NextArrow /></Button> : student.roundAvailability === 'ready' && level && typeof balance === 'number' && typeof level.entryRiskAmount === 'number' && balance < level.entryRiskAmount ? <Button to="/result/insufficient" variant="outline">Wallet requirement</Button> : student.roundAvailability === 'eliminated' ? <Button to="/result/eliminated" variant="outline">View result</Button> : student.roundAvailability === 'completed' ? <Button to="/result/completed" variant="lime">View completion</Button> : student.roundAvailability === 'evaluationPending' ? <Button to="/round" variant="lime">View evaluation status</Button> : <span className="round-unavailable">{state.dataErrors?.levelInfo?.message || 'Current level information unavailable'}</span>}</div><div className="banner-index" aria-hidden="true">{String(student.currentLevel || 0).padStart(2, '0')}</div></section>
     {enterError && <p className="error-state" role="alert">{enterError}</p>}
     {state.dataErrors?.configuration && <p className="error-state" role="alert">Competition configuration unavailable: {state.dataErrors.configuration.message}</p>}
     <SectionHeading kicker="Verified account" title="Your profile, at a glance." detail="Competition settings and wallet information are read from the authenticated backend." />

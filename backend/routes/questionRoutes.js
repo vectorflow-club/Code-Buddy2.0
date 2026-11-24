@@ -6,6 +6,7 @@ const {
   listQuestions,
   getQuestionById,
   updateQuestion,
+  deleteQuestion,
   deactivateQuestion,
   reactivateQuestion,
 } = require('../controllers/questionController');
@@ -45,6 +46,14 @@ router.get('/:id', getQuestionById);
  * @access  Protected (Admin only)
  */
 router.put('/:id', updateQuestion);
+
+/**
+ * @route   DELETE /api/admin/questions/:id
+ * @desc    Permanently delete a question (refused with 409 while it is
+ *          referenced by any active round)
+ * @access  Protected (Admin only)
+ */
+router.delete('/:id', deleteQuestion);
 
 /**
  * @route   PATCH /api/admin/questions/:id/deactivate

@@ -24,6 +24,12 @@ const isValidBankNumber = (value) => {
   return typeof value === 'string' && value.trim().length <= 20;
 };
 
+// Round statuses that still reference their question: a round in one of
+// these states is live (waiting to start, running, or awaiting evaluation).
+// 'evaluated' and 'abandoned' rounds are finished and keep their frozen
+// question snapshot, so their questions may be deleted.
+const ACTIVE_ROUND_STATUSES = ['ready', 'inProgress', 'timeExpired', 'submitted'];
+
 /**
  * Find another question in the same level already using this bank number.
  * Empty numbers are never duplicates. Pass the question's own id when
@@ -626,11 +632,70 @@ const reactivateQuestion = async (req, res) => {
   }
 };
 
+/**
+ * Delete Question (permanent)
+ * Endpoint: DELETE /api/admin/questions/:id
+ * Access: Protected (Admin only)
+ *
+ * Guard: refused with 409 while the question is referenced by any active
+ * (non-terminal) round. Rounds snapshot the question at allocation, so
+ * deleting a question referenced only by finished rounds is safe.
+ */
+const deleteQuestion = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        code: 'INVALID_ID',
+        message: 'Invalid question ID format.',
+      });
+    }
+
+    const question = await Question.findById(id);
+    if (!question) {
+      return res.status(404).json({
+        success: false,
+        code: 'QUESTION_NOT_FOUND',
+        message: 'Question not found.',
+      });
+    }
+
+    const activeRoundCount = await Round.countDocuments({
+      questionId: id,
+      status: { $in: ACTIVE_ROUND_STATUSES },
+    });
+    if (activeRoundCount > 0) {
+      return res.status(409).json({
+        success: false,
+        code: 'QUESTION_HAS_ACTIVE_ROUNDS',
+        message: `Cannot delete this question because it is assigned to ${activeRoundCount} active round${activeRoundCount === 1 ? '' : 's'}.`,
+      });
+    }
+
+    await Question.findByIdAndDelete(id);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Question deleted permanently.',
+    });
+  } catch (error) {
+    console.error('deleteQuestion error:', error.message);
+    return res.status(500).json({
+      success: false,
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Failed to delete question.',
+    });
+  }
+};
+
 module.exports = {
   createQuestion,
   listQuestions,
   getQuestionById,
   updateQuestion,
+  deleteQuestion,
   deactivateQuestion,
   reactivateQuestion,
   formatQuestionAdminResponse,

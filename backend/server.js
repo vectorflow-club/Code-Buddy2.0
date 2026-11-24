@@ -123,7 +123,11 @@ const connectDB = async () => {
     throw new Error('MONGO_URI is not defined in the backend environment.');
   }
 
-  await mongoose.connect(mongoUri);
+  // Cap the connection pool: on Vercel each serverless instance holds its
+  // own pool, and the driver default (100) lets a few concurrent instances
+  // exhaust the Atlas M0 connection limit. Five per instance is plenty for
+  // one request at a time and keeps even dozens of instances under the cap.
+  await mongoose.connect(mongoUri, { maxPoolSize: 5, minPoolSize: 0 });
 };
 
 // Serverless-safe connect: returns immediately when already connected, and

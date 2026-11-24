@@ -3,6 +3,7 @@ import {
   Plus,
   Search,
   Pencil,
+  Trash,
   Trash2,
   X,
   BookOpen,
@@ -11,6 +12,7 @@ import "./questions.css";
 import { useFetchState } from "../../hooks/useFetchState";
 import {
   createAdminQuestion,
+  deleteAdminQuestion,
   getAdminQuestions,
   setAdminQuestionActive,
   updateAdminQuestion,
@@ -229,6 +231,20 @@ export default function QuestionManagement() {
     }
   };
 
+  const handlePermanentDelete = async (question) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to permanently delete "${question.title}"? This cannot be undone.`
+    );
+    if (!confirmed) return;
+    setError("");
+    try {
+      await deleteAdminQuestion(question.id);
+      await loadQuestions();
+    } catch (deleteError) {
+      setError(deleteError.message || "Could not delete the question.");
+    }
+  };
+
   return (
     <div className="question-management">
 
@@ -368,6 +384,13 @@ export default function QuestionManagement() {
                         onClick={() => handleDelete(question)}
                       >
                         <Trash2 size={16} />
+                      </button>
+
+                      <button
+                        title="Permanently delete question"
+                        onClick={() => handlePermanentDelete(question)}
+                      >
+                        <Trash size={16} />
                       </button>
                     </div>
                   </td>
