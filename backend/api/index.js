@@ -37,8 +37,16 @@ module.exports = async (req, res) => {
     });
   }
 
+  // The root and health endpoints need no database: the health handler
+  // reads mongoose.connection.readyState directly. Skip the connect here
+  // so a health ping or uptime check never opens a connection pool on a
+  // cold instance. Every other path connects first, as before.
   try {
-    await app.ensureDbConnected();
+    const pathname = (req.url || '').split('?')[0];
+    const isNoDbPath = pathname === '/' || pathname === '/api/health';
+    if (!isNoDbPath) {
+      await app.ensureDbConnected();
+    }
     return app(req, res);
   } catch (error) {
     // Never leak the raw error: it can contain connection details.

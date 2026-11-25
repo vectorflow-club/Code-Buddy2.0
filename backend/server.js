@@ -125,9 +125,20 @@ const connectDB = async () => {
 
   // Cap the connection pool: on Vercel each serverless instance holds its
   // own pool, and the driver default (100) lets a few concurrent instances
-  // exhaust the Atlas M0 connection limit. Five per instance is plenty for
-  // one request at a time and keeps even dozens of instances under the cap.
-  await mongoose.connect(mongoUri, { maxPoolSize: 5, minPoolSize: 0 });
+  // exhaust the Atlas M0 connection limit. Three per instance is plenty for
+  // one request at a time (at most two queries run concurrently) and keeps
+  // even dozens of instances under the cap. Idle pool connections close
+  // after 30s so a warm-but-quiet instance drops back to just its driver
+  // heartbeat connections instead of holding its pool open forever.
+  // serverSelectionTimeoutMS fails fast if Atlas is slow or unreachable
+  // instead of holding an instance for the 30s default while Vercel
+  // spawns more instances.
+  await mongoose.connect(mongoUri, {
+    maxPoolSize: 3,
+    minPoolSize: 0,
+    maxIdleTimeMS: 30000,
+    serverSelectionTimeoutMS: 5000,
+  });
 };
 
 // Serverless-safe connect: returns immediately when already connected, and
