@@ -28,7 +28,7 @@ export default function TimerPanel({
   onReset,
 }) {
   const [now, setNow] = useState(() => Date.now());
-  const [extensionSeconds, setExtensionSeconds] = useState("");
+  const [extensionMinutes, setExtensionMinutes] = useState("");
   const [extensionReason, setExtensionReason] = useState("");
   const [extensionError, setExtensionError] = useState("");
 
@@ -64,9 +64,9 @@ export default function TimerPanel({
     roundStatus === "inProgress" && countdownSeconds === 0 && !isFinished;
   const isWarning =
     canDisplayCountdown && !isFinished && countdownSeconds <= 30 && countdownSeconds > 0;
-  const extensionValue = Number(extensionSeconds);
+  const extensionValue = Number(extensionMinutes);
   const isValidExtension =
-    extensionSeconds.trim() !== "" &&
+    extensionMinutes.trim() !== "" &&
     Number.isSafeInteger(extensionValue) &&
     extensionValue > 0;
 
@@ -74,16 +74,16 @@ export default function TimerPanel({
     event.preventDefault();
     setExtensionError("");
     if (!canExtend || isBusy || !isValidExtension) {
-      setExtensionError("Enter whole seconds, more than 0.");
+      setExtensionError("Enter whole minutes, more than 0.");
       return;
     }
 
     const response = await onExtend?.(
-      extensionValue,
+      extensionValue * 60,
       extensionReason.trim() || undefined,
     );
     if (response) {
-      setExtensionSeconds("");
+      setExtensionMinutes("");
       setExtensionReason("");
     }
   }
@@ -174,16 +174,16 @@ export default function TimerPanel({
         >
           <div className="vol-search">
             <input
-              id="timer-extension-seconds"
-              name="extensionSeconds"
+              id="timer-extension-minutes"
+              name="extensionMinutes"
               type="number"
               min="1"
               step="1"
-              placeholder="Extra seconds"
-              aria-label="Extra time in seconds"
-              value={extensionSeconds}
+              placeholder="Extra minutes"
+              aria-label="Extra time in minutes"
+              value={extensionMinutes}
               onChange={(event) => {
-                setExtensionSeconds(event.target.value);
+                setExtensionMinutes(event.target.value);
                 setExtensionError("");
               }}
               disabled={isBusy}
