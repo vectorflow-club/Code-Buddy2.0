@@ -392,15 +392,15 @@ export default function VolunteerDashboard() {
                   const qCode = questionCode(entry.currentLevel, entry.questionBankNumber);
                   const busyThisRow = rowBusy?.usn === entry.usn;
                   return (
-                    <tr key={entry.id}>
-                      <td className="vol-participant-name">{entry.name}</td>
-                      <td>{entry.usn}</td>
-                      <td>Level {entry.currentLevel}</td>
-                      <td>
+                    <tr key={entry.id} className="vol-participant-row">
+                      <td className="vol-participant-name" data-label="Student">{entry.name}</td>
+                      <td data-label="USN">{entry.usn}</td>
+                      <td data-label="Current level">Level {entry.currentLevel}</td>
+                      <td data-label="Status">
                         <span className={`vol-status-tag vol-${status.tone}`}>{status.label}</span>
                       </td>
-                      <td className="vol-balance">{formatCurrency(entry.walletBalance)}{isTerminal && <span className="vol-to-pay">To pay</span>}</td>
-                      <td>
+                      <td className="vol-balance" data-label="Balance">{formatCurrency(entry.walletBalance)}{isTerminal && <span className="vol-to-pay">To pay</span>}</td>
+                      <td data-label="Action">
                         <span className="vol-row-actions">
                           {qCode && (
                             <span className="vol-question-number">Question Number: <strong>{qCode}</strong></span>

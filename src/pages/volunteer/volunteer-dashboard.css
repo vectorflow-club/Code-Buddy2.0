@@ -390,6 +390,53 @@
     padding: 15px;
   }
 
+  .vol-table-wrapper {
+    overflow-x: visible;
+  }
+
+  .vol-table thead {
+    display: none;
+  }
+
+  .vol-table,
+  .vol-table tbody,
+  .vol-participant-row,
+  .vol-participant-row td {
+    display: block;
+    width: 100%;
+  }
+
+  .vol-participant-row {
+    border: 1px solid #e7ebe6;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    padding: 6px 0;
+    background: #fff;
+  }
+
+  .vol-participant-row td {
+    white-space: normal;
+  }
+
+  .vol-participant-row td:last-child {
+    border-bottom: none;
+  }
+
+  .vol-participant-row td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    color: #59645e;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+
+  .vol-participant-row td:first-child::before {
+    display: none;
+  }
+
 .vol-progress-track {
   width: 100%;
   height: 7px;
