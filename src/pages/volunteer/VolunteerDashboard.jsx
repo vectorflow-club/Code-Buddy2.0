@@ -347,7 +347,6 @@ export default function VolunteerDashboard() {
                 <th>STUDENT</th>
                 <th>USN</th>
                 <th>CURRENT LEVEL</th>
-                <th>QUESTION</th>
                 <th>STATUS</th>
                 <th>BALANCE</th>
                 <th>ACTION</th>
@@ -357,13 +356,13 @@ export default function VolunteerDashboard() {
             <tbody>
               {dashboardLoading && !dashboard ? (
                 <tr>
-                  <td colSpan="7" className="vol-empty-state" role="status">
+                  <td colSpan="6" className="vol-empty-state" role="status">
                     Loading students...
                   </td>
                 </tr>
               ) : dashboardError ? (
                 <tr>
-                  <td colSpan="7" className="vol-empty-state" role="alert">
+                  <td colSpan="6" className="vol-empty-state" role="alert">
                     {dashboardError}{" "}
                     <button
                       type="button"
@@ -376,7 +375,7 @@ export default function VolunteerDashboard() {
                 </tr>
               ) : participants.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="vol-empty-state" role="status">
+                  <td colSpan="6" className="vol-empty-state" role="status">
                     No students have signed up at {spotLabel} yet.
                   </td>
                 </tr>
@@ -390,19 +389,22 @@ export default function VolunteerDashboard() {
                   const canEvaluate = ["inProgress", "timeExpired"].includes(entry.roundStatus);
                   const canFinish = entry.roundStatus === "evaluated" && !isTerminal;
                   const hasRound = entry.roundStatus !== "none";
+                  const qCode = questionCode(entry.currentLevel, entry.questionBankNumber);
                   const busyThisRow = rowBusy?.usn === entry.usn;
                   return (
                     <tr key={entry.id}>
                       <td className="vol-participant-name">{entry.name}</td>
                       <td>{entry.usn}</td>
                       <td>Level {entry.currentLevel}</td>
-                      <td>{questionCode(entry.currentLevel, entry.questionBankNumber) || '—'}</td>
                       <td>
                         <span className={`vol-status-tag vol-${status.tone}`}>{status.label}</span>
                       </td>
                       <td className="vol-balance">{formatCurrency(entry.walletBalance)}{isTerminal && <span className="vol-to-pay">To pay</span>}</td>
                       <td>
                         <span className="vol-row-actions">
+                          {qCode && (
+                            <span className="vol-question-number">Question Number: <strong>{qCode}</strong></span>
+                          )}
                           {canStart && (
                             <button
                               type="button"

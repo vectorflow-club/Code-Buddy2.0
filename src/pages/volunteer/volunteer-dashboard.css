@@ -307,6 +307,18 @@
   gap: 4px 12px;
 }
 
+.vol-question-number {
+  font-size: 12px;
+  font-weight: 400;
+  color: #59645e;
+  white-space: nowrap;
+}
+
+.vol-question-number strong {
+  font-weight: 700;
+  color: #25382e;
+}
+
 .vol-no-action {
   color: #9aa59d;
 }
