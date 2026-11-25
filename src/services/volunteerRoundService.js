@@ -128,6 +128,10 @@ export function extendVolunteerStudentRound(usn, { extensionSeconds, reason }) {
   return volunteerRequest(usn, "extend", body);
 }
 
+export function resetVolunteerStudentRound(usn) {
+  return volunteerRequest(usn, "reset");
+}
+
 export function evaluateVolunteerStudentRound(usn, { result, remarks, programmingLanguage }) {
   const body = { result };
   if (remarks !== undefined) body.remarks = remarks;

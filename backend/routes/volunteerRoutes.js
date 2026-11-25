@@ -8,6 +8,7 @@ const {
   getVolunteerDashboard,
   startStudentRoundByUsn,
   extendStudentRoundByUsn,
+  resetStudentRoundByUsn,
   evaluateStudentRoundByUsn,
   settleStudentRoundByUsn,
   progressStudentRoundByUsn,
@@ -62,6 +63,13 @@ router.post('/students/:usn/round/start', protectVolunteer, authorizeVolunteer, 
  * @access  Protected (Volunteer only)
  */
 router.post('/students/:usn/round/extend', protectVolunteer, authorizeVolunteer, extendStudentRoundByUsn);
+
+/**
+ * @route   POST /api/volunteer/students/:usn/round/reset
+ * @desc    Reset the timer of an inProgress round to the full level duration from now
+ * @access  Protected (Volunteer only)
+ */
+router.post('/students/:usn/round/reset', protectVolunteer, authorizeVolunteer, resetStudentRoundByUsn);
 
 /**
  * @route   POST /api/volunteer/students/:usn/round/evaluate

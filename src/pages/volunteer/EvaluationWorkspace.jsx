@@ -13,6 +13,7 @@ import {
   extendVolunteerStudentRound,
   getVolunteerStudentRound,
   progressVolunteerStudentRound,
+  resetVolunteerStudentRound,
   settleVolunteerStudentRound,
   startVolunteerStudentRound,
 } from "../../services/volunteerRoundService";
@@ -107,6 +108,8 @@ export default function EvaluationWorkspace() {
   const canStart = hasLookupResult && roundStatus === "ready";
   const canExtend =
     hasLookupResult && roundStatus === "inProgress" && round.isExpired !== true;
+  const canReset =
+    hasLookupResult && roundStatus === "inProgress" && round.isExpired !== true;
   const canEvaluate =
     hasLookupResult &&
     ["inProgress", "timeExpired"].includes(roundStatus) &&
@@ -185,6 +188,11 @@ export default function EvaluationWorkspace() {
         ...(reason ? { reason } : {}),
       }),
     );
+  }
+
+  function handleReset() {
+    if (!canReset) return null;
+    return runAction("reset", (usn) => resetVolunteerStudentRound(usn));
   }
 
   function handleEvaluate(result) {
@@ -443,11 +451,14 @@ export default function EvaluationWorkspace() {
               isExpired={round.isExpired}
               canStart={canStart}
               canExtend={canExtend}
+              canReset={canReset}
               isStarting={activeAction === "start"}
               isExtending={activeAction === "extend"}
+              isResetting={activeAction === "reset"}
               isBusy={isBusy}
               onStart={handleStart}
               onExtend={handleExtend}
+              onReset={handleReset}
             />
           )}
 

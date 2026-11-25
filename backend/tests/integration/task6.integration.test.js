@@ -417,6 +417,37 @@ async function run() {
       checkEqual(extendRes.body.extensionSeconds, 45, 'Extension seconds reported');
       checkEqual(extendRes.body.round.timerExtensions.length, 1, 'One extension logged');
 
+      const resetRes = await env
+        .http()
+        .post(`/api/volunteer/students/${y2.usn}/round/reset`)
+        .set('Authorization', `Bearer ${volunteerToken}`);
+      checkEqual(resetRes.status, 200, 'Timer reset -> 200');
+      checkEqual(resetRes.body.round.status, 'inProgress', 'Reset round still inProgress');
+      checkEqual(resetRes.body.extensionSeconds, 180, 'Reset seconds reported as full Level 1 time');
+      check(
+        typeof resetRes.body.round.remainingSeconds === 'number' &&
+          resetRes.body.round.remainingSeconds > 150 &&
+          resetRes.body.round.remainingSeconds <= 180,
+        'Reset deadline is about now + full Level 1 time',
+      );
+      checkEqual(resetRes.body.round.timerExtensions.length, 2, 'Reset logged as second extension');
+      checkEqual(
+        resetRes.body.round.timerExtensions[1].reason,
+        'Timer reset to full level time',
+        'Reset entry carries the reset reason',
+      );
+      checkEqual(
+        resetRes.body.round.timerExtensions[1].secondsAdded,
+        180,
+        'Reset entry logs the full level seconds',
+      );
+
+      const resetReadyRes = await env
+        .http()
+        .post(`/api/volunteer/students/${y1.usn}/round/reset`)
+        .set('Authorization', `Bearer ${volunteerToken}`);
+      checkEqual(resetReadyRes.status, 409, 'Timer reset on ready round -> 409');
+
       await env.models.Round.findByIdAndUpdate(startY2Res.body.round.id, {
         $set: { deadline: new Date(Date.now() - 10000) },
       });

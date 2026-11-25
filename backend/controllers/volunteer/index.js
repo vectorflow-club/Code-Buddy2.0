@@ -4,6 +4,7 @@ const { getVolunteerDashboard } = require('./dashboard');
 const {
   startStudentRoundByUsn,
   extendStudentRoundByUsn,
+  resetStudentRoundByUsn,
   evaluateStudentRoundByUsn,
 } = require('./lifecycle');
 const { settleStudentRoundByUsn, progressStudentRoundByUsn } = require('./settlement');
@@ -15,6 +16,7 @@ module.exports = {
   getVolunteerDashboard,
   startStudentRoundByUsn,
   extendStudentRoundByUsn,
+  resetStudentRoundByUsn,
   evaluateStudentRoundByUsn,
   settleStudentRoundByUsn,
   progressStudentRoundByUsn,

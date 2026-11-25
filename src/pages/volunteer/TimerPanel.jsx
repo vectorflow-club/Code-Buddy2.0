@@ -18,11 +18,14 @@ export default function TimerPanel({
   isExpired,
   canStart = false,
   canExtend = false,
+  canReset = false,
   isStarting = false,
   isExtending = false,
+  isResetting = false,
   isBusy = false,
   onStart,
   onExtend,
+  onReset,
 }) {
   const [now, setNow] = useState(() => Date.now());
   const [extensionSeconds, setExtensionSeconds] = useState("");
@@ -155,12 +158,12 @@ export default function TimerPanel({
         <button
           type="button"
           className="timer-reset-button"
-          disabled
-          aria-disabled="true"
-          title="Reset is not available"
+          disabled={!canReset || isBusy}
+          onClick={onReset}
+          title="Restart the timer to the full level time"
         >
           <RotateCcw size={16} />
-          Reset
+          {isResetting ? "Resetting…" : "Reset"}
         </button>
       </div>
 

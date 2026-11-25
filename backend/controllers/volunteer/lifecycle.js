@@ -385,6 +385,215 @@ const extendStudentRoundByUsn = async (req, res) => {
 };
 
 /**
+ * Helper to format consistent round-reset conflict responses for non-inProgress statuses.
+ */
+const buildResetIneligibleResponse = (status, currentLevel) => {
+  if (status === 'timeExpired') {
+    return {
+      status: 409,
+      code: 'ROUND_TIMER_EXPIRED',
+      message: `Cannot reset Level ${currentLevel}: time is already up.`,
+    };
+  }
+  return {
+    status: 409,
+    code: 'INVALID_ROUND_STATUS',
+    message: `Cannot reset a round that is '${status}'. Only rounds in progress can be reset.`,
+  };
+};
+
+/**
+ * Reset a running student round's timer to the full level duration from now
+ * Endpoint: POST /api/volunteer/students/:usn/round/reset
+ * Access: Protected (Volunteer only)
+ */
+const resetStudentRoundByUsn = async (req, res) => {
+  try {
+    const resolved = await resolveRegisteredStudent(req.params.usn);
+    if (resolved.error) {
+      return res.status(resolved.error.status).json({
+        success: false,
+        code: resolved.error.code,
+        message: resolved.error.message,
+      });
+    }
+
+    const { student, normalizedUsn } = resolved;
+    const currentLevel = student.currentLevel;
+
+    const initialRound = await Round.findOne({
+      studentId: student._id,
+      levelNumber: currentLevel,
+    });
+
+    if (!initialRound) {
+      return res.status(404).json({
+        success: false,
+        code: 'ROUND_NOT_ALLOCATED',
+        message: `Student ${normalizedUsn} has no round for Level ${currentLevel} yet.`,
+      });
+    }
+
+    // Resolve authoritative round duration from active Level configuration (never hardcoded)
+    const levelConfig = await Level.findOne({ number: currentLevel, isActive: true });
+    if (!levelConfig) {
+      return res.status(404).json({
+        success: false,
+        code: 'LEVEL_NOT_FOUND',
+        message: `Level ${currentLevel} settings were not found.`,
+      });
+    }
+
+    const durationSeconds = Number.isFinite(levelConfig.durationSeconds)
+      ? levelConfig.durationSeconds
+      : initialRound.durationSeconds;
+
+    if (!Number.isFinite(durationSeconds) || durationSeconds < 10) {
+      return res.status(400).json({
+        success: false,
+        code: 'INVALID_ROUND_DURATION',
+        message: 'Level time must be at least 10 seconds.',
+      });
+    }
+
+    // 4. Optimistic Concurrency Control (CAS) loop on stored deadline to prevent lost updates
+    const MAX_CAS_ATTEMPTS = 5;
+    let candidateRound = initialRound;
+    let resetRound = null;
+
+    for (let attempt = 0; attempt < MAX_CAS_ATTEMPTS; attempt++) {
+      if (candidateRound.status !== 'inProgress') {
+        const conflict = buildResetIneligibleResponse(candidateRound.status, currentLevel);
+        return res.status(conflict.status).json({
+          success: false,
+          code: conflict.code,
+          message: conflict.message,
+        });
+      }
+
+      // Sync timer state so an un-synced expired round cannot be reset
+      const timerSync = await syncRoundDeadlineState(candidateRound);
+      if (timerSync.error) {
+        return res.status(timerSync.error.status).json({
+          success: false,
+          code: timerSync.error.code,
+          message: timerSync.error.message,
+        });
+      }
+
+      if (timerSync.isExpired || timerSync.round.status === 'timeExpired') {
+        const conflict = buildResetIneligibleResponse('timeExpired', currentLevel);
+        return res.status(conflict.status).json({
+          success: false,
+          code: conflict.code,
+          message: conflict.message,
+        });
+      }
+
+      const activeRound = timerSync.round;
+      const storedDeadlineDate = new Date(activeRound.deadline);
+      const resetStart = new Date();
+      const newDeadlineMs = resetStart.getTime() + durationSeconds * 1000;
+
+      // Guard against JavaScript Date maximum timestamp overflow (8.64e15 ms)
+      if (!Number.isFinite(newDeadlineMs) || newDeadlineMs > 8.64e15) {
+        return res.status(400).json({
+          success: false,
+          code: 'INVALID_ROUND_DURATION',
+          message: 'That level time gives a wrong end time.',
+        });
+      }
+
+      const extensionEntry = {
+        extendedBy: req.volunteer._id,
+        secondsAdded: durationSeconds,
+        reason: 'Timer reset to full level time',
+        timestamp: resetStart,
+      };
+
+      const updated = await Round.findOneAndUpdate(
+        {
+          _id: activeRound._id,
+          status: 'inProgress',
+          deadline: storedDeadlineDate,
+        },
+        {
+          $set: {
+            durationSeconds,
+            deadline: new Date(newDeadlineMs),
+          },
+          $push: {
+            timerExtensions: extensionEntry,
+          },
+        },
+        {
+          new: true,
+          runValidators: true,
+        }
+      );
+
+      if (updated) {
+        resetRound = updated;
+        break;
+      }
+
+      // Concurrent write altered deadline or status; re-fetch for retry or conflict report
+      const refreshedRound = await Round.findById(activeRound._id);
+      if (!refreshedRound) {
+        return res.status(404).json({
+          success: false,
+          code: 'ROUND_NOT_ALLOCATED',
+          message: `Round for Level ${currentLevel} is gone.`,
+        });
+      }
+      candidateRound = refreshedRound;
+    }
+
+    if (!resetRound) {
+      return res.status(409).json({
+        success: false,
+        code: 'RESET_CONFLICT',
+        message: 'Someone else changed the round at the same time. Please try again.',
+      });
+    }
+
+    const updatedTimer = computeTimerFields(resetRound);
+
+    return res.status(200).json({
+      success: true,
+      message: `Timer reset to the full Level ${currentLevel} time.`,
+      extensionSeconds: durationSeconds,
+      student: formatStudentVolunteerResponse(student, resetRound),
+      round: {
+        ...formatRoundVolunteerResponse(resetRound, updatedTimer),
+        startedBy: resetRound.startedBy ? resetRound.startedBy.toString() : null,
+        timerExtensions: Array.isArray(resetRound.timerExtensions)
+          ? resetRound.timerExtensions.map((ext) => ({
+              extendedBy: ext.extendedBy ? ext.extendedBy.toString() : null,
+              secondsAdded: ext.secondsAdded,
+              reason: ext.reason || '',
+              timestamp: ext.timestamp,
+            }))
+          : [],
+      },
+      extendedBy: {
+        id: req.volunteer._id.toString(),
+        name: req.volunteer.name,
+        username: req.volunteer.username,
+        assignedLab: req.volunteer.assignedLab || '',
+      },
+    });
+  } catch (error) {
+    console.error('Error resetting student round timer:', error.message);
+    return res.status(500).json({
+      success: false,
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Could not reset the timer.',
+    });
+  }
+};
+
+/**
  * Helper to strictly validate manual PASS/FAIL evaluation payload.
  * Rejects evaluator spoofing fields or unsupported properties.
  */
@@ -658,5 +867,6 @@ module.exports = {
   formatEvaluationResponse,
   startStudentRoundByUsn,
   extendStudentRoundByUsn,
+  resetStudentRoundByUsn,
   evaluateStudentRoundByUsn,
 };
