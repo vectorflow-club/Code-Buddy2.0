@@ -1,8 +1,11 @@
 import { NavLink, Outlet } from "react-router-dom";
+import { useState } from "react";
 import {
   LayoutDashboard,
   ClipboardList,
   LogOut,
+  Menu,
+  X,
 } from "lucide-react";
 import { Brand } from "../ui";
 import { useStaffSession } from "../../hooks/useStaffSession";
@@ -18,6 +21,10 @@ import "./volunteer-layout.css";
 const VOLUNTEER_EXPIRED_CODES = ["SESSION_EXPIRED"];
 
 export default function VolunteerLayout() {
+  // Same mobile-menu pattern as the student layout: a hamburger opens the
+  // sidebar as a slide-in drawer on phones (<=700px); on desktop the
+  // sidebar is always visible and this state does nothing.
+  const [menuOpen, setMenuOpen] = useState(false);
   const { session, checking, validationError, validateSession, handleLogout } = useStaffSession({
     getSession: getVolunteerSession,
     storeSession: storeVolunteerSession,
@@ -45,7 +52,26 @@ export default function VolunteerLayout() {
 
   return (
     <div className="vol-layout">
-      <aside className="vol-sidebar">
+      <button
+        type="button"
+        className="vol-mobile-menu"
+        onClick={() => setMenuOpen(!menuOpen)}
+        aria-label="Open navigation"
+        aria-expanded={menuOpen}
+      >
+        <Menu size={20} />
+      </button>
+
+      <aside className={`vol-sidebar${menuOpen ? " nav-open" : ""}`}>
+        <button
+          type="button"
+          className="vol-menu-close"
+          onClick={() => setMenuOpen(false)}
+          aria-label="Close navigation"
+        >
+          <X size={20} />
+        </button>
+
         <div className="vol-brand">
           <Brand />
         </div>
@@ -55,6 +81,7 @@ export default function VolunteerLayout() {
         <nav className="vol-nav">
           <NavLink
             to="/volunteer/dashboard"
+            onClick={() => setMenuOpen(false)}
             className={({ isActive }) =>
               isActive ? "vol-nav-link vol-active" : "vol-nav-link"
             }
@@ -65,6 +92,7 @@ export default function VolunteerLayout() {
 
           <NavLink
             to="/volunteer/evaluations"
+            onClick={() => setMenuOpen(false)}
             className="vol-nav-link"
           >
             <ClipboardList size={18} />
@@ -91,6 +119,14 @@ export default function VolunteerLayout() {
           </button>
         </div>
       </aside>
+
+      {menuOpen && (
+        <div
+          className="vol-menu-backdrop"
+          onClick={() => setMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
 
       <main className="vol-main">
         <Outlet />

@@ -1,5 +1,6 @@
 import "./admin.css";
 import { NavLink, Outlet } from "react-router-dom";
+import { useState } from "react";
 import {
   LayoutDashboard,
   BookOpen,
@@ -10,6 +11,8 @@ import {
   ClipboardList,
   Receipt,
   LogOut,
+  Menu,
+  X,
 } from "lucide-react";
 
 import { Brand } from "../ui";
@@ -36,6 +39,10 @@ const navItems = [
 const ADMIN_EXPIRED_CODES = ["SESSION_EXPIRED", "INVALID_SESSION"];
 
 export default function AdminLayout() {
+  // Same mobile-menu pattern as the student layout: a hamburger opens the
+  // sidebar as a slide-in drawer on phones (<=700px); on desktop the
+  // sidebar is always visible and this state does nothing.
+  const [menuOpen, setMenuOpen] = useState(false);
   const { session, checking, validationError, validateSession, handleLogout } = useStaffSession({
     getSession: getAdminSession,
     storeSession: storeAdminSession,
@@ -61,7 +68,16 @@ export default function AdminLayout() {
 
   return (
     <div className="admin-shell">
-      <aside className="admin-sidebar">
+      <aside className={`admin-sidebar${menuOpen ? " nav-open" : ""}`}>
+        <button
+          type="button"
+          className="admin-menu-close"
+          onClick={() => setMenuOpen(false)}
+          aria-label="Close navigation"
+        >
+          <X size={20} />
+        </button>
+
         <div className="admin-brand">
           <Brand />
           <span>ADMIN PANEL</span>
@@ -74,6 +90,7 @@ export default function AdminLayout() {
             <NavLink
               key={to}
               to={to}
+              onClick={() => setMenuOpen(false)}
               className={({ isActive }) =>
                 `admin-nav-link ${isActive ? "active" : ""}`
               }
@@ -90,8 +107,25 @@ export default function AdminLayout() {
         </div>
       </aside>
 
+      {menuOpen && (
+        <div
+          className="admin-menu-backdrop"
+          onClick={() => setMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       <main className="admin-main">
         <header className="admin-topbar">
+          <button
+            type="button"
+            className="admin-mobile-menu"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label={menuOpen ? "Close navigation" : "Open navigation"}
+            aria-expanded={menuOpen}
+          >
+            {menuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
           <span>VVCE CODE SPRINT</span>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <span className="admin-role">{session.admin.name || "ADMINISTRATOR"}</span>

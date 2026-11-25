@@ -85,6 +85,15 @@
   color: var(--ink);
 }
 
+/* Hidden-menu controls: invisible on desktop, shown only at <=700px. */
+.admin-mobile-menu {
+  display: none;
+}
+
+.admin-menu-close {
+  display: none;
+}
+
 .admin-sidebar {
   position: fixed;
   top: 0;
@@ -199,36 +208,55 @@
 }
 
 @media (max-width: 700px) {
+  /* Hamburger: first item in the topbar, like the student layout. */
+  .admin-mobile-menu {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border: none;
+    background: transparent;
+    color: var(--forest);
+    cursor: pointer;
+  }
+
+  .admin-menu-close {
+    display: grid;
+    place-items: center;
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: transparent;
+    color: var(--forest-muted);
+    cursor: pointer;
+  }
+
+  /* The icon rail is gone: on phones the full sidebar hides off-canvas and
+     slides in as a drawer when the hamburger opens it. */
   .admin-sidebar {
-    width: 75px;
-    min-width: 75px;
-    padding: 15px 8px;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    z-index: 70;
   }
 
+  .admin-sidebar.nav-open {
+    transform: translateX(0);
+  }
+
+  .admin-menu-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(23, 35, 31, 0.45);
+    z-index: 65;
+  }
+
+  /* Full-width content: no sidebar margin. */
   .admin-main {
-    margin-left: 75px;
-  }
-
-  .admin-brand > span,
-  .admin-nav-link span,
-  .admin-nav-heading,
-  .admin-sidebar-footer {
-    display: none;
-  }
-
-  /* The Brand text ("code buddy") is white-space: nowrap, so it would spill
-     out of the 75px rail without this; the symbol stays, centered. */
-  .admin-brand {
-    align-items: center;
-  }
-
-  .admin-brand .brand > span:not(.brand-symbol) {
-    display: none;
-  }
-
-  .admin-nav-link {
-    justify-content: center;
-    padding: 14px 5px;
+    margin-left: 0;
   }
 
   .admin-content {

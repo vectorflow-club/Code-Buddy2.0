@@ -361,10 +361,6 @@
 }
 
 @media (max-width: 650px) {
-  .vol-main {
-    padding: 18px;
-  }
-
   .vol-dashboard-header {
     align-items: flex-start;
     flex-direction: column;
@@ -400,8 +396,7 @@
 
   .vol-table,
   .vol-table tbody,
-  .vol-participant-row,
-  .vol-participant-row td {
+  .vol-participant-row {
     display: block;
     width: 100%;
   }
@@ -409,32 +404,112 @@
   .vol-participant-row {
     border: 1px solid #e7ebe6;
     border-radius: 12px;
-    margin-bottom: 12px;
-    padding: 6px 0;
+    margin-bottom: 8px;
+    padding: 4px 0;
     background: #fff;
   }
 
+  /* Compact card: one line per field, label on the left, value on the right. */
   .vol-participant-row td {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    padding: 10px 14px;
     white-space: normal;
-  }
-
-  .vol-participant-row td:last-child {
-    border-bottom: none;
+    overflow-wrap: anywhere;
   }
 
   .vol-participant-row td::before {
     content: attr(data-label);
-    display: block;
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.8px;
     color: #59645e;
     text-transform: uppercase;
-    margin-bottom: 2px;
+    flex-shrink: 0;
   }
 
   .vol-participant-row td:first-child::before {
     display: none;
+  }
+
+  /* "To pay" stays under the amount, right-aligned. */
+  .vol-participant-row .vol-to-pay {
+    flex-basis: 100%;
+    margin-top: 2px;
+    text-align: right;
+  }
+
+  /* Action cell: label on top, then the question strip, then real buttons. */
+  .vol-participant-row td:last-child {
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    gap: 8px;
+    border-bottom: none;
+  }
+
+  .vol-participant-row .vol-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .vol-participant-row .vol-question-number {
+    flex-basis: 100%;
+    display: block;
+    background: #e8f4e9;
+    border-radius: 8px;
+    padding: 10px 12px;
+    text-align: center;
+    font-size: 13px;
+    white-space: normal;
+  }
+
+  .vol-participant-row .vol-action-button {
+    min-height: 44px;
+    justify-content: center;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 13px;
+    background: #fff;
+    border: 1px solid #dfe5df;
+  }
+
+  /* Start / Finish level: the row's forward action, full width, filled. */
+  .vol-participant-row .vol-action-primary {
+    flex-basis: 100%;
+    background: #315b46;
+    border-color: #315b46;
+    color: #fff;
+  }
+
+  .vol-participant-row .vol-action-primary:hover {
+    color: #fff;
+  }
+
+  /* Correct / Not correct: side by side. */
+  .vol-participant-row .vol-action-correct,
+  .vol-participant-row .vol-action-wrong {
+    flex: 1 1 40%;
+  }
+
+  .vol-participant-row .vol-action-correct {
+    background: #e8f4e9;
+    border-color: #cfe4d2;
+  }
+
+  .vol-participant-row .vol-action-wrong {
+    background: #fbeae7;
+    border-color: #eecfc9;
+  }
+
+  /* Open: quiet outline, full width. */
+  .vol-participant-row .vol-action-outline {
+    flex-basis: 100%;
   }
 
 .vol-progress-track {

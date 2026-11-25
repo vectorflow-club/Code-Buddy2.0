@@ -408,7 +408,7 @@ export default function VolunteerDashboard() {
                           {canStart && (
                             <button
                               type="button"
-                              className="vol-action-button"
+                              className="vol-action-button vol-action-primary"
                               disabled={Boolean(rowBusy)}
                               onClick={() => handleStart(entry)}
                             >
@@ -438,7 +438,7 @@ export default function VolunteerDashboard() {
                           {canFinish && (
                             <button
                               type="button"
-                              className="vol-action-button"
+                              className="vol-action-button vol-action-primary"
                               disabled={Boolean(rowBusy)}
                               onClick={() => handleFinishLevel(entry)}
                             >
@@ -448,7 +448,7 @@ export default function VolunteerDashboard() {
                           {hasRound && !isTerminal && (
                             <button
                               type="button"
-                              className="vol-action-button"
+                              className="vol-action-button vol-action-outline"
                               disabled={Boolean(rowBusy)}
                               onClick={() => handleOpen(entry)}
                             >

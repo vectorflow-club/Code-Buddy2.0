@@ -5,6 +5,15 @@
   color: var(--ink, #202923);
 }
 
+/* Hidden-menu controls: invisible on desktop, shown only at <=700px. */
+.vol-mobile-menu {
+  display: none;
+}
+
+.vol-menu-close {
+  display: none;
+}
+
 .vol-sidebar {
   position: fixed;
   top: 0;
@@ -115,46 +124,62 @@
 }
 
 @media (max-width: 700px) {
+  /* Hamburger: fixed top-left, always visible on phones. The drawer covers
+     it while open; the X inside the sidebar closes it. */
+  .vol-mobile-menu {
+    display: grid;
+    place-items: center;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 60;
+    width: 40px;
+    height: 40px;
+    border: 1px solid #e2e8e2;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #315b46;
+    cursor: pointer;
+  }
+
+  .vol-menu-close {
+    display: grid;
+    place-items: center;
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: transparent;
+    color: #c2ccc6;
+    cursor: pointer;
+  }
+
+  /* The icon rail is gone: on phones the full sidebar hides off-canvas and
+     slides in as a drawer when the hamburger opens it. */
   .vol-sidebar {
-    width: 75px;
-    min-width: 75px;
-    padding: 15px 8px;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    z-index: 70;
   }
 
-  .vol-brand {
-    display: flex;
-    justify-content: center;
+  .vol-sidebar.nav-open {
+    transform: translateX(0);
   }
 
-  .vol-brand .brand > span:not(.brand-symbol) {
-    display: none;
+  .vol-menu-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(23, 35, 31, 0.45);
+    z-index: 65;
   }
 
-  .vol-nav-label,
-  .vol-nav-link span,
-  .vol-user strong,
-  .vol-user span {
-    display: none;
-  }
-
-  .vol-nav-link {
-    justify-content: center;
-    padding: 14px 5px;
-  }
-
-  .vol-user {
-    justify-content: center;
-  }
-
-  /* The logout label is a bare text node, so font-size hides it while the
-     icon (explicit SVG size) stays visible. */
-  .vol-logout {
-    justify-content: center;
-    font-size: 0;
-  }
-
-  .vol-main {
-    margin-left: 75px;
-    padding: 20px;
+  /* Full-width content: no sidebar margin, top padding clears the fixed
+     hamburger. The higher-specificity selector keeps the dashboard's
+     650px padding rule from clobbering the top padding. */
+  .vol-layout .vol-main {
+    margin-left: 0;
+    padding: 64px 20px 20px;
   }
 }
