@@ -3,7 +3,7 @@ import { Check, Clock3, Flag } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { backendCompetitionService } from '../services/backendCompetitionService'
 import { useStudent } from '../context/StudentContext'
-import { formatCurrency } from '../utils/formatters'
+import { formatCurrency, questionCode } from '../utils/formatters'
 import { Button, CountdownDisplay, EmptyState, InlineTag, LoadingState } from '../components/ui'
 
 function questionExamples(question) {
@@ -18,14 +18,12 @@ function QuestionCard({ question, status }) {
   const statement = question.statement ?? question.prompt ?? ''
   const constraints = Array.isArray(question.constraints) ? question.constraints : question.constraints ? [question.constraints] : []
   const examples = questionExamples(question)
-  // The grey box shows the question number and level - the identifiers the
-  // organizer matches against their own page. The raw database id is never
-  // shown to students. The level comes from the question snapshot; the
-  // "Question H4" span that used to sit in the title is removed so the
-  // number appears exactly once.
-  const questionLabel = question.bankNumber ? `Question ${question.bankNumber}` : null
-  const levelLabel = question.levelNumber ? `Level ${question.levelNumber}` : null
-  const boxLabel = [levelLabel, questionLabel].filter(Boolean).join(' - ') || 'Your question'
+  // The grey box shows the short question id (e.g. L1H10) — the same id the
+  // organizer uses to find the test cases in the event-day sheet. The raw
+  // database id is never shown to students.
+  const boxLabel = questionCode(question.levelNumber, question.bankNumber)
+    || (question.levelNumber ? `Level ${question.levelNumber}` : null)
+    || 'Your question'
 
   return <article className="question-card" aria-labelledby={`question-title-${question.id}`}>
     <header className="question-header">

@@ -18,7 +18,7 @@ import {
   settleVolunteerStudentRound,
   progressVolunteerStudentRound,
 } from "../../services/volunteerRoundService";
-import { formatCurrency } from "../../utils/formatters";
+import { formatCurrency, questionCode } from "../../utils/formatters";
 
 // Friendly status for a roster row, from the raw competition/round state the
 // dashboard endpoint returns. Tone maps to the existing status-tag styles.
@@ -347,6 +347,7 @@ export default function VolunteerDashboard() {
                 <th>STUDENT</th>
                 <th>USN</th>
                 <th>CURRENT LEVEL</th>
+                <th>QUESTION</th>
                 <th>STATUS</th>
                 <th>BALANCE</th>
                 <th>ACTION</th>
@@ -356,13 +357,13 @@ export default function VolunteerDashboard() {
             <tbody>
               {dashboardLoading && !dashboard ? (
                 <tr>
-                  <td colSpan="6" className="vol-empty-state" role="status">
+                  <td colSpan="7" className="vol-empty-state" role="status">
                     Loading students...
                   </td>
                 </tr>
               ) : dashboardError ? (
                 <tr>
-                  <td colSpan="6" className="vol-empty-state" role="alert">
+                  <td colSpan="7" className="vol-empty-state" role="alert">
                     {dashboardError}{" "}
                     <button
                       type="button"
@@ -375,7 +376,7 @@ export default function VolunteerDashboard() {
                 </tr>
               ) : participants.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="vol-empty-state" role="status">
+                  <td colSpan="7" className="vol-empty-state" role="status">
                     No students have signed up at {spotLabel} yet.
                   </td>
                 </tr>
@@ -395,6 +396,7 @@ export default function VolunteerDashboard() {
                       <td className="vol-participant-name">{entry.name}</td>
                       <td>{entry.usn}</td>
                       <td>Level {entry.currentLevel}</td>
+                      <td>{questionCode(entry.currentLevel, entry.questionBankNumber) || '—'}</td>
                       <td>
                         <span className={`vol-status-tag vol-${status.tone}`}>{status.label}</span>
                       </td>

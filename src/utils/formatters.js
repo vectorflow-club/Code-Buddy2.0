@@ -107,3 +107,11 @@ const levelStatusLabels = {
 export function levelStatusLabel(status) {
   return levelStatusLabels[status] || String(status || '—')
 }
+
+// The short question id the student side, the organizer roster and the
+// event-day test-case sheet all show: level number + bank number with no
+// space, e.g. L1H10. The organizer searches the sheet for exactly this.
+export function questionCode(levelNumber, bankNumber) {
+  if (!levelNumber || !bankNumber) return null
+  return `L${levelNumber}${bankNumber}`
+}

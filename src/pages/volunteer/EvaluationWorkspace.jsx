@@ -20,6 +20,7 @@ import { getVolunteerSession } from "../../services/volunteerAuthService";
 import {
   competitionStatusLabel,
   evaluationStatusLabel,
+  questionCode,
   roundAvailabilityLabel,
   roundStatusLabel,
 } from "../../utils/formatters";
@@ -406,7 +407,7 @@ export default function EvaluationWorkspace() {
               <>
                 {question.bankNumber ? (
                   <p>
-                    Question number: {displayValue(question.bankNumber)}
+                    Question number: {questionCode(round.levelNumber, question.bankNumber) || question.bankNumber}
                     {question.showBankNumber === false ? " · hidden from student" : ""}
                   </p>
                 ) : null}

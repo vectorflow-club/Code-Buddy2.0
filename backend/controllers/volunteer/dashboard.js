@@ -81,6 +81,7 @@ const getVolunteerDashboard = async (req, res) => {
         competitionStatus: student.competitionStatus,
         roundAvailability: deriveStudentRoundAvailability(student, round),
         roundStatus: round ? round.status : 'none',
+        questionBankNumber: round?.questionSnapshot?.bankNumber || null,
         walletBalance: student.walletBalance ?? 0,
         createdAt: student.createdAt,
       };
