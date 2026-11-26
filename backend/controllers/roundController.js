@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const { Round, Question, Level, Evaluation, Student, Transaction } = require('../models');
-const { TOTAL_LEVELS, FIRST_YEAR, ACADEMIC_YEARS, TRANSACTION_TYPES } = require('../constants');
+const { TOTAL_LEVELS, ACADEMIC_YEARS, TRANSACTION_TYPES } = require('../constants');
 const {
   formatStudentTransactionResponse,
   parseValidDeadlineMs,
@@ -474,7 +474,8 @@ const buildInsufficientBalanceResponse = (currentLevel, entryFee, currentBalance
  * 1. Identifies student from authenticated session (req.student).
  * 2. Enforces registration completion.
  * 3. Reads currentLevel and academic year from Student document.
- * 4. Maps academic year to difficulty: 1st Year -> EASY, 2nd..4th Year -> HARD.
+ * 4. Every academic year gets EASY questions (event-day decision 26 Nov
+ *    2026: Hard is never allocated, 1st through 4th Year alike).
  * 5. Checks for existing Round: returns existing question snapshot if already allocated.
  * 6. Validates active Level configuration.
  * 7. Selects an active matching question from Question collection.
@@ -536,12 +537,12 @@ const allocateQuestion = async (req, res) => {
       });
     }
 
+    // Event-day decision (26 Nov 2026): every year gets EASY questions.
+    // Hard questions stay in the bank but are never allocated.
     const year = student.year;
     let difficulty;
-    if (year === FIRST_YEAR) {
+    if (ACADEMIC_YEARS.includes(year)) {
       difficulty = 'EASY';
-    } else if (ACADEMIC_YEARS.includes(year)) {
-      difficulty = 'HARD';
     } else {
       return res.status(400).json({
         success: false,

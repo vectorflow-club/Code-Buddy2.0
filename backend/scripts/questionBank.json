@@ -3,6 +3,791 @@
     "bankId": "E1",
     "levelNumber": 1,
     "difficulty": "EASY",
+    "title": "Swap Two Numbers",
+    "statement": "Given two integers A and B, swap their values and print them in the new order.\n\nInput Format: A single line containing two space-separated integers A and B. | Output Format: A single line containing B followed by A, separated by a single space.",
+    "constraints": [
+      "-1000000000 <= A, B <= 1000000000"
+    ],
+    "examples": [
+      {
+        "input": "3 5",
+        "output": "5 3",
+        "explanation": "After swapping, A becomes 5 and B becomes 3"
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": "10 20",
+        "expectedOutput": "20 10"
+      },
+      {
+        "input": "0 7",
+        "expectedOutput": "7 0"
+      },
+      {
+        "input": "-4 9",
+        "expectedOutput": "9 -4"
+      },
+      {
+        "input": "100 100",
+        "expectedOutput": "100 100"
+      },
+      {
+        "input": "-15 -3",
+        "expectedOutput": "-3 -15"
+      }
+    ]
+  },
+  {
+    "bankId": "E2",
+    "levelNumber": 1,
+    "difficulty": "EASY",
+    "title": "Check Even or Odd",
+    "statement": "Given an integer N, check whether it is even or odd.\n\nInput Format: A single line containing an integer N. | Output Format: Print Even if N is even, otherwise print Odd.",
+    "constraints": [
+      "-1000000000 <= N <= 1000000000"
+    ],
+    "examples": [
+      {
+        "input": "4",
+        "output": "Even",
+        "explanation": "4 is divisible by 2"
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": "7",
+        "expectedOutput": "Odd"
+      },
+      {
+        "input": "0",
+        "expectedOutput": "Even"
+      },
+      {
+        "input": "-3",
+        "expectedOutput": "Odd"
+      },
+      {
+        "input": "100",
+        "expectedOutput": "Even"
+      },
+      {
+        "input": "-42",
+        "expectedOutput": "Even"
+      }
+    ]
+  },
+  {
+    "bankId": "E3",
+    "levelNumber": 1,
+    "difficulty": "EASY",
+    "title": "Print Numbers from 1 to N",
+    "statement": "Given an integer N, print all numbers from 1 to N in order.\n\nInput Format: A single line containing an integer N. | Output Format: A single line with the numbers from 1 to N, separated by single spaces.",
+    "constraints": [
+      "1 <= N <= 50"
+    ],
+    "examples": [
+      {
+        "input": "5",
+        "output": "1 2 3 4 5",
+        "explanation": "Numbers from 1 to 5"
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": "1",
+        "expectedOutput": "1"
+      },
+      {
+        "input": "3",
+        "expectedOutput": "1 2 3"
+      },
+      {
+        "input": "8",
+        "expectedOutput": "1 2 3 4 5 6 7 8"
+      },
+      {
+        "input": "10",
+        "expectedOutput": "1 2 3 4 5 6 7 8 9 10"
+      },
+      {
+        "input": "2",
+        "expectedOutput": "1 2"
+      }
+    ]
+  },
+  {
+    "bankId": "E4",
+    "levelNumber": 1,
+    "difficulty": "EASY",
+    "title": "Calculate Sum of First N Natural Numbers",
+    "statement": "Given an integer N, calculate the sum of the first N natural numbers (1 + 2 + ... + N).\n\nInput Format: A single line containing an integer N. | Output Format: A single integer, the sum of the first N natural numbers.",
+    "constraints": [
+      "1 <= N <= 100000"
+    ],
+    "examples": [
+      {
+        "input": "5",
+        "output": "15",
+        "explanation": "1 + 2 + 3 + 4 + 5 = 15"
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": "1",
+        "expectedOutput": "1"
+      },
+      {
+        "input": "10",
+        "expectedOutput": "55"
+      },
+      {
+        "input": "100",
+        "expectedOutput": "5050"
+      },
+      {
+        "input": "7",
+        "expectedOutput": "28"
+      },
+      {
+        "input": "20",
+        "expectedOutput": "210"
+      }
+    ]
+  },
+  {
+    "bankId": "E5",
+    "levelNumber": 1,
+    "difficulty": "EASY",
+    "title": "Print the Multiplication Table of a Number",
+    "statement": "Given a number N, print its multiplication table from 1 to 10.\n\nInput Format: A single line containing an integer N. | Output Format: A single line with the products N x 1 to N x 10, separated by single spaces.",
+    "constraints": [
+      "1 <= N <= 9"
+    ],
+    "examples": [
+      {
+        "input": "5",
+        "output": "5 10 15 20 25 30 35 40 45 50",
+        "explanation": "5 x 1 = 5, 5 x 2 = 10, and so on up to 5 x 10 = 50"
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": "3",
+        "expectedOutput": "3 6 9 12 15 18 21 24 27 30"
+      },
+      {
+        "input": "9",
+        "expectedOutput": "9 18 27 36 45 54 63 72 81 90"
+      },
+      {
+        "input": "2",
+        "expectedOutput": "2 4 6 8 10 12 14 16 18 20"
+      },
+      {
+        "input": "7",
+        "expectedOutput": "7 14 21 28 35 42 49 56 63 70"
+      },
+      {
+        "input": "1",
+        "expectedOutput": "1 2 3 4 5 6 7 8 9 10"
+      }
+    ]
+  },
+  {
+    "bankId": "E6",
+    "levelNumber": 1,
+    "difficulty": "EASY",
+    "title": "Count Digits in a Number",
+    "statement": "Given a non-negative integer N, count how many digits it has.\n\nInput Format: A single line containing a non-negative integer N. | Output Format: A single integer, the number of digits in N.",
+    "constraints": [
+      "0 <= N <= 1000000000"
+    ],
+    "examples": [
+      {
+        "input": "123",
+        "output": "3",
+        "explanation": "123 has three digits"
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": "7",
+        "expectedOutput": "1"
+      },
+      {
+        "input": "1000",
+        "expectedOutput": "4"
+      },
+      {
+        "input": "0",
+        "expectedOutput": "1"
+      },
+      {
+        "input": "98765",
+        "expectedOutput": "5"
+      },
+      {
+        "input": "10",
+        "expectedOutput": "2"
+      }
+    ]
+  },
+  {
+    "bankId": "E7",
+    "levelNumber": 1,
+    "difficulty": "EASY",
+    "title": "Find Sum of Array Elements",
+    "statement": "Given an array of N integers, find the sum of all its elements.\n\nInput Format: The first line contains an integer N. The second line contains N space-separated integers. | Output Format: A single integer, the sum of the array elements.",
+    "constraints": [
+      "1 <= N <= 100",
+      "-1000 <= each element <= 1000"
+    ],
+    "examples": [
+      {
+        "input": "5\n1 2 3 4 5",
+        "output": "15",
+        "explanation": "1 + 2 + 3 + 4 + 5 = 15"
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": "3\n10 20 30",
+        "expectedOutput": "60"
+      },
+      {
+        "input": "1\n-5",
+        "expectedOutput": "-5"
+      },
+      {
+        "input": "4\n2 4 6 8",
+        "expectedOutput": "20"
+      },
+      {
+        "input": "6\n-1 0 1 -2 2 3",
+        "expectedOutput": "3"
+      },
+      {
+        "input": "2\n100 -100",
+        "expectedOutput": "0"
+      }
+    ]
+  },
+  {
+    "bankId": "E8",
+    "levelNumber": 1,
+    "difficulty": "EASY",
+    "title": "Find Smallest of Three Numbers",
+    "statement": "Given three integers A, B and C, find the smallest of the three.\n\nInput Format: A single line containing three space-separated integers A, B and C. | Output Format: A single integer, the smallest of the three numbers.",
+    "constraints": [
+      "-1000000000 <= A, B, C <= 1000000000"
+    ],
+    "examples": [
+      {
+        "input": "3 5 2",
+        "output": "2",
+        "explanation": "2 is smaller than 3 and 5"
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": "10 10 10",
+        "expectedOutput": "10"
+      },
+      {
+        "input": "-1 0 5",
+        "expectedOutput": "-1"
+      },
+      {
+        "input": "7 3 9",
+        "expectedOutput": "3"
+      },
+      {
+        "input": "100 50 75",
+        "expectedOutput": "50"
+      },
+      {
+        "input": "0 -8 -3",
+        "expectedOutput": "-8"
+      }
+    ]
+  },
+  {
+    "bankId": "E9",
+    "levelNumber": 1,
+    "difficulty": "EASY",
+    "title": "Count Consonants in a String",
+    "statement": "Given a lowercase word with no spaces, count how many consonants it contains. Consonants are all letters except the vowels a, e, i, o, and u.\n\nInput Format: A single line containing one lowercase word. | Output Format: A single integer representing the number of consonants.",
+    "constraints": [
+      "1 <= length <= 1000"
+    ],
+    "examples": [
+      {
+        "input": "hello",
+        "output": "3",
+        "explanation": "Consonants: h, l, l"
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": "aeiou",
+        "expectedOutput": "0"
+      },
+      {
+        "input": "sky",
+        "expectedOutput": "3"
+      },
+      {
+        "input": "code",
+        "expectedOutput": "2"
+      },
+      {
+        "input": "rhythm",
+        "expectedOutput": "6"
+      },
+      {
+        "input": "a",
+        "expectedOutput": "0"
+      }
+    ]
+  },
+  {
+    "bankId": "E10",
+    "levelNumber": 1,
+    "difficulty": "EASY",
+    "title": "Check Whether a String Contains Only Digits",
+    "statement": "Given a string, check whether it contains only digits (0-9).\n\nInput Format: A single line containing a string with no spaces. | Output Format: Print Yes if every character is a digit, otherwise print No.",
+    "constraints": [
+      "1 <= length <= 1000"
+    ],
+    "examples": [
+      {
+        "input": "12345",
+        "output": "Yes",
+        "explanation": "Every character is a digit"
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": "12a3",
+        "expectedOutput": "No"
+      },
+      {
+        "input": "0",
+        "expectedOutput": "Yes"
+      },
+      {
+        "input": "987654",
+        "expectedOutput": "Yes"
+      },
+      {
+        "input": "9b8",
+        "expectedOutput": "No"
+      },
+      {
+        "input": "007",
+        "expectedOutput": "Yes"
+      }
+    ]
+  },
+  {
+    "bankId": "H1",
+    "levelNumber": 1,
+    "difficulty": "HARD",
+    "title": "Reverse a String",
+    "statement": "Given a word with no spaces, print it in reverse.\n\nInput Format: A single line containing one word. | Output Format: A single line with the reversed word.",
+    "constraints": [
+      "1 <= length <= 1000"
+    ],
+    "examples": [
+      {
+        "input": "hello",
+        "output": "olleh",
+        "explanation": "hello reversed is olleh"
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": "code",
+        "expectedOutput": "edoc"
+      },
+      {
+        "input": "a",
+        "expectedOutput": "a"
+      },
+      {
+        "input": "abcde",
+        "expectedOutput": "edcba"
+      },
+      {
+        "input": "madam",
+        "expectedOutput": "madam"
+      },
+      {
+        "input": "open",
+        "expectedOutput": "nepo"
+      }
+    ]
+  },
+  {
+    "bankId": "H2",
+    "levelNumber": 1,
+    "difficulty": "HARD",
+    "title": "Find Largest of Three Numbers",
+    "statement": "Given three integers A, B and C, find the largest of the three.\n\nInput Format: A single line containing three space-separated integers A, B and C. | Output Format: A single integer, the largest of the three numbers.",
+    "constraints": [
+      "-1000000000 <= A, B, C <= 1000000000"
+    ],
+    "examples": [
+      {
+        "input": "3 5 2",
+        "output": "5",
+        "explanation": "5 is larger than 3 and 2"
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": "10 10 10",
+        "expectedOutput": "10"
+      },
+      {
+        "input": "-1 0 5",
+        "expectedOutput": "5"
+      },
+      {
+        "input": "7 3 9",
+        "expectedOutput": "9"
+      },
+      {
+        "input": "100 50 75",
+        "expectedOutput": "100"
+      },
+      {
+        "input": "0 -8 -3",
+        "expectedOutput": "0"
+      }
+    ]
+  },
+  {
+    "bankId": "H3",
+    "levelNumber": 1,
+    "difficulty": "HARD",
+    "title": "Find Length of a String Without Built-in Functions",
+    "statement": "Given a word with no spaces, find its length by counting the characters one by one, without using any built-in length function.\n\nInput Format: A single line containing one word. | Output Format: A single integer, the number of characters in the word.",
+    "constraints": [
+      "1 <= length <= 1000"
+    ],
+    "examples": [
+      {
+        "input": "hello",
+        "output": "5",
+        "explanation": "hello has five characters"
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": "code",
+        "expectedOutput": "4"
+      },
+      {
+        "input": "a",
+        "expectedOutput": "1"
+      },
+      {
+        "input": "abcdefghij",
+        "expectedOutput": "10"
+      },
+      {
+        "input": "openai",
+        "expectedOutput": "6"
+      },
+      {
+        "input": "x",
+        "expectedOutput": "1"
+      }
+    ]
+  },
+  {
+    "bankId": "H4",
+    "levelNumber": 1,
+    "difficulty": "HARD",
+    "title": "Find Largest Element in an Array",
+    "statement": "Given an array of N integers, find the largest element in the array.\n\nInput Format: The first line contains an integer N. The second line contains N space-separated integers. | Output Format: A single integer, the largest element.",
+    "constraints": [
+      "1 <= N <= 100",
+      "-1000 <= each element <= 1000"
+    ],
+    "examples": [
+      {
+        "input": "5\n1 2 3 4 5",
+        "output": "5",
+        "explanation": "5 is the largest element"
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": "3\n10 20 30",
+        "expectedOutput": "30"
+      },
+      {
+        "input": "1\n-5",
+        "expectedOutput": "-5"
+      },
+      {
+        "input": "4\n-2 -4 -6 -8",
+        "expectedOutput": "-2"
+      },
+      {
+        "input": "6\n-1 0 1 -2 2 3",
+        "expectedOutput": "3"
+      },
+      {
+        "input": "2\n100 -100",
+        "expectedOutput": "100"
+      }
+    ]
+  },
+  {
+    "bankId": "H5",
+    "levelNumber": 1,
+    "difficulty": "HARD",
+    "title": "Find Smallest Element in an Array",
+    "statement": "Given an array of N integers, find the smallest element in the array.\n\nInput Format: The first line contains an integer N. The second line contains N space-separated integers. | Output Format: A single integer, the smallest element.",
+    "constraints": [
+      "1 <= N <= 100",
+      "-1000 <= each element <= 1000"
+    ],
+    "examples": [
+      {
+        "input": "5\n1 2 3 4 5",
+        "output": "1",
+        "explanation": "1 is the smallest element"
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": "3\n10 20 30",
+        "expectedOutput": "10"
+      },
+      {
+        "input": "1\n-5",
+        "expectedOutput": "-5"
+      },
+      {
+        "input": "4\n-2 -4 -6 -8",
+        "expectedOutput": "-8"
+      },
+      {
+        "input": "6\n-1 0 1 -2 2 3",
+        "expectedOutput": "-2"
+      },
+      {
+        "input": "2\n100 -100",
+        "expectedOutput": "-100"
+      }
+    ]
+  },
+  {
+    "bankId": "H6",
+    "levelNumber": 1,
+    "difficulty": "HARD",
+    "title": "Sort an Array in Ascending Order",
+    "statement": "Given an array of N integers, sort it in ascending order.\n\nInput Format: The first line contains an integer N. The second line contains N space-separated integers. | Output Format: A single line with the sorted array elements, separated by single spaces.",
+    "constraints": [
+      "1 <= N <= 100",
+      "-1000 <= each element <= 1000"
+    ],
+    "examples": [
+      {
+        "input": "5\n5 2 9 1 7",
+        "output": "1 2 5 7 9",
+        "explanation": "Sorted in ascending order"
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": "3\n3 2 1",
+        "expectedOutput": "1 2 3"
+      },
+      {
+        "input": "1\n42",
+        "expectedOutput": "42"
+      },
+      {
+        "input": "4\n4 4 4 4",
+        "expectedOutput": "4 4 4 4"
+      },
+      {
+        "input": "6\n10 -1 0 5 -3 2",
+        "expectedOutput": "-3 -1 0 2 5 10"
+      },
+      {
+        "input": "2\n9 3",
+        "expectedOutput": "3 9"
+      }
+    ]
+  },
+  {
+    "bankId": "H7",
+    "levelNumber": 1,
+    "difficulty": "HARD",
+    "title": "Remove Duplicate Elements from an Array",
+    "statement": "Given an array of N integers, remove the duplicate elements and print the remaining elements in their original order, keeping the first occurrence of each value.\n\nInput Format: The first line contains an integer N. The second line contains N space-separated integers. | Output Format: A single line with the unique elements in their original order, separated by single spaces.",
+    "constraints": [
+      "1 <= N <= 100",
+      "-1000 <= each element <= 1000"
+    ],
+    "examples": [
+      {
+        "input": "6\n1 2 2 3 1 4",
+        "output": "1 2 3 4",
+        "explanation": "Duplicates removed, first occurrence order kept"
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": "3\n5 5 5",
+        "expectedOutput": "5"
+      },
+      {
+        "input": "1\n7",
+        "expectedOutput": "7"
+      },
+      {
+        "input": "5\n3 1 3 2 1",
+        "expectedOutput": "3 1 2"
+      },
+      {
+        "input": "4\n-1 -1 0 -1",
+        "expectedOutput": "-1 0"
+      },
+      {
+        "input": "7\n10 20 10 30 20 40 10",
+        "expectedOutput": "10 20 30 40"
+      }
+    ]
+  },
+  {
+    "bankId": "H8",
+    "levelNumber": 1,
+    "difficulty": "HARD",
+    "title": "Find the Product of Digits of a Number",
+    "statement": "Given a non-negative integer N, find the product of its digits.\n\nInput Format: A single line containing a non-negative integer N. | Output Format: A single integer, the product of the digits of N.",
+    "constraints": [
+      "0 <= N <= 1000000000"
+    ],
+    "examples": [
+      {
+        "input": "123",
+        "output": "6",
+        "explanation": "1 x 2 x 3 = 6"
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": "5",
+        "expectedOutput": "5"
+      },
+      {
+        "input": "101",
+        "expectedOutput": "0"
+      },
+      {
+        "input": "99",
+        "expectedOutput": "81"
+      },
+      {
+        "input": "234",
+        "expectedOutput": "24"
+      },
+      {
+        "input": "10",
+        "expectedOutput": "0"
+      }
+    ]
+  },
+  {
+    "bankId": "H9",
+    "levelNumber": 1,
+    "difficulty": "HARD",
+    "title": "Find LCM of Two Numbers",
+    "statement": "Given two positive integers A and B, find their least common multiple (LCM), the smallest positive number divisible by both.\n\nInput Format: A single line containing two space-separated integers A and B. | Output Format: A single integer, the LCM of A and B.",
+    "constraints": [
+      "1 <= A, B <= 100000"
+    ],
+    "examples": [
+      {
+        "input": "4 6",
+        "output": "12",
+        "explanation": "12 is the smallest number divisible by both 4 and 6"
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": "3 5",
+        "expectedOutput": "15"
+      },
+      {
+        "input": "12 18",
+        "expectedOutput": "36"
+      },
+      {
+        "input": "7 7",
+        "expectedOutput": "7"
+      },
+      {
+        "input": "8 12",
+        "expectedOutput": "24"
+      },
+      {
+        "input": "21 6",
+        "expectedOutput": "42"
+      }
+    ]
+  },
+  {
+    "bankId": "H10",
+    "levelNumber": 1,
+    "difficulty": "HARD",
+    "title": "Check Whether a Number is a Strong Number",
+    "statement": "Given a positive integer N, check whether it is a Strong number. A Strong number equals the sum of the factorials of its digits (for example, 145 = 1! + 4! + 5! = 1 + 24 + 120).\n\nInput Format: A single line containing a positive integer N. | Output Format: Print Yes if N is a Strong number, otherwise print No.",
+    "constraints": [
+      "1 <= N <= 100000"
+    ],
+    "examples": [
+      {
+        "input": "145",
+        "output": "Yes",
+        "explanation": "1! + 4! + 5! = 1 + 24 + 120 = 145"
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": "1",
+        "expectedOutput": "Yes"
+      },
+      {
+        "input": "2",
+        "expectedOutput": "Yes"
+      },
+      {
+        "input": "123",
+        "expectedOutput": "No"
+      },
+      {
+        "input": "40585",
+        "expectedOutput": "Yes"
+      },
+      {
+        "input": "100",
+        "expectedOutput": "No"
+      }
+    ]
+  },
+  {
+    "bankId": "E1",
+    "levelNumber": 2,
+    "difficulty": "EASY",
     "title": "Count Vowels",
     "statement": "Given a lowercase word with no spaces, count how many vowels it contains. The vowels are a , e , i , o , and u .\n\nInput Format: A single line containing one lowercase word (1 ≤ length ≤ 1000). | Output Format: A single integer representing the number of vowels.",
     "constraints": [
@@ -40,7 +825,7 @@
   },
   {
     "bankId": "E2",
-    "levelNumber": 1,
+    "levelNumber": 2,
     "difficulty": "EASY",
     "title": "Prime Number Check",
     "statement": "Given an integer n, print Yes if it is a prime number, otherwise print No . A prime number is greater than 1 and has no positive divisors other than 1 and itself.\n\nInput Format: A single integer n (1 ≤ n ≤ 1,000,000). | Output Format: Yes or No .",
@@ -79,7 +864,7 @@
   },
   {
     "bankId": "E3",
-    "levelNumber": 1,
+    "levelNumber": 2,
     "difficulty": "EASY",
     "title": "Second Largest Element",
     "statement": "Given an array of n integers containing at least two distinct values, find and print the second largest distinct value in the array.\n\nInput Format: Line 1: integer n (2 ≤ n ≤ 1000). Line 2: n space-separated integers. | Output Format: The second largest distinct integer.",
@@ -118,7 +903,7 @@
   },
   {
     "bankId": "E4",
-    "levelNumber": 1,
+    "levelNumber": 2,
     "difficulty": "EASY",
     "title": "Reverse a Number",
     "statement": "Given a non-negative integer n, reverse its digits and print the resulting integer without any leading zeros.\n\nInput Format: A single non-negative integer n (0 ≤ n ≤ 10⁹). | Output Format: The reversed integer.",
@@ -157,7 +942,7 @@
   },
   {
     "bankId": "E5",
-    "levelNumber": 1,
+    "levelNumber": 2,
     "difficulty": "EASY",
     "title": "Factorial of a Number",
     "statement": "Given a non-negative integer n, compute and print its factorial n!, where 0! = 1 and n! = 1 × 2 × ... × n.\n\nInput Format: A single integer n (0 ≤ n ≤ 20). | Output Format: A single integer representing n! (use a 64-bit integer type).",
@@ -196,7 +981,7 @@
   },
   {
     "bankId": "E6",
-    "levelNumber": 1,
+    "levelNumber": 2,
     "difficulty": "EASY",
     "title": "Count Even and Odd Numbers",
     "statement": "Given an array of n integers, count how many elements are even and how many elements are odd. Note that 0 and negative multiples of 2 are even.\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 1000). Line 2: n space-separated integers. | Output Format: Two space-separated integers: even_count odd_count .",
@@ -235,7 +1020,7 @@
   },
   {
     "bankId": "E7",
-    "levelNumber": 1,
+    "levelNumber": 2,
     "difficulty": "EASY",
     "title": "Leap Year Check",
     "statement": "Given a year y, print Yes if it is a leap year, otherwise print No . A year is a leap year if it is divisible by 400, or if it is divisible by 4 and not divisible by 100.\n\nInput Format: A single integer y (1 ≤ y ≤ 10000). | Output Format: Yes or No .",
@@ -274,7 +1059,7 @@
   },
   {
     "bankId": "E8",
-    "levelNumber": 1,
+    "levelNumber": 2,
     "difficulty": "EASY",
     "title": "Greatest Common Divisor (GCD)",
     "statement": "Given two positive integers a and b, find and print their Greatest Common Divisor (the largest positive integer that divides both a and b without leaving a remainder).\n\nInput Format: Two space-separated integers a and b (1 ≤ a, b ≤ 10⁹). | Output Format: A single integer representing GCD(a, b).",
@@ -313,7 +1098,7 @@
   },
   {
     "bankId": "E9",
-    "levelNumber": 1,
+    "levelNumber": 2,
     "difficulty": "EASY",
     "title": "Armstrong Number Check",
     "statement": "Given a positive integer n with d digits, print Yes if the sum of its digits each raised to the power d equals n; otherwise print No . For example, 153 = 1³ + 5³ + 3³.\n\nInput Format: A single positive integer n (1 ≤ n ≤ 1,000,000). | Output Format: Yes or No .",
@@ -352,7 +1137,7 @@
   },
   {
     "bankId": "E10",
-    "levelNumber": 1,
+    "levelNumber": 2,
     "difficulty": "EASY",
     "title": "Toggle Case of a String",
     "statement": "Given a single word consisting only of uppercase and lowercase English letters, convert every uppercase letter to lowercase and every lowercase letter to uppercase, then print the resulting word.\n\nInput Format: A single line containing one word (1 ≤ length ≤ 1000). | Output Format: The case-toggled word.",
@@ -391,7 +1176,7 @@
   },
   {
     "bankId": "H1",
-    "levelNumber": 1,
+    "levelNumber": 2,
     "difficulty": "HARD",
     "title": "Find the Missing Number",
     "statement": "Given an array containing n distinct integers taken from the range 0 to n , find and print the single number in that range that is missing from the array.\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 10⁵). Line 2: n space-separated distinct integers. | Output Format: The missing integer.",
@@ -430,7 +1215,7 @@
   },
   {
     "bankId": "H2",
-    "levelNumber": 1,
+    "levelNumber": 2,
     "difficulty": "HARD",
     "title": "Valid Anagram",
     "statement": "Given two lowercase English strings s and t, print True if t is an anagram of s (uses the exact same letters with the same frequencies), otherwise print False .\n\nInput Format: Line 1: string s. Line 2: string t (1 ≤ length ≤ 5 × 10⁴). | Output Format: True or False .",
@@ -469,7 +1254,7 @@
   },
   {
     "bankId": "H3",
-    "levelNumber": 1,
+    "levelNumber": 2,
     "difficulty": "HARD",
     "title": "Two Sum",
     "statement": "Given an array of n integers and an integer target, find the two distinct 0-based indices i and j (i < j) such that nums[i] + nums[j] = target . Exactly one valid pair is guaranteed to exist.\n\nInput Format: Line 1: two integers n and target (2 ≤ n ≤ 10⁴). Line 2: n space-separated integers. | Output Format: Two space-separated indices i j with i < j.",
@@ -508,7 +1293,7 @@
   },
   {
     "bankId": "H4",
-    "levelNumber": 1,
+    "levelNumber": 2,
     "difficulty": "HARD",
     "title": "First Unique Character in a String",
     "statement": "Given a lowercase English string s, find the first character that does not repeat anywhere else in the string and print its 0-based index. If every character repeats, print -1 .\n\nInput Format: A single line containing lowercase string s (1 ≤ length ≤ 10⁵). | Output Format: An integer index or -1 .",
@@ -547,7 +1332,7 @@
   },
   {
     "bankId": "H5",
-    "levelNumber": 1,
+    "levelNumber": 2,
     "difficulty": "HARD",
     "title": "Valid Parentheses",
     "statement": "Given a string containing only the characters ( , ) , { , } , [ , and ] , print True if every opening bracket is closed by the same type of bracket in the correct order, otherwise print False .\n\nInput Format: A single line string of brackets (1 ≤ length ≤ 10⁴). | Output Format: True or False .",
@@ -586,7 +1371,7 @@
   },
   {
     "bankId": "H6",
-    "levelNumber": 1,
+    "levelNumber": 2,
     "difficulty": "HARD",
     "title": "Remove Duplicates from Sorted Array",
     "statement": "Given an integer array sorted in non-decreasing order, remove duplicate elements so that each unique element appears only once while preserving the ascending order. Print the count of unique elements on the first line and the unique elements on the second line.\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 3 × 10⁴). Line 2: n space-separated sorted integers. | Output Format: Line 1: unique count k. Line 2: k space-separated unique integers.",
@@ -625,7 +1410,7 @@
   },
   {
     "bankId": "H7",
-    "levelNumber": 1,
+    "levelNumber": 2,
     "difficulty": "HARD",
     "title": "Contains Duplicate",
     "statement": "Given an integer array of length n, print True if any value appears at least twice in the array, and print False if every element is distinct.\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 10⁵). Line 2: n space-separated integers. | Output Format: True or False .",
@@ -664,7 +1449,7 @@
   },
   {
     "bankId": "H8",
-    "levelNumber": 1,
+    "levelNumber": 2,
     "difficulty": "HARD",
     "title": "Intersection of Two Arrays",
     "statement": "Given two integer arrays, find all distinct elements that appear in both arrays and print them in ascending order separated by spaces. If the two arrays have no elements in common, print None .\n\nInput Format: Line 1: n. Line 2: n space-separated integers. Line 3: m. Line 4: m space-separated integers (1 ≤ n, m ≤ 1000). | Output Format: Space-separated unique common integers in ascending order, or None .",
@@ -703,7 +1488,7 @@
   },
   {
     "bankId": "H9",
-    "levelNumber": 1,
+    "levelNumber": 2,
     "difficulty": "HARD",
     "title": "Valid Palindrome (Alphanumeric)",
     "statement": "Given a line of text that may contain letters, digits, spaces, and punctuation, convert all uppercase letters to lowercase and remove all non-alphanumeric characters. Print True if the resulting string reads the same forwards and backwards, otherwise print False .\n\nInput Format: A single line string s (1 ≤ length ≤ 2 × 10⁴). | Output Format: True or False .",
@@ -742,7 +1527,7 @@
   },
   {
     "bankId": "H10",
-    "levelNumber": 1,
+    "levelNumber": 2,
     "difficulty": "HARD",
     "title": "Maximum Consecutive Ones",
     "statement": "Given a binary array containing only 0 s and 1 s, find and print the maximum number of consecutive 1 s appearing in the array.\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 10⁵). Line 2: n space-separated binary integers ( 0 or 1 ). | Output Format: A single integer representing the longest streak of 1 s.",
@@ -781,7 +1566,7 @@
   },
   {
     "bankId": "E1",
-    "levelNumber": 2,
+    "levelNumber": 3,
     "difficulty": "EASY",
     "title": "Sum of Digits",
     "statement": "Given a non-negative integer n, find and print the sum of all its digits.\n\nInput Format: A single non-negative integer n (0 ≤ n ≤ 10⁹). | Output Format: A single integer representing the sum of its digits.",
@@ -820,7 +1605,7 @@
   },
   {
     "bankId": "E2",
-    "levelNumber": 2,
+    "levelNumber": 3,
     "difficulty": "EASY",
     "title": "Palindrome Word",
     "statement": "Given a single lowercase word with no spaces, print Yes if it reads the same forwards and backwards, otherwise print No .\n\nInput Format: A single lowercase word (1 ≤ length ≤ 1000). | Output Format: Yes or No .",
@@ -859,7 +1644,7 @@
   },
   {
     "bankId": "E3",
-    "levelNumber": 2,
+    "levelNumber": 3,
     "difficulty": "EASY",
     "title": "Fibonacci Sequence (First N Terms)",
     "statement": "Given a positive integer n, print the first n terms of the Fibonacci sequence starting from 0 and 1 , where each subsequent term is the sum of the previous two terms.\n\nInput Format: A single integer n (1 ≤ n ≤ 30). | Output Format: n space-separated integers.",
@@ -898,7 +1683,7 @@
   },
   {
     "bankId": "E4",
-    "levelNumber": 2,
+    "levelNumber": 3,
     "difficulty": "EASY",
     "title": "Perfect Number Check",
     "statement": "Given a positive integer n, print Yes if it is a perfect number, otherwise print No . A perfect number is equal to the sum of all its positive divisors excluding itself (for example, 6 = 1 + 2 + 3).\n\nInput Format: A single integer n (1 ≤ n ≤ 10⁶). | Output Format: Yes or No .",
@@ -937,7 +1722,7 @@
   },
   {
     "bankId": "E5",
-    "levelNumber": 2,
+    "levelNumber": 3,
     "difficulty": "EASY",
     "title": "Decimal to Binary Conversion",
     "statement": "Given a non-negative base-10 integer n, convert it into its binary (base-2) representation without unnecessary leading zeros.\n\nInput Format: A single integer n (0 ≤ n ≤ 10⁹). | Output Format: Binary string representing n.",
@@ -976,7 +1761,7 @@
   },
   {
     "bankId": "E6",
-    "levelNumber": 2,
+    "levelNumber": 3,
     "difficulty": "EASY",
     "title": "Check if Array is Sorted",
     "statement": "Given an array of n integers, print Yes if the array is sorted in non-decreasing order (each element is greater than or equal to the previous one), otherwise print No .\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 1000). Line 2: n space-separated integers. | Output Format: Yes or No .",
@@ -1015,7 +1800,7 @@
   },
   {
     "bankId": "E7",
-    "levelNumber": 2,
+    "levelNumber": 3,
     "difficulty": "EASY",
     "title": "Count Words in a Sentence",
     "statement": "Given a single line of text containing words separated by one or more spaces (possibly with leading or trailing spaces), count and print the total number of words.\n\nInput Format: A single line string s (1 ≤ length ≤ 1000). | Output Format: An integer representing the word count.",
@@ -1054,7 +1839,7 @@
   },
   {
     "bankId": "E8",
-    "levelNumber": 2,
+    "levelNumber": 3,
     "difficulty": "EASY",
     "title": "Frequency of a Target Element",
     "statement": "Given an array of n integers and a target integer x, count and print how many times x appears in the array.\n\nInput Format: Line 1: two integers n and x (1 ≤ n ≤ 1000). Line 2: n space-separated integers. | Output Format: A single integer representing the count of x.",
@@ -1093,7 +1878,7 @@
   },
   {
     "bankId": "E9",
-    "levelNumber": 2,
+    "levelNumber": 3,
     "difficulty": "EASY",
     "title": "Power of Two Check",
     "statement": "Given an integer n, print Yes if there exists an integer k ≥ 0 such that n = 2ᵏ, otherwise print No .\n\nInput Format: A single integer n (−10⁹ ≤ n ≤ 10⁹). | Output Format: Yes or No .",
@@ -1132,7 +1917,7 @@
   },
   {
     "bankId": "E10",
-    "levelNumber": 2,
+    "levelNumber": 3,
     "difficulty": "EASY",
     "title": "Matrix Row Sums",
     "statement": "Given an r × c matrix of integers, calculate the sum of the elements in each row and print all row sums on a single line separated by spaces.\n\nInput Format: Line 1: two integers r and c (1 ≤ r, c ≤ 100). Next r lines: c space-separated integers each. | Output Format: r space-separated integers.",
@@ -1171,7 +1956,7 @@
   },
   {
     "bankId": "H1",
-    "levelNumber": 2,
+    "levelNumber": 3,
     "difficulty": "HARD",
     "title": "Roman to Integer",
     "statement": "Roman numerals use seven symbols: I=1, V=5, X=10, L=50, C=100, D=500, M=1000 . A smaller symbol placed before a larger symbol indicates subtraction (e.g., IV=4, IX=9, XL=40, XC=90, CD=400, CM=900 ). Given a valid Roman numeral in the range 1 to 3999, convert it to an integer.\n\nInput Format: A single uppercase Roman numeral string. | Output Format: The corresponding integer value.",
@@ -1208,7 +1993,7 @@
   },
   {
     "bankId": "H2",
-    "levelNumber": 2,
+    "levelNumber": 3,
     "difficulty": "HARD",
     "title": "Majority Element",
     "statement": "Given an array of n integers, find and print the majority element — the element that appears strictly more than ⌊n / 2⌋ times. You may assume a majority element always exists. Aim for O(n) time and O(1) extra space.\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 5 × 10⁴). Line 2: n space-separated integers. | Output Format: The majority integer.",
@@ -1247,7 +2032,7 @@
   },
   {
     "bankId": "H3",
-    "levelNumber": 2,
+    "levelNumber": 3,
     "difficulty": "HARD",
     "title": "Longest Common Prefix",
     "statement": "Given an array of n lowercase English words, find the longest common prefix string shared by all of them. If there is no common prefix, print NONE .\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 200). Line 2: n space-separated lowercase words. | Output Format: The longest common prefix, or NONE .",
@@ -1286,7 +2071,7 @@
   },
   {
     "bankId": "H4",
-    "levelNumber": 2,
+    "levelNumber": 3,
     "difficulty": "HARD",
     "title": "Merge Two Sorted Arrays",
     "statement": "Given two arrays of integers already sorted in non-decreasing order, merge them into a single sorted array and print all n + m elements. Aim for O(n + m) time using two pointers rather than re-sorting.\n\nInput Format: Line 1: n. Line 2: n sorted integers. Line 3: m. Line 4: m sorted integers (1 ≤ n, m ≤ 5 × 10⁴). | Output Format: n + m space-separated sorted integers.",
@@ -1325,7 +2110,7 @@
   },
   {
     "bankId": "H5",
-    "levelNumber": 2,
+    "levelNumber": 3,
     "difficulty": "HARD",
     "title": "Isomorphic Strings",
     "statement": "Given two strings s and t of equal length, print True if they are isomorphic, otherwise print False . Two strings are isomorphic if the characters in s can be replaced consistently to form t, where no two different characters may map to the same character.\n\nInput Format: Line 1: string s. Line 2: string t (1 ≤ length ≤ 5 × 10⁴). | Output Format: True or False .",
@@ -1364,7 +2149,7 @@
   },
   {
     "bankId": "H6",
-    "levelNumber": 2,
+    "levelNumber": 3,
     "difficulty": "HARD",
     "title": "Is Subsequence",
     "statement": "Given two lowercase strings s and t, print True if s is a subsequence of t, otherwise print False . A subsequence is formed from t by deleting zero or more characters without changing the relative order of the remaining characters.\n\nInput Format: Line 1: string s. Line 2: string t (1 ≤ length ≤ 10⁴). | Output Format: True or False .",
@@ -1403,7 +2188,7 @@
   },
   {
     "bankId": "H7",
-    "levelNumber": 2,
+    "levelNumber": 3,
     "difficulty": "HARD",
     "title": "Binary Search",
     "statement": "Given an array of n distinct integers sorted in ascending order and a target value, find and print the 0-based index of target if it exists in the array; otherwise print -1 . Implement an O(log n) solution.\n\nInput Format: Line 1: two integers n and target (1 ≤ n ≤ 10⁵). Line 2: n space-separated sorted integers. | Output Format: The 0-based index or -1 .",
@@ -1442,7 +2227,7 @@
   },
   {
     "bankId": "H8",
-    "levelNumber": 2,
+    "levelNumber": 3,
     "difficulty": "HARD",
     "title": "Find Pivot Index",
     "statement": "Given an array of n integers, find the leftmost 0-based pivot index where the sum of all elements strictly to its left equals the sum of all elements strictly to its right. If the index is on the left or right edge, the empty side has a sum of 0 . Print -1 if no pivot index exists.\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 10⁴). Line 2: n space-separated integers. | Output Format: Leftmost pivot index or -1 .",
@@ -1481,7 +2266,7 @@
   },
   {
     "bankId": "H9",
-    "levelNumber": 2,
+    "levelNumber": 3,
     "difficulty": "HARD",
     "title": "Excel Sheet Column Number",
     "statement": "Given a string representing an Excel spreadsheet column title using uppercase English letters ( A → 1, B → 2, ..., Z → 26, AA → 27, AB → 28 ), compute and print its corresponding positive column number.\n\nInput Format: A single uppercase string (1 ≤ length ≤ 6). | Output Format: The integer column number.",
@@ -1520,7 +2305,7 @@
   },
   {
     "bankId": "H10",
-    "levelNumber": 2,
+    "levelNumber": 3,
     "difficulty": "HARD",
     "title": "Climb Stairs",
     "statement": "You are climbing a staircase with n steps. Each time you can climb either 1 step or 2 steps. Find and print the total number of distinct ways you can reach the top.\n\nInput Format: A single integer n (1 ≤ n ≤ 45). | Output Format: A single integer representing the number of distinct ways.",
@@ -1559,7 +2344,7 @@
   },
   {
     "bankId": "E1",
-    "levelNumber": 3,
+    "levelNumber": 4,
     "difficulty": "EASY",
     "title": "Single Number",
     "statement": "Given a non-empty array of n integers where every element appears exactly twice except for one element that appears once, find and print that single element. Aim for O(n) time and O(1) extra space.\n\nInput Format: Line 1: odd integer n (1 ≤ n ≤ 3 × 10⁴). Line 2: n space-separated integers. | Output Format: The single unique integer.",
@@ -1598,7 +2383,7 @@
   },
   {
     "bankId": "E2",
-    "levelNumber": 3,
+    "levelNumber": 4,
     "difficulty": "EASY",
     "title": "Plus One",
     "statement": "You are given a large non-negative integer represented as an array of n digits ordered from most significant to least significant (no leading zeros except for 0 itself). Increment the integer by one and print the resulting digits separated by spaces.\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 100). Line 2: n space-separated digits (0–9). | Output Format: Space-separated digits of the incremented integer.",
@@ -1637,163 +2422,7 @@
   },
   {
     "bankId": "E3",
-    "levelNumber": 3,
-    "difficulty": "EASY",
-    "title": "Squares of a Sorted Array",
-    "statement": "Given an integer array sorted in non-decreasing order (which may contain negative numbers), return an array of the squares of each number sorted in non-decreasing order. Aim for an O(n) two-pointer solution.\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 10⁴). Line 2: n space-separated sorted integers. | Output Format: n space-separated sorted squared integers.",
-    "constraints": [
-      "1 ≤ n ≤ 10⁴"
-    ],
-    "examples": [
-      {
-        "input": "5\n-4 -1 0 3 10",
-        "output": "0 1 9 16 100",
-        "explanation": "Mixed negatives, zero, positives"
-      }
-    ],
-    "hiddenTestCases": [
-      {
-        "input": "5\n-7 -3 2 3 11",
-        "expectedOutput": "4 9 9 49 121"
-      },
-      {
-        "input": "4\n1 2 3 4",
-        "expectedOutput": "1 4 9 16"
-      },
-      {
-        "input": "4\n-5 -4 -3 -2",
-        "expectedOutput": "4 9 16 25"
-      },
-      {
-        "input": "1\n0",
-        "expectedOutput": "0"
-      },
-      {
-        "input": "4\n-2 -2 2 2",
-        "expectedOutput": "4 4 4 4"
-      }
-    ]
-  },
-  {
-    "bankId": "E4",
-    "levelNumber": 3,
-    "difficulty": "EASY",
-    "title": "Find All Disappeared Numbers",
-    "statement": "Given an array of n integers where every element is in the range 1 to n (some elements may appear multiple times), print all integers in the range 1..n that do not appear in the array, in ascending order. If none are missing, print NONE .\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 10⁵). Line 2: n space-separated integers in [1, n]. | Output Format: Missing integers in ascending order, or NONE .",
-    "constraints": [
-      "1 ≤ n ≤ 10⁵"
-    ],
-    "examples": [
-      {
-        "input": "8\n4 3 2 7 8 2 3 1",
-        "output": "5 6",
-        "explanation": "Two missing numbers"
-      }
-    ],
-    "hiddenTestCases": [
-      {
-        "input": "2\n1 1",
-        "expectedOutput": "2"
-      },
-      {
-        "input": "4\n1 2 3 4",
-        "expectedOutput": "NONE"
-      },
-      {
-        "input": "5\n2 2 2 2 2",
-        "expectedOutput": "1 3 4 5"
-      },
-      {
-        "input": "6\n6 5 4 3 2 1",
-        "expectedOutput": "NONE"
-      },
-      {
-        "input": "5\n5 4 4 2 2",
-        "expectedOutput": "1 3"
-      }
-    ]
-  },
-  {
-    "bankId": "E5",
-    "levelNumber": 3,
-    "difficulty": "EASY",
-    "title": "Reverse Words in a String",
-    "statement": "Given a line of text containing words separated by one or more spaces (possibly with leading or trailing spaces), reverse the order of the words and print them separated by a single space with no leading or trailing spaces.\n\nInput Format: A single line string s (1 ≤ length ≤ 10⁴). | Output Format: The words in reversed order, single-space separated.",
-    "constraints": [
-      "1 ≤ length ≤ 10⁴"
-    ],
-    "examples": [
-      {
-        "input": "the sky is blue",
-        "output": "blue is sky the",
-        "explanation": "Standard sentence"
-      }
-    ],
-    "hiddenTestCases": [
-      {
-        "input": "hello world",
-        "expectedOutput": "world hello"
-      },
-      {
-        "input": "a good        example",
-        "expectedOutput": "example good a"
-      },
-      {
-        "input": "CodeBuddy",
-        "expectedOutput": "CodeBuddy"
-      },
-      {
-        "input": "one two three four",
-        "expectedOutput": "four three two one"
-      },
-      {
-        "input": "level     3    ready",
-        "expectedOutput": "ready 3 level"
-      }
-    ]
-  },
-  {
-    "bankId": "E6",
-    "levelNumber": 3,
-    "difficulty": "EASY",
-    "title": "Ransom Note",
-    "statement": "Given two lowercase English strings ransomNote and magazine, print True if ransomNote can be constructed using the letters from magazine, otherwise print False . Each letter in magazine can only be used once.\n\nInput Format: Line 1: string ransomNote. Line 2: string magazine (1 ≤ length ≤ 10⁵). | Output Format: True or False .",
-    "constraints": [
-      "1 ≤ length ≤ 10⁵"
-    ],
-    "examples": [
-      {
-        "input": "a\nb",
-        "output": "False",
-        "explanation": "Letter missing"
-      }
-    ],
-    "hiddenTestCases": [
-      {
-        "input": "aa\nab",
-        "expectedOutput": "False"
-      },
-      {
-        "input": "aa\naab",
-        "expectedOutput": "True"
-      },
-      {
-        "input": "code\ndecoder",
-        "expectedOutput": "True"
-      },
-      {
-        "input": "hello\nhelo",
-        "expectedOutput": "False"
-      },
-      {
-        "input": "abc\ncbazxy",
-        "expectedOutput": "True"
-      }
-    ]
-  },
-  {
-    "bankId": "E7",
-    "levelNumber": 3,
+    "levelNumber": 4,
     "difficulty": "EASY",
     "title": "Length of Last Word",
     "statement": "Given a string s consisting of words and spaces (which may include trailing spaces), find and print the length of the last word in the string. A word is a maximal sequence of non-space characters.\n\nInput Format: A single line string s (1 ≤ length ≤ 10⁴). | Output Format: An integer representing the length of the last word.",
@@ -1831,47 +2460,8 @@
     ]
   },
   {
-    "bankId": "E8",
-    "levelNumber": 3,
-    "difficulty": "EASY",
-    "title": "Third Maximum Number",
-    "statement": "Given an integer array of size n, find and print the third distinct maximum number in the array. If the array contains fewer than three distinct numbers, print the maximum number instead.\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 10⁴). Line 2: n space-separated integers. | Output Format: The third distinct maximum (or maximum if < 3 distinct values).",
-    "constraints": [
-      "1 ≤ n ≤ 10⁴"
-    ],
-    "examples": [
-      {
-        "input": "3\n3 2 1",
-        "output": "1",
-        "explanation": "Three distinct elements"
-      }
-    ],
-    "hiddenTestCases": [
-      {
-        "input": "2\n1 2",
-        "expectedOutput": "2"
-      },
-      {
-        "input": "4\n2 2 3 1",
-        "expectedOutput": "1"
-      },
-      {
-        "input": "5\n5 5 5 5 5",
-        "expectedOutput": "5"
-      },
-      {
-        "input": "4\n-1 -2 -3 -4",
-        "expectedOutput": "-3"
-      },
-      {
-        "input": "6\n10 20 20 30 10 40",
-        "expectedOutput": "20"
-      }
-    ]
-  },
-  {
-    "bankId": "E9",
-    "levelNumber": 3,
+    "bankId": "E4",
+    "levelNumber": 4,
     "difficulty": "EASY",
     "title": "Monotonic Array",
     "statement": "An array is monotonic if it is either entirely non-decreasing (nums[i] ≤ nums[i+1]) or entirely non-increasing (nums[i] ≥ nums[i+1]). Given an array of n integers, print True if it is monotonic, otherwise print False .\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 10⁵). Line 2: n space-separated integers. | Output Format: True or False .",
@@ -1909,86 +2499,47 @@
     ]
   },
   {
-    "bankId": "E10",
-    "levelNumber": 3,
+    "bankId": "E5",
+    "levelNumber": 4,
     "difficulty": "EASY",
-    "title": "Summary Ranges",
-    "statement": "Given a sorted array of n distinct integers, group consecutive integers into ranges. Print a range of multiple consecutive integers as a->b and a standalone integer as a , all separated by spaces on a single line.\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 1000). Line 2: n space-separated strictly increasing integers. | Output Format: Space-separated range strings.",
+    "title": "Reverse Words in a String",
+    "statement": "Given a line of text containing words separated by one or more spaces (possibly with leading or trailing spaces), reverse the order of the words and print them separated by a single space with no leading or trailing spaces.\n\nInput Format: A single line string s (1 ≤ length ≤ 10⁴). | Output Format: The words in reversed order, single-space separated.",
     "constraints": [
-      "1 ≤ n ≤ 1000"
+      "1 ≤ length ≤ 10⁴"
     ],
     "examples": [
       {
-        "input": "6\n0 1 2 4 5 7",
-        "output": "0->2 4->5 7",
-        "explanation": "Mixed ranges and single"
+        "input": "the sky is blue",
+        "output": "blue is sky the",
+        "explanation": "Standard sentence"
       }
     ],
     "hiddenTestCases": [
       {
-        "input": "7\n0 2 3 4 6 8 9",
-        "expectedOutput": "0 2->4 6 8->9"
+        "input": "hello world",
+        "expectedOutput": "world hello"
       },
       {
-        "input": "1\n5",
-        "expectedOutput": "5"
+        "input": "a good        example",
+        "expectedOutput": "example good a"
       },
       {
-        "input": "4\n1 2 3 4",
-        "expectedOutput": "1->4"
+        "input": "CodeBuddy",
+        "expectedOutput": "CodeBuddy"
       },
       {
-        "input": "4\n1 3 5 7",
-        "expectedOutput": "1 3 5 7"
+        "input": "one two three four",
+        "expectedOutput": "four three two one"
       },
       {
-        "input": "5\n-3 -2 -1 2 3",
-        "expectedOutput": "-3->-1 2->3"
+        "input": "level     3    ready",
+        "expectedOutput": "ready 3 level"
       }
     ]
   },
   {
     "bankId": "H1",
-    "levelNumber": 3,
-    "difficulty": "HARD",
-    "title": "Best Time to Buy and Sell Stock",
-    "statement": "Given an array prices where prices[i] is the price of a stock on day i, choose a single day to buy one share and a later day to sell it to maximize profit. Print the maximum profit achievable, or 0 if no profit is possible.\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 10⁵). Line 2: n space-separated non-negative integers. | Output Format: Maximum profit integer.",
-    "constraints": [
-      "1 ≤ n ≤ 10⁵"
-    ],
-    "examples": [
-      {
-        "input": "6\n7 1 5 3 6 4",
-        "output": "5",
-        "explanation": "Buy at 1, sell at 6"
-      }
-    ],
-    "hiddenTestCases": [
-      {
-        "input": "5\n7 6 4 3 1",
-        "expectedOutput": "0"
-      },
-      {
-        "input": "2\n1 2",
-        "expectedOutput": "1"
-      },
-      {
-        "input": "1\n5",
-        "expectedOutput": "0"
-      },
-      {
-        "input": "5\n2 4 1 7 5",
-        "expectedOutput": "6"
-      },
-      {
-        "input": "4\n3 3 3 3",
-        "expectedOutput": "0"
-      }
-    ]
-  },
-  {
-    "bankId": "H2",
-    "levelNumber": 3,
+    "levelNumber": 4,
     "difficulty": "HARD",
     "title": "Move Zeroes",
     "statement": "Given an array of n integers, move all 0 s to the end of the array while maintaining the relative order of all non-zero elements. Implement this in-place without creating a copy of the array.\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 10⁴). Line 2: n space-separated integers. | Output Format: n space-separated integers after moving zeroes.",
@@ -2026,86 +2577,8 @@
     ]
   },
   {
-    "bankId": "H3",
-    "levelNumber": 3,
-    "difficulty": "HARD",
-    "title": "Maximum Subarray Sum",
-    "statement": "Given an integer array of length n (which may contain negative numbers), find the contiguous non-empty subarray with the largest possible sum and print that maximum sum. Aim for an O(n) solution (Kadane's Algorithm).\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 10⁵). Line 2: n space-separated integers. | Output Format: A single integer representing the maximum subarray sum.",
-    "constraints": [
-      "1 ≤ n ≤ 10⁵"
-    ],
-    "examples": [
-      {
-        "input": "9\n-2 1 -3 4 -1 2 1 -5 4",
-        "output": "6",
-        "explanation": "Subarray [4, -1, 2, 1]"
-      }
-    ],
-    "hiddenTestCases": [
-      {
-        "input": "1\n1",
-        "expectedOutput": "1"
-      },
-      {
-        "input": "5\n5 4 -1 7 8",
-        "expectedOutput": "23"
-      },
-      {
-        "input": "4\n-3 -2 -5 -1",
-        "expectedOutput": "-1"
-      },
-      {
-        "input": "5\n-2 -1 3 -1 2",
-        "expectedOutput": "4"
-      },
-      {
-        "input": "4\n1 2 3 4",
-        "expectedOutput": "10"
-      }
-    ]
-  },
-  {
-    "bankId": "H4",
-    "levelNumber": 3,
-    "difficulty": "HARD",
-    "title": "Two Sum II (Sorted Array)",
-    "statement": "Given a 1-indexed array of n integers sorted in non-decreasing order and a target integer, find the two distinct 1-based indices i and j (1 ≤ i < j ≤ n) such that nums[i] + nums[j] = target . Solve in O(n) time and O(1) extra space using two pointers.\n\nInput Format: Line 1: integers n and target (2 ≤ n ≤ 3 × 10⁴). Line 2: n sorted integers. | Output Format: Two space-separated 1-based indices i j .",
-    "constraints": [
-      "2 ≤ n ≤ 3 × 10⁴"
-    ],
-    "examples": [
-      {
-        "input": "4 9\n2 7 11 15",
-        "output": "1 2",
-        "explanation": "2 + 7 = 9 (1-based)"
-      }
-    ],
-    "hiddenTestCases": [
-      {
-        "input": "3 6\n2 3 4",
-        "expectedOutput": "1 3"
-      },
-      {
-        "input": "2 -1\n-1 0",
-        "expectedOutput": "1 2"
-      },
-      {
-        "input": "5 10\n1 2 3 7 12",
-        "expectedOutput": "3 4"
-      },
-      {
-        "input": "4 0\n-5 -2 2 9",
-        "expectedOutput": "2 3"
-      },
-      {
-        "input": "4 8\n4 4 6 9",
-        "expectedOutput": "1 2"
-      }
-    ]
-  },
-  {
-    "bankId": "H5",
-    "levelNumber": 3,
+    "bankId": "H2",
+    "levelNumber": 4,
     "difficulty": "HARD",
     "title": "Search Insert Position",
     "statement": "Given a sorted array of n distinct integers and a target value, print the 0-based index if the target is found. If not, print the 0-based index where it would be inserted to keep the array sorted. Implement an O(log n) solution.\n\nInput Format: Line 1: integers n and target (1 ≤ n ≤ 10⁴). Line 2: n strictly increasing integers. | Output Format: The target or insertion index.",
@@ -2143,47 +2616,86 @@
     ]
   },
   {
-    "bankId": "H6",
-    "levelNumber": 3,
+    "bankId": "H3",
+    "levelNumber": 4,
     "difficulty": "HARD",
-    "title": "Best Time to Buy and Sell Stock II",
-    "statement": "Given an array prices where prices[i] is the stock price on day i, you may complete as many buy-and-sell transactions as you like, provided you hold at most one share at any time. Find and print the maximum total profit achievable.\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 3 × 10⁴). Line 2: n space-separated non-negative integers. | Output Format: Maximum total profit.",
+    "title": "Two Sum II (Sorted Array)",
+    "statement": "Given a 1-indexed array of n integers sorted in non-decreasing order and a target integer, find the two distinct 1-based indices i and j (1 ≤ i < j ≤ n) such that nums[i] + nums[j] = target . Solve in O(n) time and O(1) extra space using two pointers.\n\nInput Format: Line 1: integers n and target (2 ≤ n ≤ 3 × 10⁴). Line 2: n sorted integers. | Output Format: Two space-separated 1-based indices i j .",
     "constraints": [
-      "1 ≤ n ≤ 3 × 10⁴"
+      "2 ≤ n ≤ 3 × 10⁴"
     ],
     "examples": [
       {
-        "input": "6\n7 1 5 3 6 4",
-        "output": "7",
-        "explanation": "(5−1) + (6−3) = 7"
+        "input": "4 9\n2 7 11 15",
+        "output": "1 2",
+        "explanation": "2 + 7 = 9 (1-based)"
       }
     ],
     "hiddenTestCases": [
       {
-        "input": "5\n1 2 3 4 5",
-        "expectedOutput": "4"
+        "input": "3 6\n2 3 4",
+        "expectedOutput": "1 3"
       },
+      {
+        "input": "2 -1\n-1 0",
+        "expectedOutput": "1 2"
+      },
+      {
+        "input": "5 10\n1 2 3 7 12",
+        "expectedOutput": "3 4"
+      },
+      {
+        "input": "4 0\n-5 -2 2 9",
+        "expectedOutput": "2 3"
+      },
+      {
+        "input": "4 8\n4 4 6 9",
+        "expectedOutput": "1 2"
+      }
+    ]
+  },
+  {
+    "bankId": "H4",
+    "levelNumber": 4,
+    "difficulty": "HARD",
+    "title": "Best Time to Buy and Sell Stock",
+    "statement": "Given an array prices where prices[i] is the price of a stock on day i, choose a single day to buy one share and a later day to sell it to maximize profit. Print the maximum profit achievable, or 0 if no profit is possible.\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 10⁵). Line 2: n space-separated non-negative integers. | Output Format: Maximum profit integer.",
+    "constraints": [
+      "1 ≤ n ≤ 10⁵"
+    ],
+    "examples": [
+      {
+        "input": "6\n7 1 5 3 6 4",
+        "output": "5",
+        "explanation": "Buy at 1, sell at 6"
+      }
+    ],
+    "hiddenTestCases": [
       {
         "input": "5\n7 6 4 3 1",
         "expectedOutput": "0"
       },
       {
-        "input": "1\n10",
+        "input": "2\n1 2",
+        "expectedOutput": "1"
+      },
+      {
+        "input": "1\n5",
         "expectedOutput": "0"
       },
       {
-        "input": "6\n1 5 2 8 3 9",
-        "expectedOutput": "16"
+        "input": "5\n2 4 1 7 5",
+        "expectedOutput": "6"
       },
       {
-        "input": "4\n2 2 5 5",
-        "expectedOutput": "3"
+        "input": "4\n3 3 3 3",
+        "expectedOutput": "0"
       }
     ]
   },
   {
-    "bankId": "H7",
-    "levelNumber": 3,
+    "bankId": "H5",
+    "levelNumber": 4,
     "difficulty": "HARD",
     "title": "Find the Duplicate Number",
     "statement": "Given an array of n integers where every number lies in the range 1 to n − 1 and exactly one integer is repeated (two or more times), find and print the repeated integer. Follow-up: solve in O(n) time and O(1) extra space without modifying the array.\n\nInput Format: Line 1: integer n (2 ≤ n ≤ 10⁵). Line 2: n space-separated integers in [1, n − 1]. | Output Format: The duplicate integer.",
@@ -2221,125 +2733,8 @@
     ]
   },
   {
-    "bankId": "H8",
-    "levelNumber": 3,
-    "difficulty": "HARD",
-    "title": "Longest Palindrome Length",
-    "statement": "Given a string s consisting of uppercase and lowercase English letters, find and print the length of the longest palindrome that can be built using those letters (you may rearrange them in any order). Letters are case-sensitive (for example, Aa is not a palindrome).\n\nInput Format: A single line string s (1 ≤ length ≤ 2000). | Output Format: Integer length of the longest possible palindrome.",
-    "constraints": [
-      "1 ≤ length ≤ 2000"
-    ],
-    "examples": [
-      {
-        "input": "abccccdd",
-        "output": "7",
-        "explanation": "Pairs (6) + 1 center char"
-      }
-    ],
-    "hiddenTestCases": [
-      {
-        "input": "a",
-        "expectedOutput": "1"
-      },
-      {
-        "input": "bb",
-        "expectedOutput": "2"
-      },
-      {
-        "input": "Aa",
-        "expectedOutput": "1"
-      },
-      {
-        "input": "abacaba",
-        "expectedOutput": "7"
-      },
-      {
-        "input": "aaabbbccc",
-        "expectedOutput": "7"
-      }
-    ]
-  },
-  {
-    "bankId": "H9",
-    "levelNumber": 3,
-    "difficulty": "HARD",
-    "title": "Valid Mountain Array",
-    "statement": "Given an array of n integers, print True if it is a valid mountain array, otherwise print False . An array is a valid mountain if n ≥ 3 and there exists a peak index p (0 < p < n − 1) such that elements strictly increase up to p and strictly decrease after p.\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 10⁴). Line 2: n space-separated integers. | Output Format: True or False .",
-    "constraints": [
-      "1 ≤ n ≤ 10⁴"
-    ],
-    "examples": [
-      {
-        "input": "2\n2 1",
-        "output": "False",
-        "explanation": "Length less than 3"
-      }
-    ],
-    "hiddenTestCases": [
-      {
-        "input": "3\n3 5 5",
-        "expectedOutput": "False"
-      },
-      {
-        "input": "4\n0 3 2 1",
-        "expectedOutput": "True"
-      },
-      {
-        "input": "5\n1 2 3 4 5",
-        "expectedOutput": "False"
-      },
-      {
-        "input": "6\n1 3 5 4 2 0",
-        "expectedOutput": "True"
-      },
-      {
-        "input": "5\n0 2 3 3 1",
-        "expectedOutput": "False"
-      }
-    ]
-  },
-  {
-    "bankId": "H10",
-    "levelNumber": 3,
-    "difficulty": "HARD",
-    "title": "Merge Intervals",
-    "statement": "Given n closed intervals [start, end] , merge all overlapping (or touching) intervals and print the resulting non-overlapping intervals sorted in ascending order of their start values, one interval per line.\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 10⁴). Next n lines: two integers start end. | Output Format: Merged intervals, one start end per line.",
-    "constraints": [
-      "1 ≤ n ≤ 10⁴"
-    ],
-    "examples": [
-      {
-        "input": "4\n1 3\n2 6\n8 10\n15 18",
-        "output": "1 6\n8 10\n15 18",
-        "explanation": "First two intervals overlap"
-      }
-    ],
-    "hiddenTestCases": [
-      {
-        "input": "2\n1 4\n4 5",
-        "expectedOutput": "1 5"
-      },
-      {
-        "input": "3\n6 8\n1 3\n2 5",
-        "expectedOutput": "1 5\n6 8"
-      },
-      {
-        "input": "2\n1 10\n2 5",
-        "expectedOutput": "1 10"
-      },
-      {
-        "input": "1\n5 9",
-        "expectedOutput": "5 9"
-      },
-      {
-        "input": "3\n1 2\n4 5\n7 8",
-        "expectedOutput": "1 2\n4 5\n7 8"
-      }
-    ]
-  },
-  {
     "bankId": "E1",
-    "levelNumber": 4,
+    "levelNumber": 5,
     "difficulty": "EASY",
     "title": "Rotate Array",
     "statement": "Given an integer array of length n and a non-negative integer k, rotate the array to the right by k steps and print the resulting array. Note that k may be larger than n. Aim for O(n) time and O(1) extra space.\n\nInput Format: Line 1: two integers n and k (1 ≤ n ≤ 10⁵, 0 ≤ k ≤ 10⁵). Line 2: n space-separated integers. | Output Format: n space-separated integers after rotation.",
@@ -2378,7 +2773,7 @@
   },
   {
     "bankId": "E2",
-    "levelNumber": 4,
+    "levelNumber": 5,
     "difficulty": "EASY",
     "title": "Sort Colors",
     "statement": "Given an array of n integers containing only 0 s, 1 s, and 2 s, sort the array in-place so that elements of the same value are adjacent in the order 0 , 1 , 2 . You must not use a built-in sorting function.\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 10⁴). Line 2: n space-separated integers (each 0, 1, or 2). | Output Format: n space-separated sorted integers.",
@@ -2417,7 +2812,7 @@
   },
   {
     "bankId": "E3",
-    "levelNumber": 4,
+    "levelNumber": 5,
     "difficulty": "EASY",
     "title": "Find First and Last Position in Sorted Array",
     "statement": "Given an array of n integers sorted in non-decreasing order and a target value, find the starting and ending 0-based indices of target in the array. If target is not found, print -1 -1 . Implement an O(log n) binary search solution.\n\nInput Format: Line 1: two integers n and target (1 ≤ n ≤ 10⁵). Line 2: n space-separated sorted integers. | Output Format: Two space-separated integers first last .",
@@ -2456,7 +2851,7 @@
   },
   {
     "bankId": "E4",
-    "levelNumber": 4,
+    "levelNumber": 5,
     "difficulty": "EASY",
     "title": "Jump Game",
     "statement": "You are given an array of n non-negative integers where each element represents the maximum jump length from that index. Starting at index 0 , print True if you can reach the last index ( n − 1 ), otherwise print False .\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 10⁴). Line 2: n space-separated non-negative integers. | Output Format: True or False .",
@@ -2495,7 +2890,7 @@
   },
   {
     "bankId": "E5",
-    "levelNumber": 4,
+    "levelNumber": 5,
     "difficulty": "EASY",
     "title": "Spiral Matrix Traversal",
     "statement": "Given an r × c matrix of integers, print all elements of the matrix in clockwise spiral order starting from the top-left corner, separated by single spaces on one line.\n\nInput Format: Line 1: two integers r and c (1 ≤ r, c ≤ 50). Next r lines: c space-separated integers each. | Output Format: r × c space-separated integers in spiral order.",
@@ -2534,7 +2929,7 @@
   },
   {
     "bankId": "H1",
-    "levelNumber": 4,
+    "levelNumber": 5,
     "difficulty": "HARD",
     "title": "Subarray Sum Equals K",
     "statement": "Given an array of n integers (which may contain negative numbers and zeros) and an integer k, find and print the total number of non-empty contiguous subarrays whose sum equals k. Aim for an O(n) prefix-sum hash map solution.\n\nInput Format: Line 1: two integers n and k (1 ≤ n ≤ 2 × 10⁴). Line 2: n space-separated integers. | Output Format: Total count of valid subarrays.",
@@ -2573,7 +2968,7 @@
   },
   {
     "bankId": "H2",
-    "levelNumber": 4,
+    "levelNumber": 5,
     "difficulty": "HARD",
     "title": "Container With Most Water",
     "statement": "You are given an array height of n non-negative integers where each value represents the height of a vertical line drawn at x-coordinate i. Find two lines that together with the x-axis form a container holding the maximum possible amount of water, and print that maximum area. Aim for an O(n) two-pointer solution.\n\nInput Format: Line 1: integer n (2 ≤ n ≤ 10⁵). Line 2: n space-separated non-negative integers. | Output Format: Maximum water area integer.",
@@ -2612,7 +3007,7 @@
   },
   {
     "bankId": "H3",
-    "levelNumber": 4,
+    "levelNumber": 5,
     "difficulty": "HARD",
     "title": "Longest Consecutive Sequence",
     "statement": "Given an unsorted array of n integers, find and print the length of the longest sequence of consecutive integers (for example, 1, 2, 3, 4 ). Duplicate elements do not extend the sequence. Implement an O(n) algorithm using a hash set.\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 10⁵). Line 2: n space-separated integers. | Output Format: Length of the longest consecutive sequence.",
@@ -2651,7 +3046,7 @@
   },
   {
     "bankId": "H4",
-    "levelNumber": 4,
+    "levelNumber": 5,
     "difficulty": "HARD",
     "title": "Daily Temperatures",
     "statement": "Given an array of n daily temperatures, for each day i compute how many days you must wait until a strictly warmer temperature occurs. If there is no future day with a warmer temperature, output 0 for that day. Aim for an O(n) monotonic stack solution.\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 10⁵). Line 2: n space-separated integers. | Output Format: n space-separated wait-day counts.",
@@ -2690,7 +3085,7 @@
   },
   {
     "bankId": "H5",
-    "levelNumber": 4,
+    "levelNumber": 5,
     "difficulty": "HARD",
     "title": "Minimum Size Subarray Sum",
     "statement": "Given an array of n positive integers and a positive integer target, find and print the minimal length of a contiguous subarray whose sum is greater than or equal to target. If no such subarray exists, print 0 . Aim for an O(n) sliding window solution.\n\nInput Format: Line 1: two integers n and target (1 ≤ n ≤ 10⁵, 1 ≤ target ≤ 10⁹). Line 2: n space-separated positive integers. | Output Format: Minimal subarray length or 0 .",
@@ -2729,7 +3124,7 @@
   },
   {
     "bankId": "E1",
-    "levelNumber": 5,
+    "levelNumber": 6,
     "difficulty": "EASY",
     "title": "Product of Array Except Self",
     "statement": "Given an integer array nums of length n, compute an array answer such that answer[i] equals the product of all elements of nums except nums[i]. You must solve it in O(n) time without using the division operator.\n\nInput Format: Line 1: integer n (2 ≤ n ≤ 10⁵). Line 2: n space-separated integers. | Output Format: n space-separated integers.",
@@ -2768,7 +3163,7 @@
   },
   {
     "bankId": "E2",
-    "levelNumber": 5,
+    "levelNumber": 6,
     "difficulty": "EASY",
     "title": "Longest Substring Without Repeating Characters",
     "statement": "Given a string s containing lowercase English letters, find and print the length of the longest contiguous substring that contains no repeating characters. Aim for an O(n) sliding window solution.\n\nInput Format: A single line string s (1 ≤ length ≤ 5 × 10⁴). | Output Format: Integer length of the longest unique-character substring.",
@@ -2807,7 +3202,7 @@
   },
   {
     "bankId": "E3",
-    "levelNumber": 5,
+    "levelNumber": 6,
     "difficulty": "EASY",
     "title": "3Sum",
     "statement": "Given an integer array of length n, find all unique triplets a b c (from three distinct indices) such that a + b + c = 0. Print each triplet in non-decreasing order ( a ≤ b ≤ c ), and print all unique triplets sorted lexicographically, one per line. If no valid triplet exists, print NONE .\n\nInput Format: Line 1: integer n (3 ≤ n ≤ 3000). Line 2: n space-separated integers. | Output Format: Sorted unique triplets one per line, or NONE .",
@@ -2846,7 +3241,7 @@
   },
   {
     "bankId": "E4",
-    "levelNumber": 5,
+    "levelNumber": 6,
     "difficulty": "EASY",
     "title": "House Robber",
     "statement": "You are given an array of n non-negative integers representing the amount of money stored in each house along a street. Adjacent houses have connected security systems, so you cannot rob two adjacent houses. Find and print the maximum total money you can rob without triggering the alarm.\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 10⁴). Line 2: n space-separated non-negative integers. | Output Format: Maximum rob amount integer.",
@@ -2885,7 +3280,7 @@
   },
   {
     "bankId": "E5",
-    "levelNumber": 5,
+    "levelNumber": 6,
     "difficulty": "EASY",
     "title": "Maximum Product Subarray",
     "statement": "Given an integer array of length n (which may contain negative numbers and zeros), find the contiguous non-empty subarray that has the largest product and print that maximum product.\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 2 × 10⁴). Line 2: n space-separated integers. | Output Format: Maximum product integer.",
@@ -2924,7 +3319,7 @@
   },
   {
     "bankId": "H1",
-    "levelNumber": 5,
+    "levelNumber": 6,
     "difficulty": "HARD",
     "title": "Search in Rotated Sorted Array",
     "statement": "An integer array of n distinct elements sorted in ascending order has been rotated at an unknown pivot index. Given the rotated array and a target value, print the 0-based index of target if it exists, otherwise print -1 . You must implement an O(log n) binary search algorithm.\n\nInput Format: Line 1: two integers n and target (1 ≤ n ≤ 10⁵). Line 2: n space-separated integers. | Output Format: 0-based index or -1 .",
@@ -2963,7 +3358,7 @@
   },
   {
     "bankId": "H2",
-    "levelNumber": 5,
+    "levelNumber": 6,
     "difficulty": "HARD",
     "title": "Number of Islands",
     "statement": "Given an m × n 2D grid of 1 s (land) and 0 s (water), count and print the number of islands. An island is surrounded by water and formed by connecting adjacent land cells horizontally or vertically (not diagonally).\n\nInput Format: Line 1: two integers m and n (1 ≤ m, n ≤ 300). Next m lines: a string of n characters ( 0 or 1 ). | Output Format: Total number of islands.",
@@ -3002,7 +3397,7 @@
   },
   {
     "bankId": "H3",
-    "levelNumber": 5,
+    "levelNumber": 6,
     "difficulty": "HARD",
     "title": "Word Break",
     "statement": "Given a lowercase string s and a dictionary of k words, print True if s can be segmented into a sequence of one or more dictionary words (dictionary words may be reused any number of times), otherwise print False .\n\nInput Format: Line 1: string s (1 ≤ length ≤ 300). Line 2: integer k (1 ≤ k ≤ 1000). Line 3: k space-separated dictionary words. | Output Format: True or False .",
@@ -3041,7 +3436,7 @@
   },
   {
     "bankId": "H4",
-    "levelNumber": 5,
+    "levelNumber": 6,
     "difficulty": "HARD",
     "title": "Longest Increasing Subsequence",
     "statement": "Given an integer array of length n, find and print the length of the longest strictly increasing subsequence. A subsequence is formed by deleting zero or more elements without changing the order of the remaining elements.\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 2500). Line 2: n space-separated integers. | Output Format: Integer length of the longest strictly increasing subsequence.",
@@ -3080,7 +3475,7 @@
   },
   {
     "bankId": "H5",
-    "levelNumber": 5,
+    "levelNumber": 6,
     "difficulty": "HARD",
     "title": "Course Schedule",
     "statement": "There are numCourses courses labeled from 0 to numCourses − 1 and m prerequisite pairs. Each pair a b indicates that you must finish course b before taking course a. Print True if it is possible to finish all courses, otherwise print False .\n\nInput Format: Line 1: two integers numCourses and m (1 ≤ numCourses ≤ 2000, 0 ≤ m ≤ 5000). Next m lines: two integers a b. | Output Format: True or False .",
@@ -3114,396 +3509,6 @@
       {
         "input": "3 0",
         "expectedOutput": "True"
-      }
-    ]
-  },
-  {
-    "bankId": "E1",
-    "levelNumber": 6,
-    "difficulty": "EASY",
-    "title": "Rain Water Trap",
-    "statement": "You are given the heights of n vertical bars, each of width 1. After it rains, water gets trapped between the bars. Compute and print the total units of water trapped.\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 20,000). Line 2: n space-separated non-negative integers (0 ≤ height ≤ 100,000). | Output Format: Total units of trapped water.",
-    "constraints": [
-      "1 ≤ n ≤ 20,000; 0 ≤ height ≤ 100,000"
-    ],
-    "examples": [
-      {
-        "input": "12\n0 1 0 2 1 0 1 3 2 1 2 1",
-        "output": "6",
-        "explanation": "Classic elevation map"
-      }
-    ],
-    "hiddenTestCases": [
-      {
-        "input": "6\n4 2 0 3 2 5",
-        "expectedOutput": "9"
-      },
-      {
-        "input": "5\n3 0 2 0 4",
-        "expectedOutput": "7"
-      },
-      {
-        "input": "3\n1 2 3",
-        "expectedOutput": "0"
-      },
-      {
-        "input": "6\n5 2 1 2 1 5",
-        "expectedOutput": "14"
-      },
-      {
-        "input": "1\n5",
-        "expectedOutput": "0"
-      }
-    ]
-  },
-  {
-    "bankId": "E2",
-    "levelNumber": 6,
-    "difficulty": "EASY",
-    "title": "Minimum Coins",
-    "statement": "You are given n distinct coin denominations (each coin can be used unlimited times) and a target amount. Find and print the minimum number of coins needed to make exactly that amount. If it is impossible, print -1 .\n\nInput Format: Line 1: two integers n and amount (1 ≤ n ≤ 12, 0 ≤ amount ≤ 10,000). Line 2: n space-separated coin values (1 ≤ coin ≤ 10,000). | Output Format: Minimum coin count or -1 .",
-    "constraints": [
-      "1 ≤ n ≤ 12, 0 ≤ amount ≤ 10,000; 1 ≤ coin ≤ 10,000"
-    ],
-    "examples": [
-      {
-        "input": "3 11\n1 2 5",
-        "output": "3",
-        "explanation": "5 + 5 + 1 = 11"
-      }
-    ],
-    "hiddenTestCases": [
-      {
-        "input": "1 3\n2",
-        "expectedOutput": "-1"
-      },
-      {
-        "input": "1 0\n1",
-        "expectedOutput": "0"
-      },
-      {
-        "input": "3 6\n1 3 4",
-        "expectedOutput": "2"
-      },
-      {
-        "input": "4 27\n2 5 10 1",
-        "expectedOutput": "4"
-      },
-      {
-        "input": "4 6249\n186 419 83 408",
-        "expectedOutput": "20"
-      }
-    ]
-  },
-  {
-    "bankId": "E3",
-    "levelNumber": 6,
-    "difficulty": "EASY",
-    "title": "Edit Distance",
-    "statement": "Given two lowercase English strings word1 and word2, find and print the minimum number of operations required to convert word1 into word2. In one operation, you may insert a character, delete a character, or replace a character.\n\nInput Format: Line 1: string word1. Line 2: string word2 (1 ≤ length ≤ 500). | Output Format: Minimum edit distance integer.",
-    "constraints": [
-      "1 ≤ length ≤ 500"
-    ],
-    "examples": [
-      {
-        "input": "horse\nros",
-        "output": "3",
-        "explanation": "Replace h→r, delete r, delete e"
-      }
-    ],
-    "hiddenTestCases": [
-      {
-        "input": "intention\nexecution",
-        "expectedOutput": "5"
-      },
-      {
-        "input": "abc\nabc",
-        "expectedOutput": "0"
-      },
-      {
-        "input": "kitten\nsitting",
-        "expectedOutput": "3"
-      },
-      {
-        "input": "a\nb",
-        "expectedOutput": "1"
-      },
-      {
-        "input": "abcd\nefgh",
-        "expectedOutput": "4"
-      }
-    ]
-  },
-  {
-    "bankId": "E4",
-    "levelNumber": 6,
-    "difficulty": "EASY",
-    "title": "Largest Rectangle in Histogram",
-    "statement": "Given an array of n non-negative integers representing the heights of bars in a histogram where the width of each bar is 1, find and print the area of the largest rectangle that can be formed inside the histogram. Aim for an O(n) monotonic stack solution.\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 10⁵). Line 2: n space-separated non-negative integers. | Output Format: Area of the largest rectangle.",
-    "constraints": [
-      "1 ≤ n ≤ 10⁵"
-    ],
-    "examples": [
-      {
-        "input": "6\n2 1 5 6 2 3",
-        "output": "10",
-        "explanation": "Bars [5, 6] form 5 × 2 = 10"
-      }
-    ],
-    "hiddenTestCases": [
-      {
-        "input": "2\n2 4",
-        "expectedOutput": "4"
-      },
-      {
-        "input": "7\n6 2 5 4 5 1 6",
-        "expectedOutput": "12"
-      },
-      {
-        "input": "5\n1 1 1 1 1",
-        "expectedOutput": "5"
-      },
-      {
-        "input": "1\n5",
-        "expectedOutput": "5"
-      },
-      {
-        "input": "5\n1 2 3 4 5",
-        "expectedOutput": "9"
-      }
-    ]
-  },
-  {
-    "bankId": "E5",
-    "levelNumber": 6,
-    "difficulty": "EASY",
-    "title": "Longest Valid Parentheses",
-    "statement": "Given a string consisting only of the characters ( and ) , find and print the length of the longest contiguous substring of well-formed (valid) parentheses.\n\nInput Format: A single line string of parentheses (1 ≤ length ≤ 3 × 10⁴). | Output Format: Integer length of the longest valid parentheses substring.",
-    "constraints": [
-      "1 ≤ length ≤ 3 × 10⁴"
-    ],
-    "examples": [
-      {
-        "input": "(()",
-        "output": "2",
-        "explanation": "Valid substring \"()\""
-      }
-    ],
-    "hiddenTestCases": [
-      {
-        "input": ")()())",
-        "expectedOutput": "4"
-      },
-      {
-        "input": "((()))",
-        "expectedOutput": "6"
-      },
-      {
-        "input": ")(",
-        "expectedOutput": "0"
-      },
-      {
-        "input": "()(()",
-        "expectedOutput": "2"
-      },
-      {
-        "input": "(()())()",
-        "expectedOutput": "8"
-      }
-    ]
-  },
-  {
-    "bankId": "H1",
-    "levelNumber": 6,
-    "difficulty": "HARD",
-    "title": "Egg Drop Challenge",
-    "statement": "A building has floors 1 to n and you have k identical eggs. There exists an unknown critical floor f (0 ≤ f ≤ n) such that an egg dropped from any floor higher than f breaks, while an egg dropped from floor f or lower survives and can be reused. Find and print the minimum number of drops needed to guarantee determining f in the worst case. (An O(k · n²) solution will time out.)\n\nInput Format: Two space-separated integers k (eggs) and n (floors) (1 ≤ k ≤ 100, 1 ≤ n ≤ 10,000). | Output Format: Minimum number of drops.",
-    "constraints": [
-      "1 ≤ k ≤ 100, 1 ≤ n ≤ 10,000"
-    ],
-    "examples": [
-      {
-        "input": "1 2",
-        "output": "2",
-        "explanation": "1 egg requires linear scan"
-      }
-    ],
-    "hiddenTestCases": [
-      {
-        "input": "2 6",
-        "expectedOutput": "3"
-      },
-      {
-        "input": "3 14",
-        "expectedOutput": "4"
-      },
-      {
-        "input": "2 100",
-        "expectedOutput": "14"
-      },
-      {
-        "input": "4 5000",
-        "expectedOutput": "19"
-      },
-      {
-        "input": "100 10000",
-        "expectedOutput": "14"
-      }
-    ]
-  },
-  {
-    "bankId": "H2",
-    "levelNumber": 6,
-    "difficulty": "HARD",
-    "title": "Shortest Secret Code",
-    "statement": "You are given n lowercase English words where no word is a substring of another word. Build a single string that contains every given word as a substring and has the minimum possible length. Print that minimum length. (Trying all n! permutations will time out at n = 12; use bitmask DP.)\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 12). Line 2: n space-separated lowercase words (1 ≤ length ≤ 20). | Output Format: Minimum superstring length.",
-    "constraints": [
-      "1 ≤ n ≤ 12; 1 ≤ length ≤ 20"
-    ],
-    "examples": [
-      {
-        "input": "1\nxyz",
-        "output": "3",
-        "explanation": "Single word boundary"
-      }
-    ],
-    "hiddenTestCases": [
-      {
-        "input": "2\nab ba",
-        "expectedOutput": "3"
-      },
-      {
-        "input": "3\nabc bca cab",
-        "expectedOutput": "5"
-      },
-      {
-        "input": "4\naab abb bba baa",
-        "expectedOutput": "6"
-      },
-      {
-        "input": "3\nalex loves leetcode",
-        "expectedOutput": "17"
-      },
-      {
-        "input": "5\ncatg ctaagt gcta ttca atgcatc",
-        "expectedOutput": "16"
-      }
-    ]
-  },
-  {
-    "bankId": "H3",
-    "levelNumber": 6,
-    "difficulty": "HARD",
-    "title": "Stone Merge Cost",
-    "statement": "A row of n stone piles is given. In one move, you must merge exactly K consecutive piles into a single pile, and the cost of the move equals the total number of stones in those K piles. Find and print the minimum total cost to merge all piles into one pile. If it is impossible, print -1 .\n\nInput Format: Line 1: two integers n and K (1 ≤ n ≤ 30, 2 ≤ K ≤ 30). Line 2: n space-separated pile sizes (1 ≤ pile ≤ 100). | Output Format: Minimum total cost or -1 .",
-    "constraints": [
-      "1 ≤ n ≤ 30, 2 ≤ K ≤ 30; 1 ≤ pile ≤ 100"
-    ],
-    "examples": [
-      {
-        "input": "4 2\n3 2 4 1",
-        "output": "20",
-        "explanation": "Standard K = 2 merge"
-      }
-    ],
-    "hiddenTestCases": [
-      {
-        "input": "4 3\n3 2 4 1",
-        "expectedOutput": "-1"
-      },
-      {
-        "input": "5 3\n3 5 1 2 6",
-        "expectedOutput": "25"
-      },
-      {
-        "input": "5 2\n1 2 3 4 5",
-        "expectedOutput": "33"
-      },
-      {
-        "input": "7 3\n6 1 8 2 9 3 7",
-        "expectedOutput": "65"
-      },
-      {
-        "input": "1 2\n5",
-        "expectedOutput": "0"
-      }
-    ]
-  },
-  {
-    "bankId": "H4",
-    "levelNumber": 6,
-    "difficulty": "HARD",
-    "title": "Unique Mirror Words",
-    "statement": "Given a string s containing only the characters a , b , c , and d , count the number of distinct non-empty palindromic subsequences of s (two subsequences are considered the same if their resulting text is identical). Print the count modulo 1000000007 .\n\nInput Format: A single line string s (1 ≤ length ≤ 1000). | Output Format: Distinct palindromic subsequence count modulo 10⁹ + 7.",
-    "constraints": [
-      "1 ≤ length ≤ 1000"
-    ],
-    "examples": [
-      {
-        "input": "bccb",
-        "output": "6",
-        "explanation": "b, c, bb, cc, bcb, bccb"
-      }
-    ],
-    "hiddenTestCases": [
-      {
-        "input": "abcd",
-        "expectedOutput": "4"
-      },
-      {
-        "input": "aabbcc",
-        "expectedOutput": "6"
-      },
-      {
-        "input": "abacabad",
-        "expectedOutput": "20"
-      },
-      {
-        "input": "dcbadcba",
-        "expectedOutput": "20"
-      },
-      {
-        "input": "a",
-        "expectedOutput": "1"
-      }
-    ]
-  },
-  {
-    "bankId": "H5",
-    "levelNumber": 6,
-    "difficulty": "HARD",
-    "title": "Burst Balloons",
-    "statement": "You are given n balloons indexed from 0 to n − 1 , each painted with a non-negative integer nums[i]. When you burst balloon i, you earn nums[i−1] × nums[i] × nums[i+1] coins (out-of-bounds neighbors have value 1 ) and the remaining neighbors become adjacent. Find and print the maximum coins you can collect by bursting all balloons wisely.\n\nInput Format: Line 1: integer n (1 ≤ n ≤ 300). Line 2: n space-separated integers (0 ≤ nums[i] ≤ 100). | Output Format: Maximum coins integer.",
-    "constraints": [
-      "1 ≤ n ≤ 300; 0 ≤ nums[i] ≤ 100"
-    ],
-    "examples": [
-      {
-        "input": "4\n3 1 5 8",
-        "output": "167",
-        "explanation": "15 + 120 + 24 + 8 = 167"
-      }
-    ],
-    "hiddenTestCases": [
-      {
-        "input": "2\n1 5",
-        "expectedOutput": "10"
-      },
-      {
-        "input": "1\n7",
-        "expectedOutput": "7"
-      },
-      {
-        "input": "3\n2 3 4",
-        "expectedOutput": "36"
-      },
-      {
-        "input": "4\n1 2 3 4",
-        "expectedOutput": "40"
-      },
-      {
-        "input": "3\n5 5 5",
-        "expectedOutput": "155"
       }
     ]
   }

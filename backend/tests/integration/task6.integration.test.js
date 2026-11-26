@@ -374,11 +374,11 @@ async function run() {
       const allocY3 = await env.http().post('/api/rounds/allocate').set('Authorization', `Bearer ${y3.token}`);
       const allocY4 = await env.http().post('/api/rounds/allocate').set('Authorization', `Bearer ${y4.token}`);
       checkEqual(allocY2.status, 201, 'Year 2 alloc -> 201');
-      checkEqual(allocY2.body.round.question.difficulty, 'HARD', 'Year 2 allocates HARD');
+      checkEqual(allocY2.body.round.question.difficulty, 'EASY', 'Year 2 allocates EASY');
       checkEqual(allocY3.status, 201, 'Year 3 alloc -> 201');
-      checkEqual(allocY3.body.round.question.difficulty, 'HARD', 'Year 3 allocates HARD');
+      checkEqual(allocY3.body.round.question.difficulty, 'EASY', 'Year 3 allocates EASY');
       checkEqual(allocY4.status, 201, 'Year 4 alloc -> 201');
-      checkEqual(allocY4.body.round.question.difficulty, 'HARD', 'Year 4 allocates HARD');
+      checkEqual(allocY4.body.round.question.difficulty, 'EASY', 'Year 4 allocates EASY');
 
       const meRes = await env.http().get('/api/auth/me').set('Authorization', `Bearer ${y1.token}`);
       checkEqual(meRes.status, 200, 'GET /api/auth/me -> 200');
@@ -596,7 +596,7 @@ async function run() {
           usn: champ.usn,
           vToken: volunteerToken,
           result: 'PASS',
-          expectedDifficulty: 'HARD',
+          expectedDifficulty: 'EASY',
           explicitSettle: step.explicitSettle,
           expectLevelNumber: step.lvl,
         });
