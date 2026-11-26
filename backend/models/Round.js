@@ -11,7 +11,8 @@ const timerExtensionSchema = new mongoose.Schema(
     secondsAdded: {
       type: Number,
       required: [true, 'Seconds added is required'],
-      min: [1, 'Seconds added must be at least 1'],
+      // 0 means no time was added: a pause/resume marker entry.
+      min: [0, 'Seconds added cannot be less than 0'],
     },
     reason: {
       type: String,
@@ -120,6 +121,18 @@ const roundSchema = new mongoose.Schema(
       type: Date,
       default: null,
       index: true,
+    },
+    // Timer pause: set while the organizer has the timer paused. The
+    // deadline is left untouched and the frozen time is kept here, so a
+    // paused round never expires and resume restarts from this many seconds.
+    pausedAt: {
+      type: Date,
+      default: null,
+    },
+    pausedRemainingSeconds: {
+      type: Number,
+      default: null,
+      min: [0, 'Paused time left cannot be less than 0'],
     },
     timerExtensions: {
       type: [timerExtensionSchema],

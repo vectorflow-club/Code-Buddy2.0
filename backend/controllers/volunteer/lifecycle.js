@@ -284,6 +284,16 @@ const extendStudentRoundByUsn = async (req, res) => {
       }
 
       const activeRound = timerSync.round;
+
+      // A paused round keeps its frozen time: add time only after resume.
+      if (activeRound.pausedAt) {
+        return res.status(409).json({
+          success: false,
+          code: 'ROUND_PAUSED',
+          message: 'Cannot add time to a paused round: resume it first.',
+        });
+      }
+
       const storedDeadlineDate = new Date(activeRound.deadline);
       const newDeadlineMs = storedDeadlineDate.getTime() + parsedExtensionSeconds * 1000;
 
@@ -308,6 +318,7 @@ const extendStudentRoundByUsn = async (req, res) => {
           _id: activeRound._id,
           status: 'inProgress',
           deadline: storedDeadlineDate,
+          pausedAt: null,
         },
         {
           $set: {
@@ -491,6 +502,16 @@ const resetStudentRoundByUsn = async (req, res) => {
       }
 
       const activeRound = timerSync.round;
+
+      // A paused round keeps its frozen time: reset only after resume.
+      if (activeRound.pausedAt) {
+        return res.status(409).json({
+          success: false,
+          code: 'ROUND_PAUSED',
+          message: 'Cannot reset a paused round: resume it first.',
+        });
+      }
+
       const storedDeadlineDate = new Date(activeRound.deadline);
       const resetStart = new Date();
       const newDeadlineMs = resetStart.getTime() + durationSeconds * 1000;
@@ -516,6 +537,7 @@ const resetStudentRoundByUsn = async (req, res) => {
           _id: activeRound._id,
           status: 'inProgress',
           deadline: storedDeadlineDate,
+          pausedAt: null,
         },
         {
           $set: {
@@ -589,6 +611,396 @@ const resetStudentRoundByUsn = async (req, res) => {
       success: false,
       code: 'INTERNAL_SERVER_ERROR',
       message: 'Could not reset the timer.',
+    });
+  }
+};
+
+/**
+ * Helper to format consistent round-pause conflict responses for non-inProgress statuses.
+ */
+const buildPauseIneligibleResponse = (status, currentLevel) => {
+  if (status === 'timeExpired') {
+    return {
+      status: 409,
+      code: 'ROUND_TIMER_EXPIRED',
+      message: `Cannot pause Level ${currentLevel}: time is already up.`,
+    };
+  }
+  return {
+    status: 409,
+    code: 'INVALID_ROUND_STATUS',
+    message: `Cannot pause a round that is '${status}'. Only rounds in progress can be paused.`,
+  };
+};
+
+/**
+ * Pause a running student round's timer, freezing the time left
+ * Endpoint: POST /api/volunteer/students/:usn/round/pause
+ * Access: Protected (Volunteer only)
+ *
+ * The deadline is left untouched and the frozen time is stored on the round,
+ * so the round cannot expire while it sits paused — not even when the old
+ * deadline passes. Resume restarts the countdown from the frozen time.
+ */
+const pauseStudentRoundByUsn = async (req, res) => {
+  try {
+    const resolved = await resolveRegisteredStudent(req.params.usn);
+    if (resolved.error) {
+      return res.status(resolved.error.status).json({
+        success: false,
+        code: resolved.error.code,
+        message: resolved.error.message,
+      });
+    }
+
+    const { student, normalizedUsn } = resolved;
+    const currentLevel = student.currentLevel;
+
+    const initialRound = await Round.findOne({
+      studentId: student._id,
+      levelNumber: currentLevel,
+    });
+
+    if (!initialRound) {
+      return res.status(404).json({
+        success: false,
+        code: 'ROUND_NOT_ALLOCATED',
+        message: `Student ${normalizedUsn} has no round for Level ${currentLevel} yet.`,
+      });
+    }
+
+    // 4. Optimistic Concurrency Control (CAS) loop on stored deadline to prevent lost updates
+    const MAX_CAS_ATTEMPTS = 5;
+    let candidateRound = initialRound;
+    let pausedRound = null;
+    let frozenRemainingSeconds = null;
+
+    for (let attempt = 0; attempt < MAX_CAS_ATTEMPTS; attempt++) {
+      if (candidateRound.status !== 'inProgress') {
+        const conflict = buildPauseIneligibleResponse(candidateRound.status, currentLevel);
+        return res.status(conflict.status).json({
+          success: false,
+          code: conflict.code,
+          message: conflict.message,
+        });
+      }
+
+      if (candidateRound.pausedAt) {
+        return res.status(409).json({
+          success: false,
+          code: 'ROUND_ALREADY_PAUSED',
+          message: `The timer for Level ${currentLevel} is already paused.`,
+        });
+      }
+
+      // Sync timer state so an un-synced expired round cannot be paused
+      const timerSync = await syncRoundDeadlineState(candidateRound);
+      if (timerSync.error) {
+        return res.status(timerSync.error.status).json({
+          success: false,
+          code: timerSync.error.code,
+          message: timerSync.error.message,
+        });
+      }
+
+      if (timerSync.isExpired || timerSync.round.status === 'timeExpired') {
+        const conflict = buildPauseIneligibleResponse('timeExpired', currentLevel);
+        return res.status(conflict.status).json({
+          success: false,
+          code: conflict.code,
+          message: conflict.message,
+        });
+      }
+
+      const activeRound = timerSync.round;
+      const storedDeadlineDate = new Date(activeRound.deadline);
+      const frozenSeconds = timerSync.remainingSeconds;
+
+      if (!Number.isFinite(frozenSeconds) || frozenSeconds < 0) {
+        return res.status(500).json({
+          success: false,
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Could not pause the timer.',
+        });
+      }
+
+      const pausedAt = new Date();
+      const extensionEntry = {
+        extendedBy: req.volunteer._id,
+        secondsAdded: 0,
+        reason: 'Timer paused',
+        timestamp: pausedAt,
+      };
+
+      const updated = await Round.findOneAndUpdate(
+        {
+          _id: activeRound._id,
+          status: 'inProgress',
+          deadline: storedDeadlineDate,
+          pausedAt: null,
+        },
+        {
+          $set: {
+            pausedAt,
+            pausedRemainingSeconds: frozenSeconds,
+          },
+          $push: {
+            timerExtensions: extensionEntry,
+          },
+        },
+        {
+          new: true,
+          runValidators: true,
+        }
+      );
+
+      if (updated) {
+        pausedRound = updated;
+        frozenRemainingSeconds = frozenSeconds;
+        break;
+      }
+
+      // Concurrent write altered deadline, status, or pause state; re-fetch for retry or conflict report
+      const refreshedRound = await Round.findById(activeRound._id);
+      if (!refreshedRound) {
+        return res.status(404).json({
+          success: false,
+          code: 'ROUND_NOT_ALLOCATED',
+          message: `Round for Level ${currentLevel} is gone.`,
+        });
+      }
+      candidateRound = refreshedRound;
+    }
+
+    if (!pausedRound) {
+      return res.status(409).json({
+        success: false,
+        code: 'PAUSE_CONFLICT',
+        message: 'Someone else changed the round at the same time. Please try again.',
+      });
+    }
+
+    const updatedTimer = computeTimerFields(pausedRound);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Timer paused.',
+      pausedRemainingSeconds: frozenRemainingSeconds,
+      student: formatStudentVolunteerResponse(student, pausedRound),
+      round: {
+        ...formatRoundVolunteerResponse(pausedRound, updatedTimer),
+        startedBy: pausedRound.startedBy ? pausedRound.startedBy.toString() : null,
+        timerExtensions: Array.isArray(pausedRound.timerExtensions)
+          ? pausedRound.timerExtensions.map((ext) => ({
+              extendedBy: ext.extendedBy ? ext.extendedBy.toString() : null,
+              secondsAdded: ext.secondsAdded,
+              reason: ext.reason || '',
+              timestamp: ext.timestamp,
+            }))
+          : [],
+      },
+      pausedBy: {
+        id: req.volunteer._id.toString(),
+        name: req.volunteer.name,
+        username: req.volunteer.username,
+        assignedLab: req.volunteer.assignedLab || '',
+      },
+    });
+  } catch (error) {
+    console.error('Error pausing student round timer:', error.message);
+    return res.status(500).json({
+      success: false,
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Could not pause the timer.',
+    });
+  }
+};
+
+/**
+ * Helper to format consistent round-resume conflict responses for non-inProgress statuses.
+ */
+const buildResumeIneligibleResponse = (status, currentLevel) => {
+  if (status === 'timeExpired') {
+    return {
+      status: 409,
+      code: 'ROUND_TIMER_EXPIRED',
+      message: `Cannot resume Level ${currentLevel}: time is already up.`,
+    };
+  }
+  return {
+    status: 409,
+    code: 'INVALID_ROUND_STATUS',
+    message: `Cannot resume a round that is '${status}'. Only rounds in progress can be resumed.`,
+  };
+};
+
+/**
+ * Resume a paused student round's timer from the frozen time left
+ * Endpoint: POST /api/volunteer/students/:usn/round/resume
+ * Access: Protected (Volunteer only)
+ *
+ * The new deadline is now + the frozen remaining seconds, so resume works
+ * even after the old deadline has passed — a paused round never expires.
+ */
+const resumeStudentRoundByUsn = async (req, res) => {
+  try {
+    const resolved = await resolveRegisteredStudent(req.params.usn);
+    if (resolved.error) {
+      return res.status(resolved.error.status).json({
+        success: false,
+        code: resolved.error.code,
+        message: resolved.error.message,
+      });
+    }
+
+    const { student, normalizedUsn } = resolved;
+    const currentLevel = student.currentLevel;
+
+    const initialRound = await Round.findOne({
+      studentId: student._id,
+      levelNumber: currentLevel,
+    });
+
+    if (!initialRound) {
+      return res.status(404).json({
+        success: false,
+        code: 'ROUND_NOT_ALLOCATED',
+        message: `Student ${normalizedUsn} has no round for Level ${currentLevel} yet.`,
+      });
+    }
+
+    // 4. Optimistic Concurrency Control (CAS) loop on pause state to prevent lost updates
+    const MAX_CAS_ATTEMPTS = 5;
+    let candidateRound = initialRound;
+    let resumedRound = null;
+
+    for (let attempt = 0; attempt < MAX_CAS_ATTEMPTS; attempt++) {
+      if (candidateRound.status !== 'inProgress') {
+        const conflict = buildResumeIneligibleResponse(candidateRound.status, currentLevel);
+        return res.status(conflict.status).json({
+          success: false,
+          code: conflict.code,
+          message: conflict.message,
+        });
+      }
+
+      if (!candidateRound.pausedAt) {
+        return res.status(409).json({
+          success: false,
+          code: 'ROUND_NOT_PAUSED',
+          message: `The timer for Level ${currentLevel} is not paused.`,
+        });
+      }
+
+      // The frozen time is the authority: a paused round never expires, so
+      // no deadline sync is needed here — resume restarts from this value.
+      const frozenSeconds = candidateRound.pausedRemainingSeconds;
+
+      if (!Number.isFinite(frozenSeconds) || frozenSeconds < 0) {
+        return res.status(500).json({
+          success: false,
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Could not resume the timer.',
+        });
+      }
+
+      const resumeStart = new Date();
+      const newDeadlineMs = resumeStart.getTime() + frozenSeconds * 1000;
+
+      // Guard against JavaScript Date maximum timestamp overflow (8.64e15 ms)
+      if (!Number.isFinite(newDeadlineMs) || newDeadlineMs > 8.64e15) {
+        return res.status(400).json({
+          success: false,
+          code: 'INVALID_ROUND_DURATION',
+          message: 'That paused time gives a wrong end time.',
+        });
+      }
+
+      const extensionEntry = {
+        extendedBy: req.volunteer._id,
+        secondsAdded: 0,
+        reason: 'Timer resumed',
+        timestamp: resumeStart,
+      };
+
+      const updated = await Round.findOneAndUpdate(
+        {
+          _id: candidateRound._id,
+          status: 'inProgress',
+          pausedAt: { $ne: null },
+        },
+        {
+          $set: {
+            deadline: new Date(newDeadlineMs),
+            pausedAt: null,
+            pausedRemainingSeconds: null,
+          },
+          $push: {
+            timerExtensions: extensionEntry,
+          },
+        },
+        {
+          new: true,
+          runValidators: true,
+        }
+      );
+
+      if (updated) {
+        resumedRound = updated;
+        break;
+      }
+
+      // Concurrent write changed pause state or status; re-fetch for retry or conflict report
+      const refreshedRound = await Round.findById(candidateRound._id);
+      if (!refreshedRound) {
+        return res.status(404).json({
+          success: false,
+          code: 'ROUND_NOT_ALLOCATED',
+          message: `Round for Level ${currentLevel} is gone.`,
+        });
+      }
+      candidateRound = refreshedRound;
+    }
+
+    if (!resumedRound) {
+      return res.status(409).json({
+        success: false,
+        code: 'RESUME_CONFLICT',
+        message: 'Someone else changed the round at the same time. Please try again.',
+      });
+    }
+
+    const updatedTimer = computeTimerFields(resumedRound);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Timer resumed.',
+      student: formatStudentVolunteerResponse(student, resumedRound),
+      round: {
+        ...formatRoundVolunteerResponse(resumedRound, updatedTimer),
+        startedBy: resumedRound.startedBy ? resumedRound.startedBy.toString() : null,
+        timerExtensions: Array.isArray(resumedRound.timerExtensions)
+          ? resumedRound.timerExtensions.map((ext) => ({
+              extendedBy: ext.extendedBy ? ext.extendedBy.toString() : null,
+              secondsAdded: ext.secondsAdded,
+              reason: ext.reason || '',
+              timestamp: ext.timestamp,
+            }))
+          : [],
+      },
+      resumedBy: {
+        id: req.volunteer._id.toString(),
+        name: req.volunteer.name,
+        username: req.volunteer.username,
+        assignedLab: req.volunteer.assignedLab || '',
+      },
+    });
+  } catch (error) {
+    console.error('Error resuming student round timer:', error.message);
+    return res.status(500).json({
+      success: false,
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Could not resume the timer.',
     });
   }
 };
@@ -868,5 +1280,7 @@ module.exports = {
   startStudentRoundByUsn,
   extendStudentRoundByUsn,
   resetStudentRoundByUsn,
+  pauseStudentRoundByUsn,
+  resumeStudentRoundByUsn,
   evaluateStudentRoundByUsn,
 };

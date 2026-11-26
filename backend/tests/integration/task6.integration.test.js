@@ -448,6 +448,118 @@ async function run() {
         .set('Authorization', `Bearer ${volunteerToken}`);
       checkEqual(resetReadyRes.status, 409, 'Timer reset on ready round -> 409');
 
+      // Timer pause/resume on the same running y2 round (reset above left it inProgress).
+      const pauseRes = await env
+        .http()
+        .post(`/api/volunteer/students/${y2.usn}/round/pause`)
+        .set('Authorization', `Bearer ${volunteerToken}`);
+      checkEqual(pauseRes.status, 200, 'Timer pause -> 200');
+      checkEqual(pauseRes.body.round.status, 'inProgress', 'Paused round still inProgress');
+      checkEqual(pauseRes.body.round.isPaused, true, 'Paused round reports isPaused');
+      checkEqual(pauseRes.body.round.isExpired, false, 'Paused round is not expired');
+      check(
+        typeof pauseRes.body.round.remainingSeconds === 'number' &&
+          pauseRes.body.round.remainingSeconds > 0 &&
+          pauseRes.body.round.remainingSeconds <= 180,
+        'Pause freezes the time left inside the full Level 1 time',
+      );
+      checkEqual(
+        pauseRes.body.pausedRemainingSeconds,
+        pauseRes.body.round.remainingSeconds,
+        'Pause reports the same frozen time left',
+      );
+      checkEqual(pauseRes.body.round.timerExtensions.length, 3, 'Pause logged as third extension');
+      checkEqual(
+        pauseRes.body.round.timerExtensions[2].reason,
+        'Timer paused',
+        'Pause entry carries the pause reason',
+      );
+      checkEqual(
+        pauseRes.body.round.timerExtensions[2].secondsAdded,
+        0,
+        'Pause entry adds no seconds',
+      );
+      const frozenRemaining = pauseRes.body.round.remainingSeconds;
+
+      const pauseAgainRes = await env
+        .http()
+        .post(`/api/volunteer/students/${y2.usn}/round/pause`)
+        .set('Authorization', `Bearer ${volunteerToken}`);
+      checkEqual(pauseAgainRes.status, 409, 'Pause on paused round -> 409');
+      checkEqual(pauseAgainRes.body.code, 'ROUND_ALREADY_PAUSED', 'Pause again reports already paused');
+
+      const extendPausedRes = await env
+        .http()
+        .post(`/api/volunteer/students/${y2.usn}/round/extend`)
+        .set('Authorization', `Bearer ${volunteerToken}`)
+        .send({ extensionSeconds: 30 });
+      checkEqual(extendPausedRes.status, 409, 'Extend while paused -> 409');
+      checkEqual(extendPausedRes.body.code, 'ROUND_PAUSED', 'Extend while paused reports paused round');
+
+      const resetPausedRes = await env
+        .http()
+        .post(`/api/volunteer/students/${y2.usn}/round/reset`)
+        .set('Authorization', `Bearer ${volunteerToken}`);
+      checkEqual(resetPausedRes.status, 409, 'Reset while paused -> 409');
+      checkEqual(resetPausedRes.body.code, 'ROUND_PAUSED', 'Reset while paused reports paused round');
+
+      // A paused round must NOT expire while it sits paused, even when its
+      // old deadline passes. The student poll is the path that would flip it.
+      await env.models.Round.findByIdAndUpdate(startY2Res.body.round.id, {
+        $set: { deadline: new Date(Date.now() - 10000) },
+      });
+      const pausedSyncRes = await env
+        .http()
+        .get('/api/rounds/active')
+        .set('Authorization', `Bearer ${y2.token}`);
+      checkEqual(pausedSyncRes.status, 200, 'Active check on paused round past deadline -> 200');
+      checkEqual(pausedSyncRes.body.round.status, 'inProgress', 'Paused round stays in progress past its old deadline');
+      checkEqual(pausedSyncRes.body.round.isPaused, true, 'Paused round still reports paused past its old deadline');
+      checkEqual(pausedSyncRes.body.round.isExpired, false, 'Paused round is not expired past its old deadline');
+      checkEqual(
+        pausedSyncRes.body.round.remainingSeconds,
+        frozenRemaining,
+        'Paused round keeps its frozen time left past its old deadline',
+      );
+      const dbPausedRound = await env.models.Round.findById(startY2Res.body.round.id).lean();
+      checkEqual(dbPausedRound.status, 'inProgress', 'DB Round.status stays inProgress while paused past deadline');
+
+      // Resume still works after the old deadline has passed.
+      const resumeRes = await env
+        .http()
+        .post(`/api/volunteer/students/${y2.usn}/round/resume`)
+        .set('Authorization', `Bearer ${volunteerToken}`);
+      checkEqual(resumeRes.status, 200, 'Timer resume -> 200');
+      checkEqual(resumeRes.body.round.status, 'inProgress', 'Resumed round still inProgress');
+      checkEqual(resumeRes.body.round.isPaused, false, 'Resumed round reports not paused');
+      checkEqual(resumeRes.body.round.isExpired, false, 'Resumed round is not expired');
+      check(
+        typeof resumeRes.body.round.remainingSeconds === 'number' &&
+          resumeRes.body.round.remainingSeconds >= frozenRemaining - 1 &&
+          resumeRes.body.round.remainingSeconds <= frozenRemaining,
+        'Resume restarts from the frozen time left',
+      );
+      checkEqual(resumeRes.body.round.timerExtensions.length, 4, 'Resume logged as fourth extension');
+      checkEqual(
+        resumeRes.body.round.timerExtensions[3].reason,
+        'Timer resumed',
+        'Resume entry carries the resume reason',
+      );
+
+      const resumeAgainRes = await env
+        .http()
+        .post(`/api/volunteer/students/${y2.usn}/round/resume`)
+        .set('Authorization', `Bearer ${volunteerToken}`);
+      checkEqual(resumeAgainRes.status, 409, 'Resume when not paused -> 409');
+      checkEqual(resumeAgainRes.body.code, 'ROUND_NOT_PAUSED', 'Resume again reports not paused');
+
+      const pauseReadyRes = await env
+        .http()
+        .post(`/api/volunteer/students/${y1.usn}/round/pause`)
+        .set('Authorization', `Bearer ${volunteerToken}`);
+      checkEqual(pauseReadyRes.status, 409, 'Timer pause on ready round -> 409');
+      checkEqual(pauseReadyRes.body.code, 'INVALID_ROUND_STATUS', 'Pause on ready round reports bad status');
+
       await env.models.Round.findByIdAndUpdate(startY2Res.body.round.id, {
         $set: { deadline: new Date(Date.now() - 10000) },
       });

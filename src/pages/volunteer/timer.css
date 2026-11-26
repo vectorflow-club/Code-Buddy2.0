@@ -146,6 +146,21 @@
   background: #f4f6f2;
 }
 
+.timer-pause-button {
+  background: #ffffff;
+  border: 1px solid #dfe5df;
+  color: #35463c;
+}
+
+.timer-pause-button:hover:not(:disabled) {
+  background: #f4f6f2;
+}
+
+.timer-pause-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .timer-duration-note {
   display: flex;
   justify-content: space-between;

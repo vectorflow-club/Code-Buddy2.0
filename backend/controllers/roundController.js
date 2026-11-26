@@ -53,6 +53,20 @@ const syncRoundDeadlineState = async (round, now = new Date()) => {
   }
 
   if (round.status === 'inProgress') {
+    // A paused round never expires while it sits paused, even if its old
+    // deadline passes. The frozen time is what resume restarts from.
+    if (round.pausedAt) {
+      return {
+        round,
+        remainingSeconds:
+          typeof round.pausedRemainingSeconds === 'number'
+            ? round.pausedRemainingSeconds
+            : 0,
+        isExpired: false,
+        didExpireNow: false,
+      };
+    }
+
     const parsed = parseValidDeadlineMs(round.deadline);
     if (parsed.errorCode) {
       return {

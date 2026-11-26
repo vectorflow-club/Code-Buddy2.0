@@ -12,8 +12,10 @@ import {
   evaluateVolunteerStudentRound,
   extendVolunteerStudentRound,
   getVolunteerStudentRound,
+  pauseVolunteerStudentRound,
   progressVolunteerStudentRound,
   resetVolunteerStudentRound,
+  resumeVolunteerStudentRound,
   settleVolunteerStudentRound,
   startVolunteerStudentRound,
 } from "../../services/volunteerRoundService";
@@ -107,9 +109,22 @@ export default function EvaluationWorkspace() {
   const roundStatus = round?.status;
   const canStart = hasLookupResult && roundStatus === "ready";
   const canExtend =
-    hasLookupResult && roundStatus === "inProgress" && round.isExpired !== true;
+    hasLookupResult &&
+    roundStatus === "inProgress" &&
+    round.isExpired !== true &&
+    round.isPaused !== true;
   const canReset =
-    hasLookupResult && roundStatus === "inProgress" && round.isExpired !== true;
+    hasLookupResult &&
+    roundStatus === "inProgress" &&
+    round.isExpired !== true &&
+    round.isPaused !== true;
+  const canPause =
+    hasLookupResult &&
+    roundStatus === "inProgress" &&
+    round.isExpired !== true &&
+    round.isPaused !== true;
+  const canResume =
+    hasLookupResult && roundStatus === "inProgress" && round.isPaused === true;
   const canEvaluate =
     hasLookupResult &&
     ["inProgress", "timeExpired"].includes(roundStatus) &&
@@ -193,6 +208,16 @@ export default function EvaluationWorkspace() {
   function handleReset() {
     if (!canReset) return null;
     return runAction("reset", (usn) => resetVolunteerStudentRound(usn));
+  }
+
+  function handlePause() {
+    if (!canPause) return null;
+    return runAction("pause", (usn) => pauseVolunteerStudentRound(usn));
+  }
+
+  function handleResume() {
+    if (!canResume) return null;
+    return runAction("resume", (usn) => resumeVolunteerStudentRound(usn));
   }
 
   function handleEvaluate(result) {
@@ -449,16 +474,23 @@ export default function EvaluationWorkspace() {
               remainingSeconds={round.remainingSeconds}
               deadline={round.deadline}
               isExpired={round.isExpired}
+              isPaused={round.isPaused === true}
               canStart={canStart}
               canExtend={canExtend}
               canReset={canReset}
+              canPause={canPause}
+              canResume={canResume}
               isStarting={activeAction === "start"}
               isExtending={activeAction === "extend"}
               isResetting={activeAction === "reset"}
+              isPausing={activeAction === "pause"}
+              isResuming={activeAction === "resume"}
               isBusy={isBusy}
               onStart={handleStart}
               onExtend={handleExtend}
               onReset={handleReset}
+              onPause={handlePause}
+              onResume={handleResume}
             />
           )}
 

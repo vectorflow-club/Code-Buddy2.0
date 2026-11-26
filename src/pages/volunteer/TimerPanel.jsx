@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  Pause,
   Play,
   RotateCcw,
   Timer,
@@ -16,16 +17,23 @@ export default function TimerPanel({
   remainingSeconds,
   deadline,
   isExpired,
+  isPaused = false,
   canStart = false,
   canExtend = false,
   canReset = false,
+  canPause = false,
+  canResume = false,
   isStarting = false,
   isExtending = false,
   isResetting = false,
+  isPausing = false,
+  isResuming = false,
   isBusy = false,
   onStart,
   onExtend,
   onReset,
+  onPause,
+  onResume,
 }) {
   const [now, setNow] = useState(() => Date.now());
   const [extensionMinutes, setExtensionMinutes] = useState("");
@@ -33,11 +41,17 @@ export default function TimerPanel({
   const [extensionError, setExtensionError] = useState("");
 
   useEffect(() => {
-    if (roundStatus !== "inProgress" || isExpired === true || !deadline) return undefined;
+    if (
+      roundStatus !== "inProgress" ||
+      isExpired === true ||
+      isPaused === true ||
+      !deadline
+    )
+      return undefined;
 
     const intervalId = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(intervalId);
-  }, [deadline, isExpired, roundStatus]);
+  }, [deadline, isExpired, isPaused, roundStatus]);
 
   const deadlineMilliseconds = deadline ? new Date(deadline).getTime() : NaN;
   const hasDeadline = Number.isFinite(deadlineMilliseconds);
@@ -46,6 +60,7 @@ export default function TimerPanel({
   const isFinished = isExpired === true;
   const countdownSeconds = useMemo(() => {
     if (isFinished) return 0;
+    if (isPaused) return hasRemainingTime ? Math.max(0, remainingSeconds) : null;
     if (roundStatus === "inProgress" && hasDeadline) {
       return Math.max(0, Math.ceil((deadlineMilliseconds - now) / 1000));
     }
@@ -55,6 +70,7 @@ export default function TimerPanel({
     hasDeadline,
     hasRemainingTime,
     isFinished,
+    isPaused,
     now,
     remainingSeconds,
     roundStatus,
@@ -89,7 +105,10 @@ export default function TimerPanel({
   }
 
   return (
-    <section className="timer-panel" aria-busy={isStarting || isExtending}>
+    <section
+      className="timer-panel"
+      aria-busy={isStarting || isExtending || isPausing || isResuming}
+    >
       <div className="timer-header">
         <div>
           <p className="timer-eyebrow">COMPETITION TIMER</p>
@@ -113,15 +132,24 @@ export default function TimerPanel({
         <span className="timer-status">
           {isFinished
             ? "TIME IS UP"
-            : isAwaitingBackendExpiration
-              ? "AWAITING TIMER UPDATE"
-              : canDisplayCountdown
-                ? "TIME REMAINING"
-                : roundStatus === "ready"
-                  ? "READY TO START"
-                  : "NO TIMER"}
+            : isPaused
+              ? "PAUSED"
+              : isAwaitingBackendExpiration
+                ? "AWAITING TIMER UPDATE"
+                : canDisplayCountdown
+                  ? "TIME REMAINING"
+                  : roundStatus === "ready"
+                    ? "READY TO START"
+                    : "NO TIMER"}
         </span>
       </div>
+
+      {isPaused && !isFinished && (
+        <div className="timer-message">
+          <Pause size={16} />
+          Timer paused. The time left stays as it is until you resume it.
+        </div>
+      )}
 
       {isWarning && (
         <div className="timer-message timer-message-warning">
@@ -164,6 +192,23 @@ export default function TimerPanel({
         >
           <RotateCcw size={16} />
           {isResetting ? "Resetting…" : "Reset"}
+        </button>
+
+        <button
+          type="button"
+          className="timer-pause-button"
+          disabled={(!canPause && !canResume) || isBusy}
+          onClick={isPaused ? onResume : onPause}
+          title={isPaused ? "Resume the timer" : "Pause the timer"}
+        >
+          {isPaused ? <Play size={16} /> : <Pause size={16} />}
+          {isResuming
+            ? "Resuming…"
+            : isPausing
+              ? "Pausing…"
+              : isPaused
+                ? "Resume"
+                : "Pause"}
         </button>
       </div>
 

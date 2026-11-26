@@ -9,6 +9,8 @@ const {
   startStudentRoundByUsn,
   extendStudentRoundByUsn,
   resetStudentRoundByUsn,
+  pauseStudentRoundByUsn,
+  resumeStudentRoundByUsn,
   evaluateStudentRoundByUsn,
   settleStudentRoundByUsn,
   progressStudentRoundByUsn,
@@ -70,6 +72,20 @@ router.post('/students/:usn/round/extend', protectVolunteer, authorizeVolunteer,
  * @access  Protected (Volunteer only)
  */
 router.post('/students/:usn/round/reset', protectVolunteer, authorizeVolunteer, resetStudentRoundByUsn);
+
+/**
+ * @route   POST /api/volunteer/students/:usn/round/pause
+ * @desc    Pause the timer of an inProgress round, freezing the time left
+ * @access  Protected (Volunteer only)
+ */
+router.post('/students/:usn/round/pause', protectVolunteer, authorizeVolunteer, pauseStudentRoundByUsn);
+
+/**
+ * @route   POST /api/volunteer/students/:usn/round/resume
+ * @desc    Resume a paused round's timer from the frozen time left
+ * @access  Protected (Volunteer only)
+ */
+router.post('/students/:usn/round/resume', protectVolunteer, authorizeVolunteer, resumeStudentRoundByUsn);
 
 /**
  * @route   POST /api/volunteer/students/:usn/round/evaluate

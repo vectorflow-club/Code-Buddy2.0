@@ -56,6 +56,17 @@ const computeTimerFields = (round, now = new Date()) => {
   }
 
   if (round.status === 'inProgress') {
+    // A paused round reports its frozen time, never the old deadline.
+    if (round.pausedAt) {
+      return {
+        remainingSeconds:
+          typeof round.pausedRemainingSeconds === 'number'
+            ? round.pausedRemainingSeconds
+            : 0,
+        isExpired: false,
+      };
+    }
+
     const parsed = parseValidDeadlineMs(round.deadline);
     if (parsed.errorCode) {
       return { remainingSeconds: null, isExpired: false };
@@ -95,6 +106,7 @@ const formatRoundStudentResponse = (round, timerState = null) => {
     deadline: round.deadline || null,
     remainingSeconds: timer.remainingSeconds,
     isExpired: timer.isExpired,
+    isPaused: round.pausedAt != null,
     completedAt: round.completedAt || null,
     createdAt: round.createdAt,
     question: {

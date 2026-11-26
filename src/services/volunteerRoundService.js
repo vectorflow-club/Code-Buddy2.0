@@ -132,6 +132,14 @@ export function resetVolunteerStudentRound(usn) {
   return volunteerRequest(usn, "reset");
 }
 
+export function pauseVolunteerStudentRound(usn) {
+  return volunteerRequest(usn, "pause");
+}
+
+export function resumeVolunteerStudentRound(usn) {
+  return volunteerRequest(usn, "resume");
+}
+
 export function evaluateVolunteerStudentRound(usn, { result, remarks, programmingLanguage }) {
   const body = { result };
   if (remarks !== undefined) body.remarks = remarks;

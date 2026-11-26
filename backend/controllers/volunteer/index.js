@@ -5,6 +5,8 @@ const {
   startStudentRoundByUsn,
   extendStudentRoundByUsn,
   resetStudentRoundByUsn,
+  pauseStudentRoundByUsn,
+  resumeStudentRoundByUsn,
   evaluateStudentRoundByUsn,
 } = require('./lifecycle');
 const { settleStudentRoundByUsn, progressStudentRoundByUsn } = require('./settlement');
@@ -17,6 +19,8 @@ module.exports = {
   startStudentRoundByUsn,
   extendStudentRoundByUsn,
   resetStudentRoundByUsn,
+  pauseStudentRoundByUsn,
+  resumeStudentRoundByUsn,
   evaluateStudentRoundByUsn,
   settleStudentRoundByUsn,
   progressStudentRoundByUsn,
