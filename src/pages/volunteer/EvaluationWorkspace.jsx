@@ -561,7 +561,7 @@ export default function EvaluationWorkspace() {
                   onClick={() => handleEvaluate("PASS")}
                 >
                   <CheckCircle2 size={17} />
-                  {activeAction === "evaluate" ? "Saving…" : "Mark correct"}
+                  {activeAction === "evaluate" ? "Saving…" : "Correct"}
                 </button>
 
                 <button
@@ -571,7 +571,7 @@ export default function EvaluationWorkspace() {
                   onClick={() => handleEvaluate("FAIL")}
                 >
                   <XCircle size={17} />
-                  {activeAction === "evaluate" ? "Saving…" : "Mark not correct"}
+                  {activeAction === "evaluate" ? "Saving…" : "Not correct"}
                 </button>
               </div>
             )}
